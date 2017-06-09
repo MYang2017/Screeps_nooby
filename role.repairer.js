@@ -1,3 +1,5 @@
+var actionRepair = require('action.repair');
+
 module.exports = {
     run: function(creep) {
         if (creep.memory.working == true && creep.carry.energy == 0) {
@@ -8,21 +10,10 @@ module.exports = {
         }
 
         if (creep.memory.working == true) {
-            var structure = creep.pos.findClosestByRange(FIND_STRUCTURES, { filter: (s) => s.hits < s.hitsMax && s.structureType != STRUCTURE_ROAD && s.structureType != STRUCTURE_WALL && s.structureType != STRUCTURE_RAMPART })
-            if (structure == undefined) {
-                structure = creep.pos.findClosestByRange(FIND_STRUCTURES, { filter: (s) => s.hits < s.hitsMax && s.structureType == STRUCTURE_ROAD && s.structureType != STRUCTURE_WALL && s.structureType != STRUCTURE_RAMPART})
-            }
-            if (structure != undefined) {
-                if (creep.repair(structure) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(structure);
-                }
-            }
-            else {
-                //roleLongDistanceHarvester.run(creep);
-            }
+            actionRepair.run(creep);
         }
         else {
-          var [resourceID, ifDropped] = evaluateEnergyResources(creep, true, true, true, true); // find energy functoin in myFunctoins
+          var [resourceID, ifDropped] = evaluateEnergyResources(creep, true, true, true, true); // find energy function in myFunctoins
           if (resourceID != undefined) {
             energy = Game.getObjectById(resourceID);
             if (ifDropped) { // if energy is dropped
@@ -34,6 +25,11 @@ module.exports = {
               if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                   creep.moveTo(energy);
               }
+            }
+          }
+          else { // room level too low, go for resources
+            if (creep.harvest(Game.getObjectById(ifDropped)) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(Game.getObjectById(ifDropped));
             }
           }
         }

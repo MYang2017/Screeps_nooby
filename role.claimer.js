@@ -4,11 +4,13 @@ module.exports = {
             //console.log(creep.claimController(creep.room.controller));
             if (creep.claimController(creep.room.controller) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(creep.room.controller);
+
             }
+            creep.signController(creep.room.controller, 'Territory of the Twilight Kingdoms of the East');
         }
         else { // go to target room
-            var exit = creep.room.findExitTo(creep.memory.target);
-            creep.moveTo(creep.pos.findClosestByRange(exit));
+            var destination = Game.flags['go'].pos;
+            creep.moveTo(destination);
         }
     }
 };

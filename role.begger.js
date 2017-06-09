@@ -14,26 +14,26 @@ module.exports = {
 
         if (creep.memory.working == true) { // if working
             if (creep.room.name != creep.memory.home) { // if not at home base, go back to home base
-                creep.moveTo(new RoomPosition(25,25, creep.memory.home)); 
+                creep.travelTo(new RoomPosition(25,25, creep.memory.home));
             }
             else if (creep.room.name == creep.memory.home) { // back to home, finish begging
                 var pocket = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ( (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_TOWER) && s.energy < s.energyCapacity) })
                 if (pocket != undefined) { // first consider put energy into storage
                     if (creep.transfer(pocket, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) { // go to storage and put energy
-                        creep.moveTo(pocket);
+                        creep.travelTo(pocket);
                     }
                 }
                 else { // if cannot find a unfull spawn or extensions or tower, find a storage
                     pocket = creep.room.storage;
                     if (pocket != undefined) { // found a resevoir and not filled
                         if (creep.transfer(pocket, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) { // go to resevoir and put energy
-                            creep.moveTo(pocket);
+                            creep.travelTo(pocket);
                         }
                     }
                     else { // they are full, find a container
                         pocket = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: (s) => s.structureType == STRUCTURE_CONTAINER});
                         if (creep.transfer(pocket, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) { // go to container and put energy
-                            creep.moveTo(pocket);
+                            creep.travelTo(pocket);
                         }
                     }
                 }
@@ -41,23 +41,35 @@ module.exports = {
         }
         else { // working == false
             if (creep.room.name == creep.memory.target) { // if in target (giver) room, go withdraw from storage:
-                let giver = creep.room.storage;
+                /*let giver = creep.room.storage;
                 if (giver != undefined) { // if there is storage
                     if (creep.withdraw(giver, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(giver);
+                        creep.travelTo(giver);
                     }
                 }
                 else { // if there is no storage (which could be possible after destroyed), try picking up some energy
-                    let energy = creep.pos.findClosestByRange(FIND_DROPPED_ENERGY);
+                    let energy = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {filter: {resourceType: RESOURCE_ENERGY}});
                     if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(energy);
+                        creep.travelTo(energy);
+                    }
+                }*/
+                let energy = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {filter: {resourceType: RESOURCE_ENERGY}});
+                if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
+                    creep.travelTo(energy);
+                }
+                if (energy == undefined) {
+                    let container = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER && (s.store[RESOURCE_ENERGY] > (creep.carryCapacity-creep.carry.energy))});
+                    if (container != undefined) { // if all containers are 0, take energy from storage
+                        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                            creep.travelTo(container);
+                        }
                     }
                 }
             }
             else { // if not in target room, move to target room
-                creep.moveTo(new RoomPosition(25,25, creep.memory.target));
+                creep.travelTo(new RoomPosition(25,25, creep.memory.target));
                 //var exit = creep.room.findExitTo(creep.memory.target);
-                //creep.moveTo(creep.pos.findClosestByRange(exit));
+                //creep.travelTo(creep.pos.findClosestByRange(exit));
             }
         }
     }

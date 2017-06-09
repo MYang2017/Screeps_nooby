@@ -1,3 +1,7 @@
+var actionGetEnergy = require('action.getEnergy');
+var actionUpgrade = require('action.upgradeController');
+var actionBuild = require('action.build');
+
 module.exports = {
     run: function(creep) {
         creep.say('upgrading');
@@ -8,27 +12,25 @@ module.exports = {
             creep.memory.working = true;
         }
 
-        if (creep.memory.working == true) {
-            //if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(creep.room.controller);
-                creep.upgradeController(creep.room.controller);
-            //}
+        if (creep.memory.target != undefined && creep.room.name != creep.memory.target) {
+           creep.moveTo(Game.flags[creep.memory.target]);
         }
         else {
-          var [resourceID, ifDropped] = evaluateEnergyResources(creep, true, true, true, true); // find energy functoin in myFunctoins
-          if (resourceID != undefined) {
-            energy = Game.getObjectById(resourceID);
-            if (ifDropped) { // if energy is dropped
-              if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                  creep.moveTo(energy);
-              }
+            if (creep.memory.working == true) {
+                if ( ifConstructionSiteInRoom(creep.room) ) {
+                    actionBuild.run(creep);
+                }
+                else {
+                    actionUpgrade.run(creep);
+                    if ((creep.room.controller.level>=5)&&(_.sum(creep.room.find(FIND_MY_CREEPS, {filter:s=>s.role=='linkKeeper'}))==0)) {
+                        let link = creep.pos.findInRange(FIND_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_LINK})[0];
+                        creep.withdraw(link, RESOURCE_ENERGY)
+                    }
+                }
             }
-            else { // energy is from container, storage or link
-              if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                  creep.moveTo(energy);
-              }
+            else {
+                actionGetEnergy.run(creep);
             }
-          }
         }
     }
 };

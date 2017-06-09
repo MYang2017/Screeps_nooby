@@ -1,3 +1,5 @@
+Game.spawns['Spawn_E92N12_1'].createBegger(2500,'E92N12','E94N12');
+Game.spawns['Spawn_E92N11'].createBegger(2500,'E92N11','E91N9');
 //module.exports.loop = function () {
     // predifine and store preferred number of all creeps in CURRENT spawn, run ONCE right after claiming a new room
     Game.spawns.Spawn1.memory.minNoHarvesters = 1;
@@ -5,12 +7,12 @@
     Game.spawns.Spawn1.memory.minNoBuilders = 1;
     Game.spawns.Spawn1.memory.minNoRepairers = 1;
     Game.spawns.Spawn1.memory.minNoWallRepairers = 1;
-    
+
     Game.spawns.Spawn1.createPickuper(500);
     Game.spawns.Spawn1.createAttacker(800,'attacker','E91N11');
-    
+
     Game.spawns.Spawn1.memory.requiredWORKParts = 5*2; // 10 resource/5 WORK parts per second
-    
+
     for (let spawnName in Game.spawns) {
         let spawn = Game.spawns[spawnName];
         let creepsInRoom = spawn.room.find(FIND_MY_CREEPS, { filter: (c) => c.memory.role == 'harvester' });
@@ -21,10 +23,10 @@
         var NoBuilders = _.sum(creepsInRoom, (c) => c.memory.role == 'builder');
         var NoRepairers = _.sum(creepsInRoom, (c) => c.memory.role == 'repairer');
         var NoWallRepairers = _.sum(creepsInRoom, (c) => c.memory.role == 'wallRepairer');
-        
+
         // calculate effective WORK parts
-        
-        
+
+
         // if effectove WORK parts < required WORK parts, spawn a new creep
 //};
 
@@ -81,9 +83,9 @@ if (creep.room.name == creep.memory.home) {
                 //var exit = creep.room.findExitTo(creep.memory.home);
                 //creep.moveTo(creep.pos.findClosestByRange(exit));
             }
-            
-            
-            
+
+
+
             //find spawn, extensions and towers in local room, if there is one, fill it up
             var structure = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ( (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_TOWER) && s.energy < s.energyCapacity) })
             if (structure == undefined) { // cannot find one
@@ -101,7 +103,7 @@ if (creep.room.name == creep.memory.home) {
                     creep.moveTo(structure);
                 }
             }
-            
+
 for (let creepName in Memory.creeps) {
     creep = Game.creeps[creepName];
     if (creep.memory.role == 'begger') {
@@ -124,14 +126,14 @@ module.exports = {
     run: function(creep) {
         ifMineral = mineralNeedsCollect(creep.room);
         creepCarrying = _.sum(creep.carry);
-        
+
         if (creep.memory.working == true && creepCarrying == 0) {
             creep.memory.working = false;
         }
         else if (creep.memory.working == false && creepCarrying == creep.carryCapacity) {
             creep.memory.working = true;
         }
-        
+
         if (creep.memory.working == true) { // if filled with energy, transfer to spawn, extensions or towers
             if (creep.carry.energy>0) { // creep is tranfering energy
                 creep.say('deli E');
@@ -152,7 +154,7 @@ module.exports = {
                 }
             }
         }
-        else { // if not working: find a none empty container and get energy from containers // 
+        else { // if not working: find a none empty container and get energy from containers //
             if (ifMineral == undefined) { // creep is getting energy
                 creep.say('deli E');
                 let container = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 0});
@@ -191,7 +193,7 @@ module.exports = {
             else if (creep.memory.working == false && creep.carry.energy == creep.carryCapacity) {
                 creep.memory.working = true;
             }
-    
+
             if (creep.memory.working == true) { // if filled with energy, transfer to spawn, extensions or towers
                 var structure = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ( (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_TOWER) && s.energy < s.energyCapacity) })
                 if (structure == undefined) { // if spawn extensions or towers are full, go find storage
@@ -222,7 +224,7 @@ module.exports = {
             else if (creep.memory.working == false && _.sum(creep.carry) == creep.carryCapacity) {
                 creep.memory.working = true;
             }
-    
+
             if (creep.memory.working == true) {
                 var structure = creep.room.storage;
                 if (creep.transfer(structure, resourceType) == ERR_NOT_IN_RANGE) {
@@ -238,7 +240,7 @@ module.exports = {
                 }
             }
         }
-            
+
     }
 };
 

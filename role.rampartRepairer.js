@@ -11,13 +11,14 @@ module.exports = {
 
         if (creep.memory.working == true) {
             var target = Game.getObjectById(Game.rooms[creep.room.name].memory.toBuildRampart);
-            if (runEveryTicks(500) == true) {
+            if ((runEveryTicks(5) == true)||(target == undefined)) {
                 Game.rooms[creep.room.name].memory.toBuildRampart = whichRampartToBuild(creep.room).id;
             }
             if (target != undefined) {
+                creep.say('rampart...')
                 //console.log(creep.room.name,target);
                 if (creep.repair(target) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(target);
+                        creep.travelTo(target);
                         //creep.repair(target)
                     }
             }
@@ -31,12 +32,12 @@ module.exports = {
             energy = Game.getObjectById(resourceID);
             if (ifDropped) { // if energy is dropped
               if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                  creep.moveTo(energy);
+                  creep.travelTo(energy);
               }
             }
             else { // energy is from container, storage or link
               if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                  creep.moveTo(energy);
+                  creep.travelTo(energy);
               }
             }
           }

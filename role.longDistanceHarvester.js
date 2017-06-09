@@ -1,5 +1,10 @@
 module.exports = {
     run: function(creep) {
+      /*if (Game.rooms[creep.memory.target].memory.ifPeace == false) { // room under attack, run away
+         creep.say('run away');
+         creep.moveTo(Game.flags[creep.memory.target+'_shelter'].pos);
+      }
+      else {*/
         if (creep.memory.working == true && creep.carry.energy == 0) {
             creep.memory.working = false;
         }
@@ -44,5 +49,6 @@ module.exports = {
                 //creep.moveTo(creep.pos.findClosestByRange(exit));
             }
         }
-    }
+      }
+    //}
 };
