@@ -1,5 +1,6 @@
 var roleBuilder = require('role.builder');
 var roleDismantler = require('role.dismantler');
+var actionBuild = require('action.build');
 
 module.exports = {
     run: function(creep) {
@@ -32,7 +33,8 @@ module.exports = {
         else { // go to target room
             //var exit = creep.room.findExitTo(creep.memory.target);
             //creep.travelTo(creep.pos.findClosestByRange(exit));
-            creep.travelTo(Game.flags[creep.memory.target].pos);
+            //creep.travelTo(Game.flags[creep.memory.target].pos);
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
         }
       }
     }

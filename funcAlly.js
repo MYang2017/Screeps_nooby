@@ -1,5 +1,5 @@
 global.allyList = function() {
-    return ['JoshCF','Zolcsika','Evander','Zeus']
+    return ['JoshCF','Zolcsika','Evander','Zeus','slowmotionghost','Kasami']
 }
 
 global.subSpawnList = function() {

@@ -1,3 +1,7 @@
+var rolePioneer = require('role.pioneer');
+var roleHarvester = require('role.harvester');
+var actionBuild = require('action.build');
+var actionUpgradeController = require('action.upgradeController');
 module.exports = {
     run: function(creep) {
       /*if (Game.rooms[creep.memory.target].memory.ifPeace == false) { // room under attack, run away
@@ -12,42 +16,35 @@ module.exports = {
             creep.memory.working = true;
         }
 
-        if (creep.memory.working == true) {
+        if (creep.memory.working == true) { // if working act as upgrader
             if (creep.room.name == creep.memory.home) {
-                var structure = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ( (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_TOWER) && s.energy < s.energyCapacity) })
-                if (structure == undefined) {
-                    structure = creep.room.storage;
+                if (creep.room.energyAvailable < creep.room.energyCapacityAvailable) { // need to fill
+                    roleHarvester.run(creep);
                 }
-                if (structure == undefined) {
-                    structure = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER && s.store[RESOURCE_ENERGY] > 0});
-                }
-                if (structure != undefined) {
-                    if (creep.transfer(structure, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(structure);
+                else {
+                    if (ifConstructionSiteInRoom(creep.room)) {
+                        actionBuild.run(creep);
+                    }
+                    else {
+                        if (creep.room.storage) {
+                            if (creep.transfer(creep.room.storage, 'energy') == ERR_NOT_IN_RANGE) {
+                                creep.travelTo(creep.room.storage);
+                            }
+                        }
+                        else {
+                            actionUpgradeController.run(creep);
+                        }
                     }
                 }
             }
             else {
-                creep.moveTo(new RoomPosition(25,25, creep.memory.home));
+                creep.travelTo(new RoomPosition(25,25, creep.memory.home));
                 //var exit = creep.room.findExitTo(creep.memory.home);
                 //creep.moveTo(creep.pos.findClosestByRange(exit));
             }
         }
-        else {
-            if (creep.room.name == creep.memory.target) {
-                var source = creep.room.find(FIND_SOURCES)[creep.memory.sourceIndex];
-                if (source == undefined) {
-                    source = creep.room.storage;
-                }
-                if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source);
-                }
-            }
-            else {
-                creep.moveTo(new RoomPosition(25,25, creep.memory.target));
-                //var exit = creep.room.findExitTo(creep.memory.target);
-                //creep.moveTo(creep.pos.findClosestByRange(exit));
-            }
+        else { // working is false, find energy
+            rolePioneer.run(creep);
         }
       }
     //}

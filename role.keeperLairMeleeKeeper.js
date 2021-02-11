@@ -1,85 +1,81 @@
 var actionRunAway = require('action.flee');
+var actionAvoid = require('action.idle');
 
 module.exports = {
     run: function(creep) {
+
+        if (creep.memory.storedTarget == undefined) {
+            creep.memory.storedTarget = {};
+        }
+        let hostileCreep = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => !allyList().includes(s.owner)});
+        let toHeal = creep.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) } );
+
         if (creep.room.name == creep.memory.target) { // if in target room
-            if (creep.memory.ranged) {
-                creep.say('jiu~', true);
-                let hostileCreep = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => !allyList().includes(s.owner)});
-                if (creep.hits > 0.9*creep.hitsMax) { // if full health
-                    /*var scan = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))&&(s.getActiveBodyparts(HEAL) > 0)}); // find healer first
-                    if (scan == undefined) {
-                        scan = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => !allyList().includes(s.owner)}); // find other creeps
-                    }*/
-                    if (creep.attack(hostileCreep) == ERR_NOT_IN_RANGE) {
-                        creep.rangedAttack(hostileCreep);
-                        creep.attack(hostileCreep);
-                        creep.travelTo(hostileCreep);
-                    }
-                    if (hostileCreep == undefined) {
-                        let toHeal = creep.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) } );
-                        if (toHeal) { // if there is damaged creep, go heal
-                            if (creep.heal(toHeal) == ERR_NOT_IN_RANGE) {
-                                //creep.heal(creep);
-                                creep.travelTo(toHeal);
-                            }
-                        }
-                        else { // move to flag and wait
-                            creep.travelTo(Game.flags[creep.memory.target]);
-                        }
-                    }
-                }
-                else { // if wound go to base to heal, hit and run
-                    actionRunAway.run(creep);
-                    creep.rangedAttack(hostileCreep);
+            if ( hostileCreep&&hostileCreep.owner.username == 'Invader' ) { // if invader is near by, run away
+                let numMyKiller = creep.room.find(FIND_MY_CREEPS, {filter:c=>c.memory.role=='keeperLairInvaderHealer'}).length;
+                if (numMyKiller==0||creep.hits<0.618*creep.hitsMax) {
+                    creep.say('Ai~', true);
+                    creep.attack(hostileCreep);
                     creep.heal(creep);
+                    actionRunAway.run(creep);
+                }
+                else {
+                    creep.say('Tucf!', true);
+                    if (creep.attack(hostileCreep)==ERR_NOT_IN_RANGE) {
+                        creep.heal(creep);
+                        creep.travelTo(hostileCreep, { maxRooms: 1 });
+                    }
                 }
             }
             else {
                 creep.say('oh~', true);
                 let posToGo = keeperLairToGo(creep, creep.memory.target); // find hostile or next spawning lair
-                if (posToGo) {
-                    let toHeal = creep.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) } );
-                    if (toHeal) { // if there is damaged creep, go heal
-                        if (creep.heal(toHeal) == ERR_NOT_IN_RANGE) {
-                            creep.travelTo(toHeal);
-                        }
+                if (posToGo) { // if source keeper lair needs to be cleared
+                    let disToTarget = creep.pos.getRangeTo(posToGo);
+                    if (disToTarget == 6 && creep.hits < creep.hitsMax) { // stop and heal
+                        creep.heal(creep);
+                        creep.attack(hostileCreep);
                     }
-                    let disToTarget =  creep.pos.getRangeTo(posToGo);
-                    if (disToTarget==6 && creep.hits<creep.hitsMax) { // stop and heal
+                    else if (disToTarget > 1) { // if far get to target position
                         //creep.heal(creep);
-                    }
-                    else if (disToTarget>1) { // if far get to target position
-                        //creep.heal(creep);
-                        creep.travelTo(posToGo);
+                        creep.travelTo(posToGo, { maxRooms: 1 });
+                        creep.heal(creep);
+                        creep.attack(hostileCreep);
+                        //creep.rangedMassAttack();
+                        //creep.rangedAttack(hostileCreep);
+                        creep.memory.storedTarget.x = posToGo.pos.x; creep.memory.storedTarget.y = posToGo.pos.y; creep.memory.storedTarget.roomName = posToGo.room.name;
                     }
                     else { // if in range of attacking, attack
-                        //creep.heal(creep);
-                        creep.attack(posToGo);
+                        //console.log(creep.name, creep.attack(hostileCreep), creep.heal(creep))
+                        creep.attack(hostileCreep);
+                        creep.heal(creep);
+                        //creep.rangedMassAttack();
                     }
                 }
-                else { // no hostile and spawn time is far
+                else { // no source keeper hostile and spawn time is far
                     let toHeal = creep.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) } );
                     if (toHeal) { // if there is damaged creep, go heal
                         if (creep.heal(toHeal) == ERR_NOT_IN_RANGE) {
-                            creep.heal(creep);
-                            creep.travelTo(toHeal);
+                            creep.travelTo(toHeal, { maxRooms: 1 });
+                            creep.attack(hostileCreep);
                         }
                     }
                     else { // move to flag and wait
-                        creep.travelTo(Game.flags[creep.memory.target]);
+                        //creep.travelTo(new RoomPosition(25,25, creep.memory.target));
+                        // avoid
+                        creep.attack(hostileCreep);
+                        actionAvoid.run(creep);
                     }
                 }
             }
         }
-        else {
-            creep.travelTo(Game.flags[creep.memory.target]);
-        }
-
-        // re-spawn creep in advance
-        if (creep.ticksToLive-50 == creep.memory.spawnTime) {
-            creep.room.memory.forSpawning.spawningQueue.push({memory:{role: 'keeperLairMeleeKeeper', target: creep.memory.target, ranged: creep.memory.ranged},priority: 8});
-            console.log('respawn keeperLairMeleeKeeper in advance '+creep.memory.target);
+        else { // not in target room, go to target room
+            if (creep.memory.storedTarget.roomName) { // if stored target position
+                creep.travelTo(new RoomPosition(creep.memory.storedTarget.x,creep.memory.storedTarget.y, creep.memory.storedTarget.roomName));
+            }
+            else {
+                creep.travelTo(new RoomPosition(25,25, creep.memory.target));
+            }
         }
     }
 };

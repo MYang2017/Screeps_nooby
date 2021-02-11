@@ -1,6 +1,6 @@
 global.keeperLairToGo = function(creep, keeperRoomName) {
     // called when a keeper is removed or creep just entre keeper room
-    let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))}); // find hostile creeps in keeper room
+    let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => s.owner.username!='Invader'&&!allyList().includes(s.owner.username)});
     if (target) { // if found
         return target
     }
@@ -19,4 +19,13 @@ global.keeperLairToGo = function(creep, keeperRoomName) {
             return goToLair;
         }
     }
+}
+
+global.initiateKeeperMiningMemory = function (roomName, keeperRoomName) {
+    let room = Game.rooms[roomName];
+
+    if (room.memory.keeperMiningRoomNames == undefined) {
+        room.memory.keeperMiningRoomNames = [keeperRoomName];
+    }
+    room.memory.keeperMiningRoomNames.concat(keeperRoomName);
 }

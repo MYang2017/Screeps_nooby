@@ -4,7 +4,7 @@ module.exports = {
         if (true) { // if full health
             //if (creep.room.name == creep.memory.target) { // if in target room
                 if (Game.flags['attack'] != undefined) {
-                    creep.moveTo(Game.flags['attack'].pos); // gether at flag's position
+                    creep.travelTo(Game.flags['attack'].pos); // gether at flag's position
                     var target = Game.flags['attack'].pos.findInRange(FIND_STRUCTURES, 1)[0];
 
                     //var target = Game.getObjectById(Game.flags['attack'].room.lookAt(2,17)[0]['structure'].id);

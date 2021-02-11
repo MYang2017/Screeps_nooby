@@ -9,7 +9,19 @@ module.exports = {
             var exit = creep.room.findExitTo(creep.memory.target);
             creep.travelTo(creep.pos.findClosestByRange(exit));
         }*/
-        creep.travelTo(Game.flags[creep.name].pos);
+        if (creep.room.name != creep.memory.target) {
+            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 24 });
+        }
+        else {
+            if (creep.ticksToLive < 1000) {
+                creep.memory.target = generateRoomnameWithDistance(creep.room.name);
+            }
+            else {
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 10 });
+            }
+        }
+
+        //creep.travelTo(Game.flags[creep.name].pos);
         actionRunAway.run(creep)
     }
 };
