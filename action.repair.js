@@ -13,7 +13,9 @@ module.exports = {
                     creep.travelTo(structure, { maxRooms: 1 });
                 }
                 if (structure.hits > 0.95 * structure.hitsMax) { // if structure is healthy, find another to repair
-                    cacheContainerOrRoadToBuild(room, 0.8, 1);
+                    if (cacheContainerOrRoadToBuild(room,0.8,1)==undefined) { // if not found anything to repair
+                      actionUpgrade.run(creep);
+                    }
                 }
             }
         }

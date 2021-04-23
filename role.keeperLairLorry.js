@@ -1,23 +1,26 @@
 var actionRunAway = require('action.flee');
 var actionGetEnergy = require('action.getEnergy');
 var linkEnergyTransferAtHome = require('action.linkEnergyTransferAtHome');
+var onetheway = require('action.ontheway');
 
 module.exports = {
     run: function(creep) {
       //console.log(creep.pos,creep.name)
-        let creepCarrying = _.sum(creep.carry);
+        let creepCarrying = _.sum(creep.store);
         if (creep.memory.storedTarget == undefined) {
             creep.memory.storedTarget = {};
         }
-
-        if (creep.hits < creep.hitsMax && creep.room.name != creep.memory.home) { // go back home to heal when injured
-            creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
+        
+        if (creep.pos.findInRange(FIND_HOSTILE_CREEPS, 4, {filter: c=>(!allyList().includes(c.owner.username) )}).length > 0) { // self destroy if not useful damages by NPC
+            creep.memory._trav = undefined;
+            actionRunAway.run(creep)
         }
         else {
-            if (creep.pos.findInRange(FIND_HOSTILE_CREEPS, 4).length > 0) { // self destroy if not useful damages by NPC
-                actionRunAway.run(creep)
+            if (creep.hits < creep.hitsMax && creep.room.name != creep.memory.home) { // go back home to heal when injured
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.home), {range: 23 , ignoreCreeps: false});
             }
             else {
+            
                 if (creep.memory.working == true && creepCarrying == 0) {
                     creep.memory.toCentre = false;
                     creep.memory.working = false;
@@ -59,7 +62,7 @@ module.exports = {
                             if (false) { // work as temperory builder
                                 //if (constructionSite) {
                                 if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
-                                    creep.travelTo(constructionSite, { maxRooms: 1 });
+                                    creep.travelTo(constructionSite, { maxRooms: 1 , ignoreCreeps: false });
                                     //creep.build(constructionSite);
                                 }
                             }
@@ -69,11 +72,11 @@ module.exports = {
                                     creep.repair(thingUnderFeet);
                                     creep.say('repair road');
                                 }
-                                creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
+                                creep.travelTo(new RoomPosition(25, 25, creep.memory.home), {ignoreCreeps: false});
                             }
                         }
                         else {
-                            creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
+                            creep.travelTo(new RoomPosition(25, 25, creep.memory.home), {ignoreCreeps: false});
                         }
                     }
                 }
@@ -101,7 +104,7 @@ module.exports = {
                                     }
                                     else if (resType == 'd') {
                                         if (creep.pickup(resObj) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(resObj, { maxRooms: 1 });
+                                            creep.travelTo(resObj, { maxRooms: 1 , ignoreCreeps: false });
                                         }
                                         if (!resObj) {
                                             creep.memory.toGetId = undefined;
@@ -116,7 +119,7 @@ module.exports = {
                                         else {
                                             for (let mineralType in resObj.store) {
                                                 if (creep.withdraw(resObj, mineralType) == ERR_NOT_IN_RANGE) {
-                                                    creep.travelTo(resObj, { maxRooms: 1 });
+                                                    creep.travelTo(resObj, { maxRooms: 1 , ignoreCreeps: false});
                                                     creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
                                                 }
                                             }
@@ -129,7 +132,7 @@ module.exports = {
                                 }
                             }
                             else { // does not have job to do but entred the room, avoid standing on edge
-                                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1 });
+                                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1 , ignoreCreeps: false });
                             }
                         }
                         else {
@@ -146,7 +149,7 @@ module.exports = {
                                     let tombstone = tombstones[0];
                                     for (let mineralType in tombstone.store) {
                                         if (creep.withdraw(tombstone, mineralType) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(tombstone);
+                                            creep.travelTo(tombstone, { maxRooms: 1 ,ignoreCreeps: false});
                                         }
                                     }
                                 }
@@ -155,7 +158,7 @@ module.exports = {
                                     if ((ifMineral) && (ifMineral[2] > 0)) {
                                         let container = creep.pos.findClosestByRange(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_CONTAINER && s.store.energy > 0 });
                                         if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(container, { maxRooms: 1 });
+                                            creep.travelTo(container, { maxRooms: 1 , ignoreCreeps: false});
                                         }
                                     }
                                     else if ((ifMineral) && (ifMineral[0] > creep.carryCapacity)) { // if there is a mineral container and its mineral amount is higher than creep's carrying capacity
@@ -163,7 +166,7 @@ module.exports = {
                                         creep.say('get ' + resourceType);
                                         let container = creep.pos.findClosestByRange(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_CONTAINER && s.store[resourceType] > 0 });
                                         if (creep.withdraw(container, resourceType) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(container, { maxRooms: 1 });
+                                            creep.travelTo(container, { maxRooms: 1 , ignoreCreeps: false});
                                         }
                                     }
                                     else { // find energy
@@ -172,12 +175,12 @@ module.exports = {
                                             let energy = Game.getObjectById(resourceID);
                                             if (ifDropped) { // if energy is dropped
                                                 if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                                                    creep.travelTo(energy, { maxRooms: 1 });
+                                                    creep.travelTo(energy, { maxRooms: 1 , ignoreCreeps: false});
                                                 }
                                             }
                                             else { // energy is from container
                                                 if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                                    creep.travelTo(energy, { maxRooms: 1 });
+                                                    creep.travelTo(energy, { maxRooms: 1 , ignoreCreeps: false});
                                                 }
                                             }
                                         }
@@ -185,13 +188,14 @@ module.exports = {
                                 }
                             }
                         }
+                        onetheway.run(creep);
                     }
                     else {
                         if (creep.memory.storedTarget.roomName) { // if stored target position
-                            creep.travelTo(new RoomPosition(creep.memory.storedTarget.x, creep.memory.storedTarget.y, creep.memory.storedTarget.roomName));
+                            creep.travelTo(new RoomPosition(creep.memory.storedTarget.x, creep.memory.storedTarget.y, creep.memory.storedTarget.roomName), { signoreStructures: true, ignoreCreeps: false});
                         }
                         else {
-                            creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
+                            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), {ignoreCreeps: false});
                         }
                         //var exit = creep.room.findExitTo(creep.memory.target);
                         //creep.travelTo(creep.pos.findClosestByRange(exit));

@@ -1,14 +1,35 @@
+var actionRunAway = require('action.flee');
+
 module.exports = {
     run: function(creep) {
         creep.say('OMG!😨', true);
+        
+        let inR = creep.room;
 
-        /*if (grouped && healingEnough) {
-            // move forward
+        if (inR.name==creep.memory.target) {
+            let tar = creep.room.find(FIND_HOSTILE_CREEPS);
+            if (tar.length>0) {
+                tar = tar[0]
+            }
+            else {
+                tar = Game.rooms[inR.name].find(FIND_HOSTILE_STRUCTURES, {filter:s=>s.structureType==STRUCTURE_SPAWN})[0];
+            }
+            if (tar) {
+                if (creep.pos.getRangeTo(tar)<=4) {
+                    actionRunAway.run(creep);
+                }
+                else {
+                    creep.moveTo(tar);
+                }
+                creep.rangedAttack(tar);
+            }
         }
         else {
-            // move backward
-        }*/
-
+            creep.moveTo(new RoomPosition(25, 25, tarRName), {range: 10});
+        }
+        
+        // replacing old logic with flags and uniqueString
+        /*
         if (creep.hits > 0.9*creep.hitsMax) { // if full health
             let myNurseName = findMyHero(creep.memory.uniqueString, 'healer');
             let myNurse = Game.creeps[myNurseName];
@@ -75,5 +96,6 @@ module.exports = {
         else { // wounded
             creep.travelTo(Game.flags[creep.memory.target+'esc']);
         }
+        */
     }
 };

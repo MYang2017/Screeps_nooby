@@ -14,8 +14,8 @@ var distanceDmg = {1: 10, 2: 4, 3: 1};
 var actionRunAway = require('action.flee');
 
 // ================================================ new important session ==================================================================================
-global.findNSEWRooms = function(creep) {
-    let currentRoomName = creep.room.name;
+global.findNSEWRooms = function(rn) {
+    let currentRoomName = rn;
     let worldsize = Game.map.getWorldSize();
     let currentRoomCoords = parseRoomName(currentRoomName);
     let coordsX = currentRoomCoords.x;
@@ -55,7 +55,43 @@ global.findNSEWRooms = function(creep) {
 }
 
 global.retreatToNexRoom = function(creep) {
-
+    let crn = creep.room.name;
+    if (creep.memory.shern == undefined) {
+        let x = creep.pos.x;
+        let y = creep.pos.y;
+        let nrn;
+        let srn;
+        let wrn;
+        let ern;
+        let dn = Math.abs(y-0);
+        let ds = Math.abs(49-y);
+        let dw = Math.abs(x-0);
+        let de = Math.abs(49-x);
+        
+        let currentRoomCoords = parseRoomName(crn);
+        let coordsX = currentRoomCoords.x;
+        let coordsY = currentRoomCoords.y;
+        
+        let delt = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+        var dss = [dn, ds, dw, de];
+        var len = dss.length;
+        var indices = new Array(len);
+        for (var i = 0; i < len; ++i) indices[i] = i;
+        indices.sort(function (a, b) { return dss[a] < dss[b] ? -1 : dss[a] > dss[b] ? 1 : 0; });
+        for (let ind of indices) {
+            let nextrn = generateRoomName(coordsX+delt[ind][0],coordsY+delt[ind][1]);
+            if (Game.map.findExit(crn, nextrn)<0) {
+                //pass
+            }
+            else {
+                creep.memory.shern = nextrn;
+                break;
+            }
+        }
+    }
+    else {
+        creep.travelTo(new RoomPosition(25, 25, creep.memory.shern), {range: 24});
+    }
 }
 
 global.whichOneOfFourCoornersIsSafest = function(roomName) {
@@ -429,4 +465,93 @@ global.yaRRRRR = function(roomName) {
             creepx.memory.target = 'E98N16';
         }
     }
+}
+
+/////////////////////////////////////////////////////////////////////////////// room defence
+global.popBubble = function(r) {
+    let enemies = r.find(FIND_HOSTILE_CREEPS, 
+        {filter:s=>
+            (s.owner.username!=='Invader')
+            &&(!allyList().includes(s.owner.username))
+            &&(s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)+s.getActiveBodyparts(WORK)>40)}
+        );
+    if (enemies.length>0) {
+        let rpts = r.find(FIND_MY_STRUCTURES, {filter:t=>t.structureType==STRUCTURE_RAMPART});
+        for (let rpt of rpts) {
+            if (rpt.hits<10000) {
+                return fo('CAOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO!')
+            }
+        }
+    }
+}
+
+
+// quads code <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+global.quadsSpawner = function (rn, tarrn, dry=false) {
+    let quadsId = generateRandomStrings()+rn;
+    // cacheBoostLabs(rn, 'ZH'); //prepare for boost
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'quads', target: tarrn, quadsId: quadsId, ifLead: 1, dry: dry}, priority: 16});
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'quads', target: tarrn, quadsId: quadsId, ifLead: 2, dry: dry}, priority: 15});
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'quads', target: tarrn, quadsId: quadsId, ifLead: 3, dry: dry}, priority: 15});
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'quads', target: tarrn, quadsId: quadsId, ifLead: 4, dry: dry}, priority: 15});
+}
+
+global.changeQuadsTarget = function (quadsId, target) {
+    for (let cpn in Game.creeps) {
+        let cp = Game.creeps[cpn];
+        if (cp.memory.role == 'quads' && cp.memory.quadsId == quadsId) {
+            cp.memory.target = target;
+        }
+    }
+}
+
+global.drainSpawner = function (rn, tarrn) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'drainer', home: rn, target: tarrn},priority: 9.5});
+    //Game.rooms[rn].memory.forSpawning.spawningQueue.push({ memory: { role: 'claimer', target: tarrn, attack: true }, priority: 18 });
+}
+
+global.kiterSpawner = function (rn, tarrn, lvl=6) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'kiter', home: rn, target: tarrn, lvl: lvl},priority: 9.5});
+    //Game.rooms[rn].memory.forSpawning.spawningQueue.push({ memory: { role: 'claimer', target: tarrn, attack: true }, priority: 18 });
+}
+
+global.annoyerSpawner = function (rn, tarrn) {
+     Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'annoyer', home: rn, target: tarrn},priority: 9.5});
+}
+
+global.symbolStealerSpawner = function (rn, tarrn, big=false, stc=undefined) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'stealer', home: rn, target: tarrn, big: big, stc: stc},priority: 9.5});
+}
+
+global.traderSpawner = function (rn, tarrn, big=false) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'dragonAss', home: rn, target: tarrn, big: big},priority: 9.5});
+}
+
+global.symbolAsdpofSpawner = function (rn, tarrn) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'asdpof', home: rn, target: tarrn},priority: 9.5});
+}
+
+global.stealAtNight = function () {
+    let d = new Date();
+    let hrs = d.getHours();
+    if (Game.time%1777==0) {
+        //if (hrs>=19 && hrs<=24) {
+            //symbolStealerSpawner('E4S23', 'E1S21');
+            //symbolStealerSpawner('E7S28', 'E9S28');
+            //symbolStealerSpawner('E7S28', 'E4S29');
+            symbolStealerSpawner('E7S28', 'E5S27');
+            //symbolStealerSpawner('E1S27', 'E1S24');
+            //symbolStealerSpawner('E1S27', 'E3S26');
+            symbolStealerSpawner('E7S28', 'E11S27');
+            //symbolStealerSpawner('E7S28', 'E11S28');
+        //}
+    }
+    if (Game.time%1777==0) { // digital
+        //symbolStealerSpawner('E11S16', 'E7S15');
+    }
+}
+
+global.thisIsWhatYouWanted = function () {
+    //kiterSpawner('E19S19', 'E23S19')
+    //kiterSpawner('E19S19', 'E23S16')
 }

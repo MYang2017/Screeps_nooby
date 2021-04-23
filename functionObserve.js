@@ -253,3 +253,25 @@ global.hasPowerJobToDo = function (room) {
         }
     }
 }
+
+global.cacheInvaderCore = function (r) {
+    let invc = r.find(FIND_STRUCTURES, {filter: c=>c.structureType == STRUCTURE_TOWER && c.owner.username=='Invader'});
+    let invaders = r.find(FIND_HOSTILE_CREEPS, {filter: s=>s.owner.username=='Invader'});
+    
+    // new invader core room, avoid
+    if (invc.length + invaders.length >0) {
+        Memory.rooms[r.name].avoid = true;
+        return false
+    }
+    else { // clear dissapeared invc rooms
+        if (Memory.rooms[r.name]) {
+            if (Memory.rooms[r.name].avoid) {
+                Memory.rooms[r.name].avoid = false;
+            }
+        }
+        else {
+            Memory.rooms[r.name] = {'avoid': false};
+        }
+        return true
+    }
+}

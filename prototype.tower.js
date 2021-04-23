@@ -13,7 +13,8 @@ StructureTower.prototype.defend = function () {
         if (this.room.memory.isUnderFucked && this.room.memory.isUnderFucked == true) {
             target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {
                 filter: s => (
-                    !allyList().includes(s.owner.username)
+                    !allyList().includes(s.owner.username) 
+                    && (s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)>0) // season 2 special
                 )
             });
             if (target == undefined) { // no enemies, keep healing the rest damaged creeps
@@ -33,8 +34,10 @@ StructureTower.prototype.defend = function () {
         else {
             target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {
                 filter: s => (
-                    !allyList().includes(s.owner.username) &&
-                    s.pos.getRangeTo(s.pos.findClosestByRange(FIND_MY_CREEPS)) < 4
+                    (s.owner.username=='Invader') || 
+                    ((!allyList().includes(s.owner.username)) &&
+                    (s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)>0) && // season 2 special
+                    s.pos.getRangeTo(s.pos.findClosestByRange(FIND_MY_CREEPS)) < 4)
                 )
             });
 
@@ -55,24 +58,27 @@ StructureTower.prototype.defend = function () {
 };
 
 StructureTower.prototype.repairNoneWalls = function(room) {
-    if (this.energy>0.5*this.energyCapacity) {
-        if ( room.find(FIND_MY_CREEPS, {filter: (s) => (s.memory.role == 'miner' || s.memory.role == 'pickuper' || s.memory.role == 'lorry' || s.memory.role == 'scientist')}).length > 1 ) {
-            if (room.memory.toRepairId) {
-                let structure = Game.getObjectById(room.memory.toRepairId);
-                if (structure) { // if structure is defined
-                    if (structure.hits < 0.95*structure.hitsMax) {
-                        this.repair(structure);
+    let inter = 11;
+    if (Math.floor(Math.random() * inter) == 0) {
+        if (this.energy>0.5*this.energyCapacity) {
+            if ( room.find(FIND_MY_CREEPS, {filter: (s) => (s.memory.role == 'loader' || s.memory.role == 'pickuper' || s.memory.role == 'lorry'|| s.memory.role == 'maintainer')}).length > 1 ) {
+                if (room.memory.toRepairId) {
+                    let structure = Game.getObjectById(room.memory.toRepairId);
+                    if (structure) { // if structure is defined
+                        if (structure.hits < 0.5*structure.hitsMax) {
+                            this.repair(structure);
+                        }
+                        else { //if ( Game.time%10 == 0) { // if structure is healthy, find another to repair
+                            cacheContainerOrRoadToBuild(room,0.777,0.618);
+                        }
                     }
-                    else { //if ( Game.time%10 == 0) { // if structure is healthy, find another to repair
+                    else { // stored structure is no longer exist (destroyed or removed), find a new one
                         cacheContainerOrRoadToBuild(room,0.777,0.618);
                     }
                 }
-                else { // stored structure is no longer exist (destroyed or removed), find a new one
+                else { // no repair ID cached yet, cache road or container ID to repaire
                     cacheContainerOrRoadToBuild(room,0.777,0.618);
                 }
-            }
-            else { // no repair ID cached yet, cache road or container ID to repaire
-                cacheContainerOrRoadToBuild(room,0.777,0.618);
             }
         }
     }

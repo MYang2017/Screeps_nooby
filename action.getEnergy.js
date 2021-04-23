@@ -1,9 +1,12 @@
+let dog = require('action.idle');
+
 module.exports = {
     run: function (creep) {
         let ifShooterRoom = creep.room.memory.startMB;
         if (ifShooterRoom && creep.room.terminal) {
             if (creep.withdraw(creep.room.terminal, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.travelTo(creep.room.terminal, { maxRooms: 1 });
+                return
             }
         }
         else {
@@ -16,6 +19,7 @@ module.exports = {
                             creep.memory.storedTarget.x = energy.pos.x; creep.memory.storedTarget.y = energy.pos.y; creep.memory.storedTarget.roomName = energy.room.name;
                         }
                         creep.travelTo(energy, { maxRooms: 1 });
+                        return
                     }
                 }
                 else { // energy is from container, storage or link
@@ -24,6 +28,7 @@ module.exports = {
                             creep.memory.storedTarget.x = energy.pos.x; creep.memory.storedTarget.y = energy.pos.y; creep.memory.storedTarget.roomName = energy.room.name;
                         }
                         creep.travelTo(energy, { maxRooms: 1 });
+                        return
                     }
                 }
             }
@@ -37,7 +42,9 @@ module.exports = {
                 else {
                     creep.travelTo(Game.getObjectById(ifDropped));
                 }
+                return
             }
         }
+        dog.run(creep);
     }
 };

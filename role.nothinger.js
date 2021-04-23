@@ -3,6 +3,6 @@ var actionAvoid = require('action.idle');
 
 module.exports = {
     run: function(creep) {
-        creep.say('nothing')
+        creep.say('nothing');
     }
 };

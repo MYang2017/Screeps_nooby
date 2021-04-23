@@ -13,7 +13,7 @@
   'H': ['U','UH']
 };*/
 
-var listOfCompoundsToCreateWithPriority = [
+var listOfCompoundsToCreateWithPriority_ = [
     "XUH2O",
     "XKHO2",
     "XLHO2",
@@ -21,34 +21,34 @@ var listOfCompoundsToCreateWithPriority = [
     "XZHO2",
     "XGHO2",
 
-    "UH2O",
-    "KHO2",
-    "LHO2",
+    //"UH2O",
+    //"KHO2",
+    //"LHO2",
     "ZH2O",
     "ZHO2",
     "GHO2",
 
     "OH",
-
+    
+    //"LO", // heal
+    "ZO", // move
+    //"GO", // defence
     "G",
-
-    "ZK",
-    "UL",
-
-    "UH",
-    "KO",
-    "LO",
-    "ZH",
-    "ZO",
-    "GO",
-
+    //"KO", // range
+    
+    //"ZK",
+    //"UL",
+    
+    //"ZH", // dismantle
+    //"UH", // melee
+    
     "XGH2O", // upgrade
     "GH2O",
-    "GH",
+    //"GH",
 
     "XLH2O", // repaire, build
-    "LH2O",
-    "LH",
+    //"LH2O",
+    //"LH",
 
     // stop producing harvest boost
     /*"XUHO2",
@@ -56,10 +56,19 @@ var listOfCompoundsToCreateWithPriority = [
     "UO",*/
 
     // stop producing carry boost
-    /*"XKH2O",
+    "XKH2O",
     "KH2O",
-    "KH",*/
+    "KH",
 
+];
+
+var listOfCompoundsToCreateWithPriority = [
+    'XZH2O',
+    'XZHO2',
+    'ZH2O',
+    'ZHO2',
+    'ZH',
+    'ZO',
 ];
 
 global.startLabber = function(room) {
@@ -81,6 +90,14 @@ global.labRun = function(room) {
         for (let outLabId of room.memory.forLab.outLabs) {
             let outLab = Game.getObjectById(outLabId);
             outLab.runReaction(Game.getObjectById(room.memory.forLab.inLabs[0]),Game.getObjectById(room.memory.forLab.inLabs[1]));
+        }
+        if (room.memory.forLab.boostLabs) {
+            for (let tp in room.memory.forLab.boostLabs) {
+                if (tp == room.memory.forLab.toCreate) { // boost mat happens to be the one we are creating now
+                    let outBoostLab = Game.getObjectById(room.memory.forLab.boostLabs[tp]);
+                    outBoostLab.runReaction(Game.getObjectById(room.memory.forLab.inLabs[0]),Game.getObjectById(room.memory.forLab.inLabs[1]));
+                }
+            }
         }
     }
 }
@@ -106,6 +123,7 @@ global.labWorkToDo = function (creep) {
 
         let inLabsId = room.memory.forLab.inLabs;
         let outLabsId = room.memory.forLab.outLabs;
+        let boostLabsObj = room.memory.forLab.boostLabs;
         let toCreate = room.memory.forLab.toCreate;
         let inMinerals = [inverseReaction(toCreate)[0], inverseReaction(toCreate)[1]];
 
@@ -156,6 +174,32 @@ global.labWorkToDo = function (creep) {
                     creep.memory.labWork.keep = outLabId; // lab depleted
                     creep.memory.labWork.mineralType = toCreate;
                     return true;
+                }
+            }
+        }
+        
+        if (boostLabsObj && Object.keys(boostLabsObj.length>0)) {
+            for (let boostTp in boostLabsObj) { // check if boostlabs have correct minerals
+                let lab = Game.getObjectById(boostLabsObj[boostTp]);
+                if ((lab.mineralType) && (lab.mineralType != boostTp)) { // if lab mineral is not wanted
+                    creep.memory.labWork.target = room.terminal.id; // get compound to terminal
+                    creep.memory.labWork.keep = boostLabsObj[boostTp]; // lab depleted
+                    creep.memory.labWork.mineralType = lab.mineralType;
+                    return true;
+                }
+                else {
+                    if (lab.mineralAmount > 2100) { // too much, get rid of some
+                        creep.memory.labWork.target = room.terminal.id; // get compound to terminal
+                        creep.memory.labWork.keep = boostLabsObj[boostTp]; // lab depleted
+                        creep.memory.labWork.mineralType = boostTp;
+                        return true;
+                    }
+                    else if (lab.mineralAmount <1500) { // not enough, put some
+                        creep.memory.labWork.target = boostLabsObj[boostTp]; // get compound to terminal
+                        creep.memory.labWork.keep = room.terminal.id; // lab depleted
+                        creep.memory.labWork.mineralType = boostTp;
+                        return true;
+                    }
                 }
             }
         }
@@ -246,26 +290,101 @@ global.removelLabFlags = function(roomName) {
 global.cacheLabsInAndOut = function(roomName) {
     let room = Game.rooms[roomName];
     let labs = room.find(FIND_MY_STRUCTURES, {filter: c => c.structureType == STRUCTURE_LAB});
-    room.memory.forLab = {inLabs:[], outLabs:[], toCreate:undefined};
-
-    for (let lab of labs) {
-        let flags = room.lookForAt(LOOK_FLAGS,lab);
-        if (flags != undefined) {
-            for (let flag of flags) {
-                if (flag.color == 4) { // 4 is cyan for out lab
-                    room.memory.forLab.outLabs.push(lab.id);
-                    let toCreate = getMineralType(flag.name);
-                    room.memory.forLab.toCreate = toCreate;
+    let cachedLabs = room.memory.forLab;
+    let labsno = labs.length;
+    
+    if (labsno < 3) {
+        if (labsno == 1) { // possibly a GH lab
+            if (labs[0].pos.getRangeTo(room.controller)<3) {
+                room.memory.forLab = {inLabs:[], outLabs:[], boostLabs: {'XGH2O': labs[0].id}, toCreate:undefined};
+            }
+            else {
+                if (room.memory.forLab) {
+                    // pass
                 }
-                else if (flag.color == 5) { // 5 is green for in labs
-                    room.memory.forLab.inLabs.push(lab.id);
+                else {
+                    room.memory.forLab = {inLabs:[], outLabs:[], boostLabs: {}, toCreate:undefined};
                 }
             }
         }
+        else {
+            return
+        }
     }
-
-    Game.rooms[roomName].memory.forSpawning.roomCreepNo.creepEnergy.labber = 800;
-
+    else {
+        let recache = false;
+        if (cachedLabs == undefined || cachedLabs.inLabs == undefined || cachedLabs.outLabs == undefined) {
+            room.memory.forLab = {inLabs:[], outLabs:[], toCreate:undefined};
+            recache = true;
+        }
+        else {
+            let labsnow = cachedLabs.inLabs.length + cachedLabs.outLabs.length;
+            if (cachedLabs.inLabs.length>2 || cachedLabs.outLabs.length>8) { // check in and out labs overflow
+                room.memory.forLab.inLabs = [];
+                room.memory.forLab.outLabs = [];
+                room.memory.forLab.boostLabs = {};
+                recache = true;
+            }
+            if (room.memory.forLab.boostLabs) { // add in boost lab
+                labsnow += Object.keys(room.memory.forLab.boostLabs).length;
+            }
+            if (labsnow>10) { // check all number over flow
+                fo('o, o, ' + roomName + ' lab mem over flow...')
+                room.memory.forLab.inLabs = [];
+                room.memory.forLab.outLabs = [];
+                room.memory.forLab.boostLabs = {};
+                return
+            }
+            
+            // if lab # changed, recache
+            if (labsno !== labsnow) {
+                recache = true;
+            }
+            else { // check if in labs are in range of others (newly built causing wrong cached)
+                for (let oldinlabid of room.memory.forLab.inLabs) {
+                    let oldinlab = Game.getObjectById(oldinlabid);
+                    for (let labi of labs) {
+                        if (labi != oldinlab) { // not myself
+                            if (oldinlab.pos.getRangeTo(labi)>2) {
+                                room.memory.forLab.inLabs = [];
+                                room.memory.forLab.outLabs = [];
+                                room.memory.forLab.boostLabs = {};
+                                recache = true;
+                                fo('wrong lab cached, recache')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (recache) {
+            let inlabno = 0;
+            for (let lab of labs) {
+                if (inlabno==2) { // if find enough inlabs, add to outlabs
+                    room.memory.forLab.outLabs.push(lab.id);
+                }
+                else {
+                    let addAsInLab = true;
+                    // loop through all other labs, if all dist <=2, add to inlab and add inlabno count
+                    for (let labi of labs) {
+                        if (lab.pos.getRangeTo(labi)>2) {
+                            addAsInLab = false;
+                        }
+                    }
+                    if (addAsInLab) {
+                        room.memory.forLab.inLabs.push(lab.id);
+                        inlabno += 1;
+                    }
+                    else {
+                        room.memory.forLab.outLabs.push(lab.id);
+                    }
+                }
+                //room.memory.forLab.toCreate = toCreate;
+            }
+            Game.rooms[roomName].memory.forSpawning.roomCreepNo.creepEnergy.labber = 600;
+        }
+    }
 }
 
 global.inverseReaction = function(compound) {
@@ -278,6 +397,41 @@ global.inverseReaction = function(compound) {
     }
 }
 
+global.pickACompoundToProduce = function (roomName) {
+    let room = Game.rooms[roomName];
+    let forLab = room.memory.forLab;
+    let allMStatus = allAllMineralsSituations()
+    
+    if (forLab) {
+        let mostlikely = 0;
+        let picked = undefined;
+        for (let toCreate of listOfCompoundsToCreateWithPriority) {
+            //fo(toCreate)
+            let [mat1, mat2] = inverseReaction(toCreate);
+            let allMineralStituationObject = room.memory.mineralThresholds.currentMineralStats;
+            let storageThreshold = room.memory.mineralThresholds.storageThreshold;
+            let mat1Amount = allMineralStituationObject[mat1];
+            let mat2Amount = allMineralStituationObject[mat2];
+            let toCompound = allMineralStituationObject[toCreate];
+            //fo(mat1Amount + ', ' + mat2Amount)
+            if (mat1Amount>1500&&mat2Amount>1500&&(forLab.toCreate==undefined||allMStatus[toCreate])) {
+                if (mat1Amount+mat2Amount>mostlikely) {
+                    mostlikely = mat1Amount+mat2Amount;
+                    picked = toCreate;
+                }
+            }
+        }
+        if (picked != undefined) {
+            forLab.toCreate = picked;
+            console.log(roomName + ' reaction changed to ' + picked);
+            room.memory.forSpawning.roomCreepNo.minCreeps.labber=1;
+            room.memory.forSpawning.roomCreepNo.creepEnergy.labber=600;
+            return picked
+        }
+    }
+    return fo('nothing to create')
+}
+
 // run every xxx ticks to check if current lab has finished and need to run new lab according to the materials storage in storage and terminal
 global.changeMineralProductionInRoom = function(roomName) {
     let room = Game.rooms[roomName];
@@ -287,7 +441,7 @@ global.changeMineralProductionInRoom = function(roomName) {
         let toCreate = forLab.toCreate;
         if (!toCreate || toCreate == 'KH' || toCreate == 'KH2O' || toCreate == 'XKH2O' || toCreate == 'UO' || toCreate == 'UHO2' || toCreate == 'XUHO2') {
             // get a random compound to create
-            forLab.toCreate = pickRandomElementFromList(listOfCompoundsToCreateWithPriority);
+            forLab.toCreate = pickRandomElementFromList();
         }
         let [mat1, mat2] = inverseReaction(toCreate);
         let allMineralStituationObject = room.memory.mineralThresholds.currentMineralStats;
@@ -336,54 +490,58 @@ global.cacheBoostLabs = function (roomName, toBoost) {
     let labMemory = room.memory.forLab;
     if (!labMemory) {
         console.log('cache in/out labs first in room ' + roomName);
-        //room.memory.forLab = {};
+        cacheLabsInAndOut(roomName);
+    }
+    
+    let boostLabs = room.memory.forLab.boostLabs;
+    if (boostLabs == undefined) {
+        room.memory.forLab.boostLabs = {};
+    }
+    
+    // check if we already have the boosted lab tyoe
+    if (room.memory.forLab.boostLabs[toBoost] != undefined) {
+        fo(toBoost + ' is already boosted by one of the labs')
+        return true
     }
     else {
         // change one of the out labs to boost labs
         let outLabs = labMemory.outLabs;
         if (outLabs.length < 1) {
             console.log('no valid labs for boosting');
+            return false
         }
         else {
             // get one available lab from outLabs
             let boostLabId = outLabs[0];
             // remove it from out labs
-            labMemory.outLabs.splice(0, 1);
-
-            // get boost lab memory
-            let boostLabs = labMemory.boostLabs;
-            if (!boostLabs) {
-                labMemory.boostLabs = {};
-            }
+            room.memory.forLab.outLabs.splice(0, 1);
 
             // assign boost lab memory
-            labMemory.boostLabs[toBoost] = boostLabId;
-
-            /*// find type of material to boost
-            let flags = room.lookForAt(LOOK_FLAGS, Game.getObjectById(boostLabId));
-            if (flags != undefined) {
-                for (let flag of flags) {
-                    if (flag.color == 3) { // 3 is blue for boost lab
-                        let toBoost = getMineralType(flag.name);
-                        labMemory.boostLabs.toBoost = boostLabId;
-                    }
-                    else {
-                        console.log('boost lab flag wrong colour');
-                        labMemory.outLabs.push(boostLabId);
-                    }
-                }
-            }
-            else {
-                console.log('set up boost lab flag');
-                labMemory.outLabs.push(boostLabId);
-            }*/
+            room.memory.forLab.boostLabs[toBoost] = boostLabId;
+            return true
         }
     }
 }
 
+global.checkIfCarryIsBoostLab = function (creep) {
+    if (creep.room.memory.forLab && creep.room.memory.forLab.boostLabs) {
+        for (let restp in creep.store) {
+            if (Object.keys(creep.room.memory.forLab.boostLabs).includes(restp)) {
+                let boostLab = Game.getObjectById(creep.room.memory.forLab.boostLabs[restp]);
+                if (boostLab.mineralAmount < 1500 && creep.room.memory.mineralThresholds.currentMineralStats[restp]>0) {
+                    return [creep.room.memory.forLab.boostLabs[restp], restp]
+                }
+            }
+        }
+        // if we are here, none of the carry type is in boostlab
+        return [false, false]
+    }
+    else {
+        return [false, false]
+    }
+}
 
-
-global.checkRoomBoostLabState = function (room,filltake) {
+global.checkRoomBoostLabState = function (room,filltake,tp=undefined) {
     let labMemory = room.memory.forLab;
     if (labMemory) {
         let boostLabMemory = labMemory.boostLabs;
@@ -391,56 +549,37 @@ global.checkRoomBoostLabState = function (room,filltake) {
             return [false, false, false]
         }
         else {
-            for (let toBoost in boostLabMemory) {
-                let availableResourcesInRoom = allMyResourceInStorageAndTerminal(room, toBoost);
-                let boostLabId = boostLabMemory[toBoost];
-                let boostLab = Game.getObjectById(boostLabId);
-                let threshold
-                if (filltake == 'fill') {
-                    threshold = 0
+            if (tp == undefined) { // no specific
+                for (let toBoost in boostLabMemory) {
+                    let availableResourcesInRoom = allMyResourceInStorageAndTerminal(room, toBoost);
+                    let boostLabId = boostLabMemory[toBoost];
+                    let boostLab = Game.getObjectById(boostLabId);
+                    let threshold
+                    if (filltake == 'fill') {
+                        threshold = 0
+                    }
+                    else {
+                        threshold = 800
+                    }
+    
+                    if ((boostLab.mineralAmount < 1500) && (availableResourcesInRoom > threshold)) { // 800 to avoid creep not carrying enough
+                        return [true, toBoost, boostLabId];
+                    }
+                }
+                return [false, false, false]
+            }
+            else { // specific
+                let idd = boostLabMemory[tp];
+                if (idd == undefined) { // no such lab
+                    return [false, false, false]
                 }
                 else {
-                    threshold = 800
-                }
-
-                if ((boostLab.mineralAmount < 2000) && (availableResourcesInRoom > threshold)) { // 800 to avoid creep not carrying enough
-                    return [true, toBoost, boostLabId]
+                    return [true, tp, idd];
                 }
             }
-            return [false, false, false]
         }
     }
     else {
         return [false, false, false]
     }
-}
-
-global.newCacheLabsInAndOut = function (room) {
-    let labs = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_LAB });
-    if (room.memory.forLab) {
-        room.memory.forLab.inLabs = []; 
-        room.memory.forLab.outLabs = []; 
-    }
-    else {
-        room.memory.forLab = { inLabs: [], outLabs: [], toCreate: undefined };
-    }
-
-    for (let lab of labs) {
-        for (let otherLab of labs) {
-            let range = lab.pos.getRangeTo(otherLab.pos);
-            if (range > 2) {
-                room.memory.forLab.outLabs.push(lab.id);
-                break;
-            }
-        }
-        if (!room.memory.forLab.outLabs.includes(lab.id)) {
-            room.memory.forLab.inLabs.push(lab.id);
-        }
-    }
-
-    if (!room.memory.forLab.toCreate) {
-        room.memory.forLab.toCreate = pickRandomElementFromList(listOfCompoundsToCreateWithPriority);
-    }
-
-    room.memory.forSpawning.roomCreepNo.creepEnergy.labber = 800;
 }

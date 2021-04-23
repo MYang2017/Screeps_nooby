@@ -4,6 +4,7 @@ module.exports = {
     run: function (creep) {
         creepCarrying = _.sum(creep.carry);
         let toLab = labWorkToDo(creep);
+        
         if (toLab == false) {
             roleLorry.run(creep);
         }
@@ -27,9 +28,8 @@ module.exports = {
                         }
                     }
                     else {
-                        if (creep.transfer(creep.room.terminal, resourceType) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(creep.room.terminal);
-                        }
+                        roleLorry.run(creep);
+                        return
                     }
                 }
                 //}
@@ -44,6 +44,7 @@ module.exports = {
                     if (keep.store[carryMineral] < creep.carryCapacity) { // not enough in-minerals
                         //creep.memory.role='lorry'; // become a lorry
                         roleLorry.run(creep);
+                        return
                     }
                 }
                 //for (const resourceType in creep.carry) {

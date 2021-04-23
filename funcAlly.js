@@ -1,5 +1,5 @@
 global.allyList = function() {
-    return ['JoshCF','Zolcsika','Evander','Zeus','slowmotionghost','Kasami']
+    return ['asdpof', 'PythonBeatJava', 'JoshCF','Zolcsika','Evander','Zeus','slowmotionghost','Kasami', 'TheLastPiece', 'ManVsRice', 'Donatzor', 'Kanduras', 'PolarJ', 'buger', 'SirFrump', 'dragoonreas', 'SystemParadox', 'Xenofix'];
 }
 
 global.subSpawnList = function() {

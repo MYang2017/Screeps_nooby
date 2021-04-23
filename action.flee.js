@@ -1,6 +1,6 @@
 module.exports = {
     run: function(creep) {
-        let enemies = creep.pos.findInRange(FIND_HOSTILE_CREEPS,7);
+        let enemies = creep.pos.findInRange(FIND_HOSTILE_CREEPS,7, {filter: c=>((c.getActiveBodyparts(ATTACK)+c.getActiveBodyparts(RANGED_ATTACK)>0)&&!allyList().includes(c.owner.username) )}); 
         let keeperLair = creep.pos.findInRange(FIND_STRUCTURES, 7, { filter: c => c.structureType == STRUCTURE_KEEPER_LAIR && c.ticksToSpawn < 3 });
         if (keeperLair) {
             enemies = enemies.concat(keeperLair);
@@ -8,6 +8,8 @@ module.exports = {
 
         try {
             if (enemies.length > 0) {
+                creep.memory.attackedAtTime = Game.time;
+                
                 let closestAvoidId = undefined;
                 let closestDist = 100;
                 for (let enemy of enemies) {
@@ -33,7 +35,7 @@ module.exports = {
                         let nextDirToMove = undefined;
                         for (let dir of possibleDir) {
                             let nextPos = getPosByDir(creep.pos, dir);
-                            if (isTerrainWalkableByPos(nextPos.roomName, nextPos.x, nextPos.y)) {
+                            if (isTerrainWalkableByPos(nextPos.roomName, nextPos.x, nextPos.y) && (nextPos.x!==0 && nextPos.x!==49 && nextPos.y!==0 && nextPos.y!==49)) {
                                 nextDirToMove = dir;
                                 break
                             }

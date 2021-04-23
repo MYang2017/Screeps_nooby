@@ -16,13 +16,11 @@ module.exports = {
                 if (numMyKiller==0||creep.hits<0.618*creep.hitsMax) {
                     creep.say('Ai~', true);
                     creep.attack(hostileCreep);
-                    creep.heal(creep);
                     actionRunAway.run(creep);
                 }
                 else {
                     creep.say('Tucf!', true);
                     if (creep.attack(hostileCreep)==ERR_NOT_IN_RANGE) {
-                        creep.heal(creep);
                         creep.travelTo(hostileCreep, { maxRooms: 1 });
                     }
                 }
@@ -33,13 +31,11 @@ module.exports = {
                 if (posToGo) { // if source keeper lair needs to be cleared
                     let disToTarget = creep.pos.getRangeTo(posToGo);
                     if (disToTarget == 6 && creep.hits < creep.hitsMax) { // stop and heal
-                        creep.heal(creep);
                         creep.attack(hostileCreep);
                     }
                     else if (disToTarget > 1) { // if far get to target position
                         //creep.heal(creep);
                         creep.travelTo(posToGo, { maxRooms: 1 });
-                        creep.heal(creep);
                         creep.attack(hostileCreep);
                         //creep.rangedMassAttack();
                         //creep.rangedAttack(hostileCreep);
@@ -48,7 +44,6 @@ module.exports = {
                     else { // if in range of attacking, attack
                         //console.log(creep.name, creep.attack(hostileCreep), creep.heal(creep))
                         creep.attack(hostileCreep);
-                        creep.heal(creep);
                         //creep.rangedMassAttack();
                     }
                 }
@@ -76,6 +71,10 @@ module.exports = {
             else {
                 creep.travelTo(new RoomPosition(25,25, creep.memory.target));
             }
+        }
+        
+        if (creep.hits<creep.hitsMax) {
+            creep.heal(creep);
         }
     }
 };

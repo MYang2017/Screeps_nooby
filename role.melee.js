@@ -1,8 +1,14 @@
+var dog = require('action.idle')
+
 module.exports = {
     run: function(creep) {
         //if (creep.hits == creep.hitsMax) { // if full health
         if (true) { // if full health
             //if (creep.room.name == creep.memory.target) { // if in target room
+            if (creep.room.name !== creep.memory.target) {
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
+            }
+            else {
                 if (Game.flags['attack'] != undefined) {
                     creep.travelTo(Game.flags['attack'].pos); // gether at flag's position
                     var target = Game.flags['attack'].pos.findInRange(FIND_STRUCTURES, 1)[0];
@@ -33,18 +39,35 @@ module.exports = {
                           };*/
                         if (target==undefined) {
                             //let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))});
-                            target = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => ((s.structureType == STRUCTURE_WALL))});
+                            target = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES);
                         }
                         if (target==undefined) {
                             //let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))});
-                            target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+                            target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s=>!allyList().includes(s.owner.username) && s.owner.username!=='Source Keeper'});
                         }
-                        if (creep.attack(target) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(target)
-                            creep.rangeattack(target)
+                        if (target) {
+                            let upc = creep.attack(target);
+                            if ( upc == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(target, { maxRooms: 1 });
+                            }
+                            else if (upc == OK) {
+                                let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
+                                if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
+                                    let allrs = creep.room.find(FIND_MY_CREEPS, {filter: o=>o.memory.role == 'melee'});
+                                    for (let allr of allrs) {
+                                        allr.move(getRandomInt(1,8));
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            creep.memory.target = creep.memory.home;
+                            creep.memory.role = 'ranger';
+                            //dog.run(creep);
                         }
                     }
                 }
+            }
             /*}
             else { // go to target room
                 var exit = creep.room.findExitTo(creep.memory.target);
