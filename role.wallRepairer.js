@@ -4,7 +4,6 @@ var actionAvoid = require('action.idle');
 module.exports = {
     run: function(creep) {
         creep.say('wall...');
-<<<<<<< HEAD
         
         var doge = function (creep, tar) {
             let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
@@ -16,11 +15,6 @@ module.exports = {
         if (creep.room.name != creep.memory.target) {
             creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
         }
-=======
-        if (creep.room.name != creep.memory.target) {
-            creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
-        }
->>>>>>> master
         else {
             if (creep.memory.working == true && creep.carry.energy == 0) {
                 creep.memory.working = false;
@@ -38,14 +32,10 @@ module.exports = {
                         //creep.repair(target)
                     }
                     else {
-<<<<<<< HEAD
                         doge(creep, endangeredRampart[0]);
                     }
                     Game.rooms[creep.room.name].memory.toRepairWallOrRampartId = endangeredRampart[0].id;
-=======
-                        actionAvoid.run(creep);
-                    }
->>>>>>> master
+
                 }
                 else { // if all rampart safe find rampart constructionsite
                     let rampartConstructionSite = creep.room.find(FIND_MY_CONSTRUCTION_SITES, { filter: { structureType: STRUCTURE_RAMPART } });
@@ -54,7 +44,6 @@ module.exports = {
                             creep.travelTo(rampartConstructionSite[0], { maxRooms: 1 });
                             //creep.build(constructionSite);
                         }
-<<<<<<< HEAD
                         else {
                             let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
                             if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
@@ -104,32 +93,6 @@ module.exports = {
                                         creep.move(getRandomInt(1,8));
                                     }
                                 }
-                                
-=======
-                    }
-                    else { // cannot find rampart constructionsite, repair normally
-                        let wallRampartToRepair = Game.rooms[creep.room.name].memory.toRepairWallOrRampartId;
-                        if (wallRampartToRepair == undefined) {
-                            Game.rooms[creep.room.name].memory.toRepairWallOrRampartId = whichWallAndRampartToBuild(creep.room).id;
-                        }
-                        else {
-                            var target = Game.getObjectById(Game.rooms[creep.room.name].memory.toRepairWallOrRampartId);
-                            if (Game.time % 500 == 0) {
-                                Game.rooms[creep.room.name].memory.toRepairWallOrRampartId = whichWallAndRampartToBuild(creep.room).id;
-                            }
-                            if (target != undefined) {
-                                //console.log(creep.room.name,target);
-                                if (creep.repair(target) == ERR_NOT_IN_RANGE) {
-                                    creep.travelTo(target, { maxRooms: 1 });
-                                    //creep.repair(target)
-                                }
-                                else {
-                                    actionAvoid.run(creep);
-                                }
-                            }
-                            else {
-                                roleBuilder.run(creep);
->>>>>>> master
                             }
                         }
                     }
@@ -146,7 +109,6 @@ module.exports = {
                     var [resourceID, ifDropped] = evaluateEnergyResources(creep, true, true, true, true); // find energy functoin in myFunctoins
                     if (resourceID != undefined) {
                         energy = Game.getObjectById(resourceID);
-<<<<<<< HEAD
                         if (energy.resourceType != 'energy') {
                             if (creep.withdraw(creep.room.storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                                 creep.travelTo(creep.room.storage, { maxRooms: 1 });
@@ -161,16 +123,6 @@ module.exports = {
                                 if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                                     creep.travelTo(energy, { maxRooms: 1 });
                                 }
-=======
-                        if (ifDropped) { // if energy is dropped
-                            if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                                creep.travelTo(energy, { maxRooms: 1 });
-                            }
-                        }
-                        else { // energy is from container, storage or link
-                            if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                creep.travelTo(energy, { maxRooms: 1 });
->>>>>>> master
                             }
                         }
                     }

@@ -10,7 +10,6 @@ var up = require('action.upgradeController');
 module.exports = {
     run: function(creep) {
         creep.say('pioneering');
-<<<<<<< HEAD
         
         if (creep.hits < 0.818 * creep.hitsMax && creep.room.name != creep.memory.home) { // go back home to heal when injured
             creep.moveTo(new RoomPosition(25, 25, creep.memory.home));
@@ -123,39 +122,6 @@ module.exports = {
                             }
                             else {
                                 creep.memory.dests = [{x:48 ,y: 22, roomName: 'E16S20'}];
-=======
-        if ((creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter: c=> (c.getActiveBodyparts(ATTACK)+c.getActiveBodyparts(RANGED_ATTACK)>0)}).length > 0)) { // self destroy if not useful damages by NPC
-            actionRunAway.run(creep);
-        }
-        else {
-            if (creep.hits < creep.hitsMax) {
-                creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
-            }
-            else {
-                if (false) {// (creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length > 0) { // self destroy if not useful damages by NPC
-                    actionRunAway.run(creep)
-                }
-                else {
-                    if (creep.room.name != creep.memory.target) { // if not in target room yet
-                        if (creep.memory.route) { // if there is a stored intermediate route, follow the route
-                            let route = creep.memory.route;
-                            if (creep.memory.intermediate == undefined) {
-                                creep.memory.intermediate = route[creep.room.name];
-                            }
-                            else if (creep.room.name != creep.memory.intermediate) {
-                                creep.travelTo(new RoomPosition(25, 25, creep.memory.intermediate));
-                            }
-                            else if ((creep.room.name == creep.memory.intermediate)) {
-                                creep.memory.intermediate = route[creep.room.name];
-                            }
-                        }
-                        else { // if there is not a stored route, do normal
-                            if (creep.memory.workingPos) { // if stored target position
-                                creep.travelTo(new RoomPosition(creep.memory.workingPos.x, creep.memory.workingPos.y, creep.memory.target));
-                            }
-                            else {
-                                creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
->>>>>>> master
                             }
                         }
                         
@@ -188,23 +154,17 @@ module.exports = {
                     if (creep.room.controller==undefined) { // middle rooms
                         roleBuilder.run(creep)
                     }
-<<<<<<< HEAD
                     else {
                         if (creep.room.name!=creep.memory.home) {
                             creep.memory.home = creep.memory.target;
                         }
                         //console.log(!ifWaitForRenew(creep))
                         let needE = !creep.memory.working;
-=======
-                    else { // if in target room
-                        //console.log(!ifWaitForRenew(creep))
->>>>>>> master
                         if (!ifWaitForRenew(creep)) {
                             if (creep.memory.role == 'longDistanceHarvester' && creep.memory.working == true) {
                                 creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
                             }
                             else {
-<<<<<<< HEAD
                                 if (creep.getActiveBodyparts(WORK) > 20) {
                                     creep.memory.working = false;
                                     creep.memory.role = 'superUpgrader';
@@ -257,17 +217,6 @@ module.exports = {
                                             }
                                         }
                                     }
-=======
-                                if (creep.room.energyCapacity<creep.room.energyCapacityAvailable) {
-                                    roleHarvester.run(creep);
-                                }
-                                else if (ifConstructionSiteInRoom(creep.room) || (creep.room.controller == undefined) || (creep.room.controller.level < 1)) { // if there is still construction sites (globally, which is bad, need change)
-                                    roleBuilder.run(creep);
-                                    //actionHarvestE.run(creep);
-                                }
-                                else {
-                                    roleUpgrader.run(creep);
->>>>>>> master
                                 }
                             }
                         }

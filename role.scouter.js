@@ -1,8 +1,6 @@
 var actionRunAway = require('action.flee');
-<<<<<<< HEAD
 var actionAvoid = require('action.idle');
-=======
->>>>>>> master
+
 require('funcExpand');
 
 module.exports = {
@@ -14,7 +12,6 @@ module.exports = {
             var exit = creep.room.findExitTo(creep.memory.target);
             creep.travelTo(creep.pos.findClosestByRange(exit));
         }*/
-<<<<<<< HEAD
         
         if (creep.memory.home == undefined) {
             creep.memory.home = creep.room.name;
@@ -25,24 +22,6 @@ module.exports = {
         if (flag.length>0 && flag[0].name=='t' ) { // follow flag 
             let tar = flag[0].pos;
             creep.travelTo(tar, {maxRooms: 1, ignoreStructures: true, ignoreCreeps: false});
-=======
-        if (creep.room.name != creep.memory.target) {
-            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 24 });
-            creep.memory.takeNotes = true;
-        }
-        else {
-            if (creep.memory.takeNotes) {
-                logGrandeRoomInfo(creep.room);
-                creep.memory.takeNotes = false;
-            }
-            
-            if (creep.ticksToLive < 1000) {
-                creep.memory.target = generateRoomnameWithDistance(creep.room.name);
-            }
-            else {
-                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 10 });
-            }
->>>>>>> master
         }
         else {
         */

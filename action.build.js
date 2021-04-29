@@ -11,13 +11,12 @@ module.exports = {
         else {
             constructionSite = constructionSite[0]
         }
-<<<<<<< HEAD
-        
+
         if (constructionSite != undefined) {
             creep.build(constructionSite);
-            if (creep.pos.getRangeTo(constructionSite)>2) {
+            if (creep.pos.getRangeTo(constructionSite) > 2) {
                 creep.travelTo(constructionSite, { maxRooms: 1, range: 1 });
-                
+
             }
             else {
                 if (((creep.pos.x == 0) || (creep.pos.x == 49)) || ((creep.pos.y == 0) || (creep.pos.y == 49))) {
@@ -26,25 +25,7 @@ module.exports = {
                 else {
                     let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
                     if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
-                        creep.move(getRandomInt(1,8));
-                    }
-                }
-=======
-        if (constructionSite != undefined) {
-            if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
-                creep.travelTo(constructionSite, { maxRooms: 1 });
-                //creep.build(constructionSite);
->>>>>>> master
-            }
-            else {
-                if (((creep.pos.x == 0) || (creep.pos.x == 49)) || ((creep.pos.y == 0) || (creep.pos.y == 49))) {
-                    creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 15 })
-                }
-                else {
-                    let posi = creep.pos;
-                    let objectsAround = creep.room.lookForAtArea(LOOK_CREEPS, posi.y-1, posi.x-1, posi.y+1, posi.x+1, true);
-                    if (objectsAround.length>=4) {
-                        actionAvoid.run(creep);
+                        creep.move(getRandomInt(1, 8));
                     }
                 }
             }

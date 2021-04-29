@@ -1,12 +1,8 @@
-<<<<<<< HEAD
 var funcB = require('funcBuildingPlanner');
 
-global.remoteMiningProcess = function(rn) {
-    
+global.remoteMiningProcess = function (rn) {
+
 }
-=======
-var funcB = require('funcBuildingPlanner')
->>>>>>> master
 
 global.startRemoteMining = function (roomName, role, no, cost) {
     let roomCreepInfo = Game.rooms[roomName].memory.forSpawning.roomCreepNo;
@@ -43,21 +39,21 @@ global.initiateNoOfRemoteLorries = function (noOfSources, sourceTravelTime, room
     // in 1500 seconds (a creep's life time):
 
     // there will be 5 refreshes of one source, which is 5*3000 = 15k resources
-    let totalEGain = 15000*noOfSources;
-    totalEGain = totalEGain*0.95; // considering degeneration and waste
+    let totalEGain = 15000 * noOfSources;
+    totalEGain = totalEGain * 0.95; // considering degeneration and waste
 
     // capacity creep carry each time
-    let eCarry = Math.floor((Math.min(roomECapacityAvailable*.875,2333)-150)/150) * 2 * 50; // see formula from prototype.spawn line 81
+    let eCarry = Math.floor((Math.min(roomECapacityAvailable * .875, 2333) - 150) / 150) * 2 * 50; // see formula from prototype.spawn line 81
     // calculate average travel time between sources and home
     let oneTripTime = 0;
     for (let source_id in sourceTravelTime) {
-        oneTripTime = oneTripTime + sourceTravelTime[source_id]/1.5; // there is a 1.5 factor (see prototype.room line 343)
+        oneTripTime = oneTripTime + sourceTravelTime[source_id] / 1.5; // there is a 1.5 factor (see prototype.room line 343)
     }
     let roundTripTime = oneTripTime * 2 / Object.keys(sourceTravelTime).length; // time of a round trip
-    let roundTripNo = 1500/roundTripTime; // how many times a creep and go between source and homeName
-    let EperLife = eCarry*roundTripNo;
+    let roundTripNo = 1500 / roundTripTime; // how many times a creep and go between source and homeName
+    let EperLife = eCarry * roundTripNo;
 
-    let noOfLorriesNeeded = Math.ceil(totalEGain/EperLife);
+    let noOfLorriesNeeded = Math.ceil(totalEGain / EperLife);
 
     return noOfLorriesNeeded
 }
@@ -66,23 +62,20 @@ global.manageRemoteRoomsResourceGetting = function (roomName) {
     let room = Game.rooms[roomName];
     let keeperRoomNames = room.memory.keeperMiningRoomNames;
     let middleRoomName = room.memory.middleRoomName;
-    
+
     if (room.memory.readyToRemoteMining) {
         for (let remoteMiningRoomName in room.memory.readyToRemoteMining) {
             findAllResourcesNeedsToTakeInRoom(remoteMiningRoomName);
             assignResourceToRemoteLorries(remoteMiningRoomName);
         }
     }
-<<<<<<< HEAD
-    
+
     if (room.memory.reremoteMiningRoomNames) {
         for (let reremoteMiningRoomName in room.memory.reremoteMiningRoomNames) {
             findAllResourcesNeedsToTakeInRoom(reremoteMiningRoomName);
             assignResourceToRemoteLorries(reremoteMiningRoomName);
         }
     }
-=======
->>>>>>> master
 
     if (keeperRoomNames) {
         for (let keeperRoomName of keeperRoomNames) {
@@ -100,7 +93,7 @@ global.assignResourceToRemoteLorries = function (roomName) {
     let room = Game.rooms[roomName];
     if (room) {
         let resMem = room.memory.resMem;
-        let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => ( ((s.memory.role == ('keeperLairLorry'))||(s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName) ) });
+        let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => (((s.memory.role == ('keeperLairLorry')) || (s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName)) });
         for (let keeperLairLorry of keeperLairLorrys) {
             if (!keeperLairLorry.memory.toGetId) {
                 let resourcePrioV = 0;
@@ -178,7 +171,7 @@ global.assignResourceToRemoteLorries = function (roomName) {
     }
 }
 
-global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
+global.findAllResourcesNeedsToTakeInRoom = function (roomName) {
     let room = Game.rooms[roomName];
     if (room) { // if room has visibility
         let resMem = room.memory.resMem;
@@ -197,7 +190,7 @@ global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
 
             // resources that creeps are already working on it
             let alreadyWorkingIds = [];
-            let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => (((s.memory.role == ('keeperLairLorry'))||(s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName)) });
+            let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => (((s.memory.role == ('keeperLairLorry')) || (s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName)) });
             for (let keeperLairLorry of keeperLairLorrys) {
                 if (!keeperLairLorry.memory.toGetId) {
                     alreadyWorkingIds.push(keeperLairLorry.memory.toGetId);
@@ -206,7 +199,7 @@ global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
 
             // add in resources to memory
             // season 2 symbol
-            let symbctns = room.find(FIND_SYMBOL_CONTAINERS, { filter: s=> _.sum(s.store) > 0 });
+            let symbctns = room.find(FIND_SYMBOL_CONTAINERS, { filter: s => _.sum(s.store) > 0 });
             for (let symbctn of symbctns) {
                 if (!(symbctn.id in resMem) && !alreadyWorkingIds.includes(symbctn.id)) { // if resource not logged
                     resMem[symbctn.id] = {};
@@ -219,7 +212,7 @@ global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
                     resMem[symbctn.id].resAmount = _.sum(symbctn.store);
                 }
             }
-            
+
             // dropped non energy
             let droppeds = room.find(FIND_DROPPED_RESOURCES);
             for (dropped of droppeds) {
@@ -236,7 +229,7 @@ global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
                     resMem[dropped.id].resAmount = dropped.amount;
                 }
             }
-            
+
             let tombstones = room.find(FIND_TOMBSTONES, { filter: c => (_.sum(c.store) > 0) });
             for (let tombstone of tombstones) {
                 if (!(tombstone.id in resMem) && !alreadyWorkingIds.includes(tombstone.id)) { // if resource not logged
@@ -270,7 +263,7 @@ global.findAllResourcesNeedsToTakeInRoom = function(roomName) {
                     resMem[container.id].resAmount = _.sum(container.store);
                 }
             }
-            
+
             // dropped energy
             for (dropped of droppeds) {
                 if (!(dropped.id in resMem) && !alreadyWorkingIds.includes(dropped.id)) { // if resource not logged
@@ -307,9 +300,9 @@ global.initialOnlyMineralMiningMemory = function (roomName, remoteRoomName) {
     }*/
 }
 
-global.checkIfMiddleRoom = function(roomName) {
+global.checkIfMiddleRoom = function (roomName) {
     let roomNameDecomposed = decomposeRoomNameIntoFourParts(roomName);
-    if (roomNameDecomposed[1]%5==0 && roomNameDecomposed[3]%5==0) {
+    if (roomNameDecomposed[1] % 5 == 0 && roomNameDecomposed[3] % 5 == 0) {
         return true
     }
     else {
@@ -354,19 +347,14 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
         }
         else { // send scout to register
             if (!Memory.mapInfo[candidate]) {
-<<<<<<< HEAD
                 if (Game.rooms[candidate]) {
-=======
-                if (Game.creeps[candidate]) {
->>>>>>> master
                     if (Game.rooms[candidate]) {
                         logGrandeRoomInfo(Game.rooms[candidate]);
                     }
                 }
-<<<<<<< HEAD
                 else { // spawn a scouter
-                    console.log(roomName+' added scouter '+candidate)
-                    r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: candidate}, priority: 0.01});
+                    console.log(roomName + ' added scouter ' + candidate)
+                    r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: candidate }, priority: 0.01 });
                 }
             }
             else { // analyze if room is suitable for remote mining
@@ -380,18 +368,18 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
             }
         }
     }
-    
+
     if (true) {
         // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< switch of reremote early mining
     }
     else {
         for (let candidate in r.memory.readyToRemoteMining) {
             let cr = Game.rooms[candidate];
-            
+
             // if candiate not defined, send scout
             if (cr == undefined) {
-                console.log(roomName+' added scouter '+candidate)
-                r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: candidate}, priority: 0.01});
+                console.log(roomName + ' added scouter ' + candidate)
+                r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: candidate }, priority: 0.01 });
             }
             else { // else // have vision
                 // find cacandi name that is not main
@@ -408,10 +396,10 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
                             }
                             let ccr = Game.rooms[cacandi];
                             if (ccr == undefined) {
-                                if (Game.creeps[cacandi]==undefined) {
+                                if (Game.creeps[cacandi] == undefined) {
                                     // if no vision send scout
-                                    console.log(roomName+' added scouter '+cacandi)
-                                    r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: cacandi}, priority: 0.01});
+                                    console.log(roomName + ' added scouter ' + cacandi)
+                                    r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: cacandi }, priority: 0.01 });
                                 }
                             }
                             else { // have vision
@@ -436,7 +424,7 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
     }
 }
 
-global.remoteMiningManager = function (r, execute=false) {
+global.remoteMiningManager = function (r, execute = false) {
     if (!execute) {
         return
     }
@@ -463,17 +451,17 @@ global.remoteMiningManager = function (r, execute=false) {
                                 }
                             }
                             else { // spawn a scouter
-                                console.log(r.name+' added scouter '+candidate)
-                                r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: candidate}, priority: 0.01});
+                                console.log(r.name + ' added scouter ' + candidate)
+                                r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: candidate }, priority: 0.01 });
                             }
                         }
                         else { // analyze if room is suitable for remote mining
                             // remove early mining info
-                            if (r.memory.earlyHarv && r.memory.earlyHarv[candidate]&& r.memory.earlyHarv[candidate]>0) {
+                            if (r.memory.earlyHarv && r.memory.earlyHarv[candidate] && r.memory.earlyHarv[candidate] > 0) {
                                 r.memory.earlyHarv[candidate] = 0;
                             }
                             determineIfRoomIsSuitableForRemoteMining(r, candidate);
-                            
+
                             if (buildRoadInMainRoomForRemoteMining(r, candidate, r.memory.readyToRemoteMining[candidate])) {
                                 return
                             }
@@ -498,7 +486,7 @@ global.remoteMiningManager = function (r, execute=false) {
                     reremoteMiningchecker = true && r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady;
                 }
             }
-            
+
             // reremote mining
             if (reremoteMiningchecker) {
                 for (let candidate in r.memory.readyToRemoteMining) {
@@ -507,18 +495,18 @@ global.remoteMiningManager = function (r, execute=false) {
             }
         }
         else {
-    
+
         }
     }
 }
 
 global.reremoteMining = function (r, candidate) {
     let cr = Game.rooms[candidate];
-    
+
     // if candiate not defined, send scout
     if (cr == undefined) {
-        console.log(r.name+' added scouter '+candidate)
-        r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: candidate}, priority: 0.01});
+        console.log(r.name + ' added scouter ' + candidate)
+        r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: candidate }, priority: 0.01 });
     }
     else { // else // have vision
         // find cacandi name that is not main
@@ -527,22 +515,22 @@ global.reremoteMining = function (r, candidate) {
             if (cacandi !== r.name) { // if not main room
                 let ccr = Game.rooms[cacandi];
                 if (ccr == undefined) {
-                    if (Game.creeps[cacandi]==undefined) {
+                    if (Game.creeps[cacandi] == undefined) {
                         // if no vision send scout
-                        console.log(r.name+' added scouter '+cacandi)
-                        r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: cacandi}, priority: 0.01});
+                        console.log(r.name + ' added scouter ' + cacandi)
+                        r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: cacandi }, priority: 0.01 });
                     }
                 }
                 else { // have vision
-                    if (r.memory.reremoteMiningRoomNames==undefined) {
+                    if (r.memory.reremoteMiningRoomNames == undefined) {
                         r.memory.reremoteMiningRoomNames = {};
                     }
                     if (r.memory.reremoteMiningRoomNamesBuilt && r.memory.reremoteMiningRoomNamesBuilt[cacandi] == true) {
                         // check if need to rebuild
                         // check container if there
-                        if (Game.time%1777==0) {
+                        if (Game.time % 1777 == 0) {
                             if (ccr) {
-                                if ( (Object.keys(Memory.mapInfo[cacandi].eRes).length>0 && Object.keys(Memory.mapInfo[cacandi].eRes).length<3) && findTotolNumberOfStructure(ccr, STRUCTURE_CONTAINER) < Object.keys(Memory.mapInfo[cacandi].eRes).length) {
+                                if ((Object.keys(Memory.mapInfo[cacandi].eRes).length > 0 && Object.keys(Memory.mapInfo[cacandi].eRes).length < 3) && findTotolNumberOfStructure(ccr, STRUCTURE_CONTAINER) < Object.keys(Memory.mapInfo[cacandi].eRes).length) {
                                     fo('recovering reremote room ' + cacandi);
                                     r.memory.reremoteMiningRoomNamesBuilt[cacandi].subRoomRoadReady = false;
                                 }
@@ -555,7 +543,7 @@ global.reremoteMining = function (r, candidate) {
                         let eResNum = determineIfRoomIsSuitableForReremoteMining(r, cacandi);
                         if (Memory.mapInfo[cacandi].managedBy == undefined || Memory.mapInfo[cacandi].managedBy == r.name) {
                             Memory.mapInfo[cacandi].managedBy = r.name;
-                            if (eResNum==2) { // is a 2 sources reremote room, we take it regardless
+                            if (eResNum == 2) { // is a 2 sources reremote room, we take it regardless
                                 // get access point from main to sub and sub to subsub
                                 let anch = undefined;
                                 if (r.memory.anchor) {
@@ -568,7 +556,7 @@ global.reremoteMining = function (r, candidate) {
                                 let lastPosi = ret.path.pop();
                                 let [x, y] = convertPosiIntoNextRoomPosi(lastPosi.x, lastPosi.y);
                                 let newStartPoint = new RoomPosition(x, y, candidate);
-                                
+
                                 if (planRoadRAtoRB(newStartPoint, cacandi, cacandis[cacandi])) {
                                     let ret2 = funcB.findPathBasedOnGridEvenOdd(newStartPoint, generateLineBasedOnDir(cr.name, cacandis[cacandi]));
                                     let lastPosi2 = ret2.path.pop();
@@ -599,7 +587,7 @@ global.reremoteMining = function (r, candidate) {
                                     }
                                 }
                             }
-                            else if (r.storage && eResNum==1) { // if it is a 1 source room, we evaluate it by path length
+                            else if (r.storage && eResNum == 1) { // if it is a 1 source room, we evaluate it by path length
                                 // get access point from main to sub and sub to subsub
                                 let anch = undefined;
                                 if (r.memory.anchor) {
@@ -608,7 +596,7 @@ global.reremoteMining = function (r, candidate) {
                                 else if (r.memory.newAnchor) {
                                     anch = r.memory.newAnchor;
                                 }
-                                
+
                                 // get remote room path length
                                 let ret = funcB.findPathBasedOnGridEvenOdd(anch, generateLineBasedOnDir(r.name, r.memory.readyToRemoteMining[candidate]));
                                 let lastPosi = ret.path.pop(); // main room exit
@@ -627,7 +615,7 @@ global.reremoteMining = function (r, candidate) {
                                     p2 = reto.path.length
                                 };
                                 // if length<30 we proceed, else give up
-                                if (p2<=13) { // hardcoded to prevent MvsR going further is season 2
+                                if (p2 <= 13) { // hardcoded to prevent MvsR going further is season 2
                                     if (planRoadRAtoRB(newStartPoint, cacandi, cacandis[cacandi])) { // remote room start to exit
                                         let ret2 = funcB.findPathBasedOnGridEvenOdd(newStartPoint, generateLineBasedOnDir(cr.name, cacandis[cacandi]));
                                         let lastPosi2 = ret2.path.pop(); // remote room exit
@@ -640,14 +628,14 @@ global.reremoteMining = function (r, candidate) {
                                                 Game.rooms[cacandi].memory.byPass = [];
                                                 Game.rooms[cacandi].memory.byPass.push(candidate);
                                             }
-                                            
+
                                             if (Game.rooms[cacandi].memory.byPass.includes(candidate)) {
                                                 // pass
                                             }
                                             else {
                                                 Game.rooms[cacandi].memory.byPass.push(candidate);
                                             }
-                                                
+
                                             // set build flag to true
                                             if (r.memory.reremoteMiningRoomNamesBuilt == undefined) {
                                                 r.memory.reremoteMiningRoomNamesBuilt = {};
@@ -663,7 +651,7 @@ global.reremoteMining = function (r, candidate) {
                                         r.memory.reremoteMiningRoomNames[cacandi] = undefined;
                                     }
                                     else {
-                                        r.memory.reremoteMiningRoomNames={};
+                                        r.memory.reremoteMiningRoomNames = {};
                                     }
                                     if (r.memory.earlyHarv) {
                                         r.memory.earlyHarv[cacandi] = undefined;
@@ -671,75 +659,13 @@ global.reremoteMining = function (r, candidate) {
                                 }
                             }
                             else { // not suitable for reremote mining
-                                
-                            }
-                        }
-                    }
-                }
-            }
-        }
-=======
-                else { // find a spawn
-                    let spawns = r.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_SPAWN, spawning: null } });
-                    if (spawns.length > 0) {
-                        spawns[0].createScouter(candidate, candidate);
-                    }
-                }
-            }
-            else { // analyze if room is suitable for remote mining
-                determineIfRoomIsSuitableForRemoteMining(r, candidate);
-                room.memory.earlyHarv[candidate] = 2// * Object.keys(Memory.mapInfo[candidate].eRes).length;
-            }
-        }
-    }
-}
 
-global.remoteMiningManager = function (r) {
-    itsReadyToStartRemoteMining(r)
-    if (r.memory.readyToRemoteMining) {
-        for (let candidate in r.memory.readyToRemoteMining) {
-            if (!r.memory.remoteMiningRoomNames) {
-                r.memory.remoteMiningRoomNames = {}
-                return
-            }
-            if (!r.memory.remoteMiningRoomNames[candidate]) {
-                r.memory.remoteMiningRoomNames[candidate] = { finishedAllInfanstructures: false };
-            }
-            else {
-                if (!r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady) {
-                    // send scout to register
-                    if (!Memory.mapInfo[candidate]) {
-                        if (Game.creeps[candidate]) {
-                            if (Game.rooms[candidate]) {
-                                logGrandeRoomInfo(Game.rooms[candidate]);
                             }
                         }
-                        else { // find a spawn
-                            let spawns = r.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_SPAWN, spawning: null } });
-                            if (spawns.length > 0) {
-                                spawns[0].createScouter(candidate, candidate);
-                            }
-                        }
-                    }
-                    else { // analyze if room is suitable for remote mining
-                        // remove early mining info
-                        if (r.memory.earlyHarv && r.memory.earlyHarv[candidate]) {
-                            r.memory.earlyHarv[candidate] = 0;
-                        }
-                        determineIfRoomIsSuitableForRemoteMining(r, candidate);
-                        if (buildRoadInMainRoomForRemoteMining(r, candidate, r.memory.readyToRemoteMining[candidate])) {
-                            return
-                        }
-                        startRemoteMinigTeezing(r);
-                        buildContainerInRemoteMiningRoom(r, candidate, r.memory.readyToRemoteMining[candidate]);
                     }
                 }
             }
         }
-    }
-    else {
-
->>>>>>> master
     }
 }
 
@@ -753,18 +679,8 @@ global.startRemoteMinigTeezing = function (r) {
 }
 
 global.itsReadyToStartRemoteMining = function (r) {
-<<<<<<< HEAD
     if (r.memory.readyToRemoteMining == undefined || Object.keys(r.memory.readyToRemoteMining).length == 0) {
         r.memory.readyToRemoteMining = searchForAdjacentConnectedRoomnames(r);
-=======
-    if (!r.memory.readyToRemoteMining) { // undefined or false
-        if (r.storage && r.memory) { // this code should only be run once
-            if (!r.memory.readyToRemoteMining) {
-                r.memory.readyToRemoteMining = searchForAdjacentConnectedRoomnames(r);
-            }
-            r.memory.remoteMiningRoomNames = {};
-        }
->>>>>>> master
     }
 }
 
@@ -793,11 +709,7 @@ global.returnRoomnameByDirectionNum = function (roomName, dirInd) {
     return roomNameSeparated[0] + '' + (parseInt(eval(roomNameSeparated[1]) + eval(dx))) + roomNameSeparated[2] + '' + (parseInt(eval(roomNameSeparated[3]) + eval(dy)))
 }
 
-<<<<<<< HEAD
-global.searchForAdjacentConnectedRoomnames = function (r, neib=false) {
-=======
-global.searchForAdjacentConnectedRoomnames = function (r) {
->>>>>>> master
+global.searchForAdjacentConnectedRoomnames = function (r, neib = false) {
     let connectedDirections = new Set();
     let candidates = calculateNeighbourNames(r.name)
     for (let candidate of candidates) {
@@ -810,31 +722,23 @@ global.searchForAdjacentConnectedRoomnames = function (r) {
     let connectedRoomInfoObj = {}
     for (let ind in connectedDirections) {
         let connectedRoomName = returnRoomnameByDirectionNum(r.name, connectedDirections[ind]);
-<<<<<<< HEAD
         if (neib) {
             connectedRoomInfoObj[connectedRoomName] = -1;
         }
         else {
             connectedRoomInfoObj[connectedRoomName] = connectedDirections[ind];
         }
-=======
-        connectedRoomInfoObj[connectedRoomName] = connectedDirections[ind]
->>>>>>> master
     }
     return connectedRoomInfoObj
 }
 
 global.determineIfRoomIsSuitableForRemoteMining = function (r, candidate) {
-<<<<<<< HEAD
     // if 4, middle room, other ppl's room, remove
     let candider = Game.rooms[candidate];
-    if (candider&&candider.controller&&candider.controller.owner) {
+    if (candider && candider.controller && candider.controller.owner) {
         r.memory.readyToRemoteMining[candidate] = undefined;
         return false
     }
-=======
-    // if 4, middle room, remove
->>>>>>> master
     let numERes = Object.keys(Memory.mapInfo[candidate].eRes).length;
     if (numERes > 2 || numERes == 0) {
         r.memory.readyToRemoteMining[candidate] = undefined;
@@ -842,7 +746,6 @@ global.determineIfRoomIsSuitableForRemoteMining = function (r, candidate) {
             r.memory.remoteMiningRoomNames[candidate] = undefined;
         }
         if (r.memory.earlyHarv) {
-<<<<<<< HEAD
             r.memory.earlyHarv[candidate] = 0;
         }
         return false
@@ -856,20 +759,20 @@ global.determineIfRoomIsSuitableForRemoteMining = function (r, candidate) {
 global.determineIfRoomIsSuitableForReremoteMining = function (r, cacandi) {
     // if 4, middle room, other ppl's room, remove
     let candider = Game.rooms[cacandi];
-    
+
     if (candider) {
-        if ((candider.controller==undefined)||((candider.controller && candider.controller.reservation && candider.controller.reservation.username!='PythonBeatJava')||(candider.controller && candider.controller.owner && candider.controller.owner.username!='PythonBeatJava'))) {
+        if ((candider.controller == undefined) || ((candider.controller && candider.controller.reservation && candider.controller.reservation.username != 'PythonBeatJava') || (candider.controller && candider.controller.owner && candider.controller.owner.username != 'PythonBeatJava'))) {
             r.memory.reremoteMiningRoomNames[cacandi] = undefined;
             return -1
         }
-        
+
         let numERes = Object.keys(Memory.mapInfo[cacandi].eRes).length;
         if (numERes > 2 || numERes == 0) {
             if (r.memory.reremoteMiningRoomNames) {
                 r.memory.reremoteMiningRoomNames[cacandi] = undefined;
             }
             else {
-                r.memory.reremoteMiningRoomNames={};
+                r.memory.reremoteMiningRoomNames = {};
             }
             if (r.memory.earlyHarv) {
                 r.memory.earlyHarv[cacandi] = undefined;
@@ -886,30 +789,16 @@ global.determineIfRoomIsSuitableForReremoteMining = function (r, cacandi) {
     }
     else {
         return -1
-=======
-            r.memory.earlyHarv[candidate] = undefined;
-        }
-    }
-    else { // 1 or 2
-        // let's just take the room regardless, will fix the valuation of resource quality later
->>>>>>> master
     }
 }
 
 global.buildRoadInMainRoomForRemoteMining = function (r, candidate, dir) {
-<<<<<<< HEAD
     if (!(r.memory.remoteMiningRoomNames[candidate] && r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady)) {
         if (r.memory.remoteMiningRoomNames[candidate]) {
             r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady = false;
             planRoadLocally(r, candidate, dir)
             return true
         }
-=======
-    if (!r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady) {
-        r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady = false;
-        planRoadLocally(r, candidate, dir)
-        return true
->>>>>>> master
     }
     else {
         return false
@@ -917,12 +806,8 @@ global.buildRoadInMainRoomForRemoteMining = function (r, candidate, dir) {
 }
 
 global.planRoadLocally = function (r, candidate, dir) {
-    let spawn = r.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_SPAWN} })[0];
+    let spawn = r.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_SPAWN } })[0];
     let ret = funcB.findPathBasedOnGridEvenOddAndBankerBlockage(r, generateLineBasedOnDir(r.name, dir));
-<<<<<<< HEAD
-=======
-    
->>>>>>> master
     let path = ret.path;
 
     if (ret.incomplete == false) {
@@ -948,7 +833,6 @@ global.planRoadLocally = function (r, candidate, dir) {
     }
 }
 
-<<<<<<< HEAD
 global.planRoadRAtoRB = function (pos1, candidate, dir) {
     let r = Game.rooms[pos1.roomName];
     let ret = funcB.findPathBasedOnGridEvenOdd(pos1, generateLineBasedOnDir(r.name, dir));
@@ -970,8 +854,6 @@ global.planRoadRAtoRB = function (pos1, candidate, dir) {
     }
 }
 
-=======
->>>>>>> master
 global.convertToEO = function (posi) {
     let terrain = Game.map.getRoomTerrain(posi.roomName);
     let ds = [[0, 1], [0, -1], [1, 0], [-1, 0]];
@@ -1059,7 +941,6 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
             if (!r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady) {
                 for (let eResId in Memory.mapInfo[candidate].eRes) {
                     let containerInfo = Memory.mapInfo[candidate].eRes[eResId].easyContainerPosi;
-<<<<<<< HEAD
                     let ret;
                     if (r.memory.anchor) {
                         ret = funcB.findPathBasedOnGridEvenOdd(r.memory.anchor, generateLineBasedOnDir(r.name, dir));
@@ -1067,9 +948,6 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
                     else {
                         ret = funcB.findPathBasedOnGridEvenOdd(r.memory.newAnchor, generateLineBasedOnDir(r.name, dir));
                     }
-=======
-                    let ret = funcB.findPathBasedOnGridEvenOdd(r.memory.anchor, generateLineBasedOnDir(r.name, dir));
->>>>>>> master
                     let lastPosi = ret.path.pop();
                     let xy = convertPosiIntoNextRoomPosi(lastPosi.x, lastPosi.y);
                     let x = xy[0];
@@ -1091,7 +969,6 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
     }
 }
 
-<<<<<<< HEAD
 global.buildContainerInReremoteMiningRoom = function (r, candidate, dir, startPos) {
     let red = Game.rooms[candidate];
     if (red) { //red && red.controller && red.controller.reservation &&   // .controller.reservation.username == r.controller.owner)
@@ -1122,7 +999,7 @@ global.buildContainerInReremoteMiningRoom = function (r, candidate, dir, startPo
                     let checkRoadPlaced = true;
                     for (let posiToCach of pasto) {
                         let placeSiteAction = Game.rooms[candidate].createConstructionSite(posiToCach.x, posiToCach.y, STRUCTURE_ROAD);
-                        
+
                         if (placeSiteAction == OK || placeSiteAction == ERR_INVALID_TARGET) {
                             //posisToCach.concat(posiToCach)
                         }
@@ -1137,8 +1014,6 @@ global.buildContainerInReremoteMiningRoom = function (r, candidate, dir, startPo
     return true
 }
 
-=======
->>>>>>> master
 global.planRoadRemotely = function (r, candidate, newStartPoint, containerInfo) {
     let reto = funcB.findPathBasedOnGridEvenOdd(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
     if (reto.incomplete == false) {

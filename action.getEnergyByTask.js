@@ -2,7 +2,7 @@ var noStoragePickuper = require('role.pickuper');
 
 module.exports = {
     run: function (creep) {
-        
+
         let onTaskIdE = creep.memory.eGetTaskId;
 
         if (onTaskIdE !== undefined) {
@@ -12,7 +12,7 @@ module.exports = {
                 noStoragePickuper.run(creep);
                 return false
             }
-            
+
             if (_.sum(creep.store) == creep.store.getCapacity()) { // energy full, remove task
                 creep.memory.eGetTaskId = undefined;
                 delete creep.room.memory.taskGetE.contracts[onTaskIdE];
@@ -23,21 +23,17 @@ module.exports = {
                 if (contract) { // task still there, do task
                     let offererId = contract.offerId;
                     let offerer = Game.getObjectById(offererId);
-                        
+
                     if (offerer) { // if offer still alive
-                        creep.room.visual.circle(offerer.pos, {fill: 'transparent', radius: 0.55, stroke: 'green', strokeWidth: 0.5});
-                        creep.room.visual.circle(creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'blue', strokeWidth: 0.5});
-                    
-                        
+                        creep.room.visual.circle(offerer.pos, { fill: 'transparent', radius: 0.55, stroke: 'green', strokeWidth: 0.5 });
+                        creep.room.visual.circle(creep.pos, { fill: 'transparent', radius: 0.55, stroke: 'blue', strokeWidth: 0.5 });
+
+
                         if (contract.t == 'd') {
                             let droppedRes = Game.getObjectById(contract.offerId);
                             let pickupRes = creep.pickup(droppedRes);
-                            if ( pickupRes == ERR_NOT_IN_RANGE) {
-<<<<<<< HEAD
+                            if (pickupRes == ERR_NOT_IN_RANGE) {
                                 creep.travelTo(droppedRes, { maxRooms: 1, range: 1 });
-=======
-                                creep.travelTo(droppedRes, { maxRooms: 1 });
->>>>>>> master
                             }
                             else if (pickupRes == OK || pickupRes == ERR_FULL || pickupRes == ERR_INVALID_TARGET) {
                                 creep.room.memory.resourcePrototype[contract.offerId].eGetTaskId = undefined;
@@ -53,24 +49,16 @@ module.exports = {
                             else {
                                 for (let mineralType in tombObj.store) {
                                     if (creep.withdraw(tombObj, mineralType) == ERR_NOT_IN_RANGE) {
-<<<<<<< HEAD
                                         creep.travelTo(tombObj, { maxRooms: 1, range: 1 });
-=======
-                                        creep.travelTo(tombObj, { maxRooms: 1 });
->>>>>>> master
                                     }
                                 }
                             }
                         }
-                        else if (contract.t == 'c' || contract.t ==  's' || contract.t ==  'ter') {
+                        else if (contract.t == 'c' || contract.t == 's' || contract.t == 'ter') {
                             let tarStoreObj = Game.getObjectById(contract.offerId);
                             let withdrawRes = creep.withdraw(tarStoreObj, 'energy');
-                            if ( withdrawRes == ERR_NOT_IN_RANGE) {
-<<<<<<< HEAD
+                            if (withdrawRes == ERR_NOT_IN_RANGE) {
                                 creep.travelTo(tarStoreObj, { maxRooms: 1, range: 1 });
-=======
-                                creep.travelTo(tarStoreObj, { maxRooms: 1 });
->>>>>>> master
                             }
                             else if (withdrawRes == OK || withdrawRes == ERR_FULL || withdrawRes == ERR_NOT_ENOUGH_RESOURCES || withdrawRes == ERR_INVALID_TARGET) {
                                 creep.room.memory.resourcePrototype[contract.offerId].eGetTaskId = undefined;

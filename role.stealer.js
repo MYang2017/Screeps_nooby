@@ -34,7 +34,6 @@ module.exports = {
         if (getB.run(creep)!=true) {
             return
         }
-<<<<<<< HEAD
         else {
             if (creep.memory.bornTime == undefined) {
                 // creep born time = Game.time
@@ -353,18 +352,6 @@ module.exports = {
                             }
                         }
                     }
-=======
-      }
-      else {
-        if (creep.room.name == creep.memory.target) { // if in target room
-            let target = creep.room.find(FIND_STRUCTURES, { filter: s => ((s.structureType == STRUCTURE_STORAGE) ||(s.structureType == STRUCTURE_TOWER)||(s.structureType == STRUCTURE_EXTENSION)||(s.structureType == STRUCTURE_SPAWN))&&(s.energy>0)});
-          //let target = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter: s => (s.structureType == STRUCTURE_TOWER)});
-            //let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))});
-            //console.log(creep.withdrow(target));
-            if (target) { // found hostile creep
-                if (creep.withdraw(target[0],RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(target[0])
->>>>>>> master
                 }
             }
         }

@@ -1,6 +1,6 @@
 module.exports = {
     run: function (creep) {
-        
+
         let onTaskId = creep.memory.moveTaskId;
 
         if (onTaskId !== undefined) { // creep have contract id
@@ -13,7 +13,7 @@ module.exports = {
                 let askerName = contract.askerName;
                 let askerCreep = Game.creeps[askerName];
                 if (askerCreep) { // if asker still alive
-                    
+
                     if (creep.pos.getRangeTo(askerCreep) > 1) { // if not pull range to to asker
                         creep.travelTo(askerCreep);
                     }
@@ -24,8 +24,8 @@ module.exports = {
                             creep.move(askerCreep);
                         }
                         else { // if not at working position go to it
-                            creep.room.visual.circle(askerCreep.pos, {fill: 'transparent', radius: 0.55, stroke: 'white', strokeWidth: 0.5});
-                            creep.room.visual.circle(creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'red', strokeWidth: 0.5});
+                            creep.room.visual.circle(askerCreep.pos, { fill: 'transparent', radius: 0.55, stroke: 'white', strokeWidth: 0.5 });
+                            creep.room.visual.circle(creep.pos, { fill: 'transparent', radius: 0.55, stroke: 'red', strokeWidth: 0.5 });
                             creep.pull(askerCreep);
                             /*let foundi = creep.room.lookForAt(LOOK_CREEPS, tarPosi.x, tarPosi.y);
                             if (foundi.length>0) {
@@ -43,11 +43,7 @@ module.exports = {
                             //creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
 
                             //creep.moveToWhenNeverTar(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name))
-<<<<<<< HEAD
-                            creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name), {creepCost: 3});
-=======
-                            creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
->>>>>>> master
+                            creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name), { creepCost: 3 });
                             //creep.moveToAvoidAllOtherCreeps(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
                         }
                     }

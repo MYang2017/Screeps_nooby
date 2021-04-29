@@ -1,5 +1,4 @@
 /*
-<<<<<<< HEAD
 room plan: https://gist.github.com/xyzzy529/df3b39f4d552da5dd4f829dfcda06fa8
 https://screeps.com/forum/topic/1024/useful-utilities
 
@@ -10,64 +9,17 @@ spawnQueueTimer rethink
 
 remote mining room exclude overlapped rooms
 
-=======
-
-miner fill extension if have carry
-mover put nleg beside site
-upgrade point
-mover put energy beside upgrade point(drop/container fill)
-twoer
-rewrite structure energy
-
-room plan: https://gist.github.com/xyzzy529/df3b39f4d552da5dd4f829dfcda06fa8
-
-storage position plan (1
-find tower and wall/rampart positions (1?
-road fucked up
-	cach
-in pathfinding of placing sites, use anchor point instead of spawn
-
-spawnQueueTimer rethink
-	balance clearing and wait timer to check again
-grandeloginfo, log mineral in centre rooms, becareful with other type (power, xxx)
-
-remote mining room exclude overlapped rooms
-
-link
-
-second tower build
-
-stop wallupgraders when room low e
-
-longdistancebuilder give way
-
-longdistance lorry spawn when container ready
-
->>>>>>> master
 red neck favour moving in rampart
 
 intershard expand (*)
 
-<<<<<<< HEAD
-=======
-rework miner to build extension and fill extension (need new room plan?) (*)
 
-fill task (***********************), currently for pickuper lorry, later longdistant...
-
-room plan (**)
-
-resource flow (**), terminals
->>>>>>> master
-
-rednecks 
+rednecks
 	ranged
 	dynamic number
 	cancel spawn
 	tower colab
-<<<<<<< HEAD
 room indangerstate and reduce spawning requirement for pickuper
-=======
->>>>>>> master
 
 
 granafal granofa?
@@ -76,19 +28,12 @@ subroom
 	determine spawn posi and place after claim (very advanced and late game...)
 	poineer and local screeps balancing
 
-<<<<<<< HEAD
 auto subroom, first spawn (1
-=======
-scouter spawn and log with time
-auto subroom, first spawn (1
-roomindangerstate and reduce spawning requirement for pickuper
->>>>>>> master
 
 
 
 things need to change:
 spawn with direction
-<<<<<<< HEAD
 
 
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -134,9 +79,9 @@ return a, b
 
 
 // replace traveler for cached move
-creep.moveLDL(toPos); 
+creep.moveLDL(toPos);
 
-input: current pos, target pos, 
+input: current pos, target pos,
 return: a path in the current room
 
 let storedPath = creep.memory.storedPath
@@ -163,7 +108,7 @@ let p = creep.memory.storedPath;
 let res = creep.moveTo(p[0]);
 if OK
 	creep.memory.storedPath.splice(0,1)
-else 
+else
 	wait
 
 findPath(fromPos, toPos)
@@ -182,48 +127,5 @@ battle logic of quads
 symbol flow in E11S16
 lab bug?
 Z flow to E1S27
-=======
-early room
-    upgrade container
-    staticUpgrader
-
-dickHeads + linkeepr rework
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> master
 
 */

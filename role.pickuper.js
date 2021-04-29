@@ -26,11 +26,8 @@ module.exports = {
                                 if (structure == undefined) {
                                     structure = creep.room.storage;
                                     if (structure) {
-<<<<<<< HEAD
                                         if (_.sum(structure.store) > 0.8 * structure.storeCapacity) { // storage is almost full
-=======
-                                        if (structure.store[RESOURCE_ENERGY] > 0.8 * structure.storeCapacity) { // storage is almost full
->>>>>>> master
+
                                             structure = creep.room.terminal;
                                         }
                                     }
@@ -60,7 +57,6 @@ module.exports = {
                                 }
                                 else {
                                     let storage = creep.room.storage;
-<<<<<<< HEAD
                                     if (terminal==undefined) {
                                         if (creep.transfer(storage, resourceType) == ERR_NOT_IN_RANGE) {
                                             creep.travelTo(storage);
@@ -69,8 +65,7 @@ module.exports = {
                                     }
                                     actionAvoid.run(creep);
                                     
-=======
->>>>>>> master
+
                                     if (terminal && _.sum(terminal.store) < terminal.storageCapacity * 0.95) { // if terminal is defined
                                         // chech if terminal threshold is met
                                         if (terminal.store[resourceType] > creep.room.memory.mineralThresholds.terminalThreshold[resourceType]) {
@@ -106,11 +101,8 @@ module.exports = {
                     else { // working, get resources: dropped minerals >> minerals (container) >> energy (container) >> dropped energy
                         // if there is dropped mineral
                         let droppedMinerals = creep.room.find(FIND_DROPPED_RESOURCES, { filter: s => s.resourceType != RESOURCE_ENERGY });
-<<<<<<< HEAD
                         if (droppedMinerals.length>0) { // if there is mineral dropped
-=======
-                        if (droppedMinerals.length) { // if there is mineral dropped
->>>>>>> master
+
                             creep.travelTo(droppedMinerals[0], { maxRooms: 1 });
                             creep.pickup(droppedMinerals[0]);
                         }
@@ -121,7 +113,6 @@ module.exports = {
                                 for (let mineralType in tombstone.store) {
                                     if (creep.withdraw(tombstone, mineralType) == ERR_NOT_IN_RANGE) {
                                         creep.travelTo(tombstone, { maxRooms: 1 });
-<<<<<<< HEAD
                                     }
                                 }
                                 hasJobToDo = true;
@@ -186,64 +177,11 @@ module.exports = {
                                                                 hasJobToDo = true;
                                                                 break;
                                                             }
-=======
-                                    }
-                                }
-                                hasJobToDo = true;
-                                //break;
-                            }
-                            else {
-                                ifMineral = mineralNeedsCollect(creep.room);
-                                if ((ifMineral) && (ifMineral[0] > creep.carryCapacity)) { // if there is a mineral container and its mineral amount is higher than creep's carrying capacity
-                                    let resourceType = ifMineral[1];
-                                    creep.say('get ' + resourceType);
-                                    let container = creep.pos.findClosestByRange(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_CONTAINER && s.store[resourceType] > 0 });
-                                    if (creep.withdraw(container, resourceType) == ERR_NOT_IN_RANGE) {
-                                        creep.travelTo(container, { maxRooms: 1 });
-                                    }
-                                }
-                                else { // find energy
-                                    let terminal = creep.room.terminal;
-                                    /*if ((terminal!=undefined)&&((terminal.store.energy > 50000 && creep.room.storage.store.energy < 20000)||(creep.room.storage.store.energy < 5000))) {
-                                        if (creep.withdraw(terminal, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(terminal, { maxRooms: 1 });
-                                        }
-                                    }
-                                    else {*/
-                                    let [resourceID, ifDropped] = evaluateEnergyResources(creep, false, false, true, true); // find energy functoin in myFunctoins
-                                    let hasJobToDo = false;
-                                    if (resourceID) { // if there is dropped energy or energy in container
-                                        let energy = Game.getObjectById(resourceID);
-                                        if (ifDropped) { // if energy is dropped
-                                            if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                                                creep.travelTo(energy, { maxRooms: 1 });
-                                            }
-                                        }
-                                        else { // energy is from container
-                                            if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                                creep.travelTo(energy, { maxRooms: 1 });
-                                            }
-                                        }
-                                    }
-                                    else { // no energy getable, get mineral from lab
-                                        if (!hasJobToDo) {
-                                            if (creep.room.memory.forLab && creep.ticksToLive > 50) {
-                                                let outLabIds = creep.room.memory.forLab.outLabs;
-                                                let toCreate = creep.room.memory.forLab.toCreate;
-                                                for (let labId of outLabIds) {
-                                                    let lab = Game.getObjectById(labId);
-                                                    if (((creep.room.memory.upgradeLabId == undefined) || (labId != creep.room.memory.upgradeLabId)) &&
-                                                        (lab.mineralAmount > creep.carryCapacity)) {
-                                                        if (creep.withdraw(lab, toCreate) == ERR_NOT_IN_RANGE) {
-                                                            creep.travelTo(lab);
-                                                            hasJobToDo = true;
-                                                            break;
->>>>>>> master
+
                                                         }
                                                     }
                                                 }
                                             }
-<<<<<<< HEAD
     
                                             /*let labs = creep.room.find(FIND_MY_STRUCTURES, {filter: c => c.structureType == STRUCTURE_LAB});
                                             for (let lab of labs) {
@@ -330,91 +268,11 @@ module.exports = {
                                             if (!hasJobToDo) {
                                                 if (actionFillUpgrade.run(creep)) {
                                                     return
-=======
-                                        }
 
-                                        /*let labs = creep.room.find(FIND_MY_STRUCTURES, {filter: c => c.structureType == STRUCTURE_LAB});
-                                        for (let lab of labs) {
-                                            let flag = creep.room.lookForAt(LOOK_FLAGS,lab)[0];
-                                            if (flag != undefined) {
-                                                if (flag.color == COLOR_CYAN) { // 4 is cyan for out lab
-                                                    let toCreate = getMineralType(flag.name);
-                                                    if ((!boostingMineralToKeepInLab().includes(toCreate))&&(lab.mineralAmount>creep.carryCapacity)) {
-                                                        if (creep.withdraw(lab, toCreate) == ERR_NOT_IN_RANGE) {
-                                                            creep.travelTo(lab);
-                                                            hasJobToDo = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }*/
-                                        if (!hasJobToDo) { // balancing mineral management, same as lorry
-                                            let storage = creep.room.storage;
-                                            let ifShooterRoom = creep.room.memory.startMB;
-                                            if (ifShooterRoom && creep.room.terminal) {
-                                                /*for (let mineralType in terminal.store) {
-                                                    if (terminal.store[mineralType] > creep.room.memory.mineralThresholds.terminalThreshold[mineralType]) {
-                                                        if (creep.withdraw(terminal, mineralType, Math.min(creep.carryCapacity - _.sum(creep.carry), terminal.store[mineralType] - creep.room.memory.mineralThresholds.terminalThreshold[mineralType])) == ERR_NOT_IN_RANGE) {
-                                                            creep.travelTo(terminal);
-                                                            hasJobToDo = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                }*/
-                                            }
-                                            else {
-                                                if (terminal) { // if terminal is defined
-                                                    // chech if terminal threshold is met
-                                                    for (let mineralType in terminal.store) {
-                                                        if (terminal.store[mineralType] > creep.room.memory.mineralThresholds.terminalThreshold[mineralType]) {
-                                                            if (creep.withdraw(terminal, mineralType, Math.min(creep.carryCapacity - _.sum(creep.carry), terminal.store[mineralType] - creep.room.memory.mineralThresholds.terminalThreshold[mineralType])) == ERR_NOT_IN_RANGE) {
-                                                                creep.travelTo(terminal);
-                                                                hasJobToDo = true;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                else {
-                                                    if (creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                                        creep.travelTo(storage);
-                                                    }
-                                                }
-                                            }
-                                            /*if (terminal!=undefined && _.sum(terminal.store) < 250000) {
-                                                // no work to do, move over-stored minerals from storage to terminal for transaction or for sell
-                                                let storage = creep.room.storage;
-                                                for (let mineralType in storage.store) {
-                                                    if (mineralType!='energy'&&mineralType!='power'&&storage.store[mineralType]>12000) {
-                                                        if (creep.withdraw(storage, mineralType) == ERR_NOT_IN_RANGE) {
-                                                            creep.travelTo(storage);
-                                                            hasJobToDo = true;
-                                                        }
-                                                    }
-                                                }
-                                            }*/
-                                        }
-                                        if (!hasJobToDo) {
-                                            if (creep.room.find(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_LINK }).length > 0) {
-                                                let link = creep.pos.findInRange(FIND_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_LINK });
-                                                if (link.length > 0 && link[0].energy > 0) {
-                                                    //console.log(creep.withdraw(link, RESOURCE_ENERGY))
-                                                    if (creep.withdraw(link[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                                        creep.travelTo(link[0]);
-                                                        hasJobToDo = true;
-                                                    }
->>>>>>> master
                                                 }
                                                 actionAvoid.run(creep);
                                             }
                                         }
-<<<<<<< HEAD
-=======
-                                        if (!hasJobToDo) {
-                                            actionAvoid.run(creep);
-                                        }
->>>>>>> master
                                     }
                                 }
                                 //}
