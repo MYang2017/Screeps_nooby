@@ -1,8 +1,9 @@
 var selfRecycling = require('action.selfRecycle');
+require('funcExpand');
 
 module.exports = {
     run: function (creep) {
-        if (creep.memory.prepareToDie && creep.memory.prepareToDie == true) {
+        if (false) { //(creep.memory.prepareToDie && creep.memory.prepareToDie == true) {
             selfRecycling.run(creep);
             //console.log(creep.room.name)
             let baseFlag = Game.flags['base' + creep.memory.target];
@@ -10,12 +11,16 @@ module.exports = {
                 Game.rooms[creep.memory.target].createConstructionSite(baseFlag.pos.x, baseFlag.pos.y, STRUCTURE_SPAWN, 'Spawn_' + creep.memory.target + '_1')
             }
             else {
-                console.log('Please set spawn position for room: ' + creep.memory.target);
+                console.log('Please set spawn position for room: ' + creep.memory.target + ' (depricated code in claimer)');
             }
         }
         else {
             if (creep.room.name == creep.memory.target) { // if in target room
-                //console.log(creep.claimController(creep.room.controller));
+                // log room info
+                if (!creep.memory.logged) {
+                    logGrandeRoomInfo(creep.room);
+                    creep.memory.logged = true;
+                }
                 if (creep.room.controller.my) {
                     
                     creep.memory.prepareToDie = true;
@@ -25,7 +30,8 @@ module.exports = {
                         creep.travelTo(creep.room.controller);
 
                     }
-                    creep.signController(creep.room.controller, '‍♂‍♀ 💕 May the world full of peace and love 💕 ‍♂‍♀');
+                    //creep.signController(creep.room.controller, '‍♂‍♀ 💕 May the world full of peace and love 💕 ‍♂‍♀');
+                    creep.signController(creep.room.controller, '🐯 一二三四五，上🏔干什么来着? 🐯');
                 }
             }
             else { // go to target room

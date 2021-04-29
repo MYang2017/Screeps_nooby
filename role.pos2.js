@@ -1,8 +1,19 @@
-var rolePickuper = require('role.pickuper');
-var actionAvoid = require('action.idle');
-
 module.exports = {
     run: function(creep) {
+        
+        // pos 2 creep do not need to move at all
+        
+        // logic
+        // fill order: sp > extension
+        // get order: link (when cd > 1)
+        
+        // spawn condition, when link and storage ready
+        // spawn direction, BOTTOM_LEFT
+        // by sp #1
+
+        // size carry 50, 100, 200 based on RCL
+        
+        
         creep.say('linking');
         let receiverLink = creep.room.memory.forLinks.receiverLinkId;
         let rl = Game.getObjectById(receiverLink);

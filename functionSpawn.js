@@ -6,13 +6,11 @@ global.changeRoomCreepTypeAndCost = function (roomName, role, no, cost) {
     roomCreepInfo.creepEnergy[role] = cost;
 }
 
-global.clearSpawnQueue = function() {
-    for (let roomName in Game.rooms) {
-        let r = Game.rooms[roomName];
-        if (r && r.controller.my) {
-            console.log(roomName + ' spawn queue cleared.')
-            r.memory.forSpawning.spawningQueue = [];
-        }
+global.clearSpawnQueue = function(rn) {
+    let r = Game.rooms[rn];
+    if (r && r.controller.my) {
+        console.log(rn + ' spawn queue cleared.')
+        r.memory.forSpawning.spawningQueue = [];
     }
 }
 
@@ -56,74 +54,78 @@ global.spawnCreepWithHighestPriority = function(spawnToSpawn, room) {
     if (spawnQ.length>0) { // if spawn queue is not empty
         let spawnPriority = 0;
         let creepInfo;
-
         for (let creepToSpawn of spawnQ) {
             if (creepToSpawn.priority > spawnPriority) { // get creep with highest priority to spawn
                 spawnPriority = creepToSpawn.priority;
                 creepInfo = creepToSpawn;
             }
         }
-
+        if (creepInfo == undefined) {
+            clearSpawnQueue(room.name);
+        }
+        else {
         let creepMemory = creepInfo.memory;
-        console.log('waiting to spawn ' + room.name, creepMemory.role);
-
         switch (creepMemory.role) {
             case 'miner':
-                fo(spawnToSpawn.createMiner(creepMemory.sourceID, creepMemory.target, creepMemory.currentRCL, creepMemory.ifMineEnergy, creepMemory.ifLink, creepMemory.ifKeeper, room.name));
-                if ( !(spawnToSpawn.createMiner(creepMemory.sourceID, creepMemory.target, creepMemory.currentRCL, creepMemory.ifMineEnergy, creepMemory.ifLink, creepMemory.ifKeeper, room.name)<0) ) {
+                if ( !(spawnToSpawn.createMiner(creepMemory.sourceID, creepMemory.target, creepMemory.currentRCL, creepMemory.ifMineEnergy, creepMemory.ifLink, creepMemory.ifKeeper, room.name, creepMemory.ifRescue, creepMemory.ifEarly)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
+            case 'mover':
+                if (!(spawnToSpawn.createMover(creepMemory.ifRescue) < 0)) {
+                    removeElementInArrayByElement(creepInfo, spawnQ);
+                }
+                return;
             case 'scouter':
                 if ( !(spawnToSpawn.createScouter(creepMemory.target, creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'longDistanceBuilder':
                 if ( !(spawnToSpawn.createLongDistanceBuilder(creepMemory.energy, creepMemory.target, creepMemory.home)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'longDistanceHarvester':
                 if (!(spawnToSpawn.createLongDistanceHarvester(creepMemory.energy, creepMemory.home, creepMemory.target ) < 0)) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'reserver':
                 if ( !(spawnToSpawn.createReserver(creepMemory.target, creepMemory.big, creepMemory.roomEnergyMax)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'longDistanceLorry':
                 if ( !(spawnToSpawn.createLongDistanceLorry(creepMemory.energy, creepMemory.home, creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'ranger':
-                if ( !(spawnToSpawn.createRanger(creepMemory.target, creepMemory.home)<0) ) {
+                if (!(spawnToSpawn.createRanger(creepMemory.target, creepMemory.home, creepMemory.RCL)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'attacker':
-                if ( !(spawnToSpawn.createAttacker(creepMemory.energy, creepMemory.target)<0) ) {
+                if ( !(spawnToSpawn.createAttacker(creepMemory.target, creepMemory.home, undefined )<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'claimer':
                 if ( !(spawnToSpawn.createClaimer(creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'pioneer':
                 if ( !(spawnToSpawn.createPioneer(creepMemory.energy, creepMemory.target,creepMemory.home,creepMemory.superUpgrader,creepMemory.route)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'teezer':
                 if (!(spawnToSpawn.createTeezer(creepMemory.energy, creepMemory.target, creepMemory.home, creepMemory.preferredLocation)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'superUpgrader':
                 let superUpgraderEnergy = creepMemory.energyMax;
                 if (lvl == 8) {
@@ -132,109 +134,125 @@ global.spawnCreepWithHighestPriority = function(spawnToSpawn, room) {
                 if (!(spawnToSpawn.createSuperUpgrader(superUpgraderEnergy)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'transporter':
                 if (!(spawnToSpawn.createTransporter(creepMemory.resourceType, creepMemory.fromStorage)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'keeperLairMeleeKeeper':
                 if ( !(spawnToSpawn.createKeeperLairMeleeKeeper(creepMemory.target, creepMemory.home, creepMemory.ranged)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'keeperLairInvaderAttacker':
                 if ( !(spawnToSpawn.createKeeperLairInvaderAttacker(creepMemory.target, creepMemory.home, creepMemory.name)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'keeperLairInvaderHealer':
                 if ( !(spawnToSpawn.createKeeperLairInvaderHealer(creepMemory.target, creepMemory.home, creepMemory.toHeal)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'keeperLairLorry':
                 if ( !(spawnToSpawn.createKeeperLairLorry(creepMemory.target, creepMemory.home)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'captain':
                 if ( !(spawnToSpawn.createCaptain(creepMemory.groupName)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'firstMate':
                 if ( !(spawnToSpawn.createFirstMate(creepMemory.groupName, creepMemory.boostMat)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'crew':
                 if ( !(spawnToSpawn.createCrew(creepMemory.groupName, creepMemory.boostMat)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'healer':
                 if ( !(spawnToSpawn.createHealer(creepMemory.target, creepMemory.boosted)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'ultimateWorrior':
                 if ( !(spawnToSpawn.createUltimateWorrior(creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'dismantler':
                 if ( !(spawnToSpawn.createDismantler(creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'ultimateUpgrader':
                 if ( !(spawnToSpawn.createUltimateUpgrader(false)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'powerSourceLorry':
                 if ( !(spawnToSpawn.createPowerSourceLorry(creepMemory.target,creepMemory.home)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'powerSourceAttacker':
                 if ( !(spawnToSpawn.createPowerSourceAttacker(creepMemory.target,creepMemory.name)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'powerSourceHealer':
                 if ( !(spawnToSpawn.createPowerSourceHealer(creepMemory.target,creepMemory.toHeal)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'wanderer':
                 if ( !(spawnToSpawn.createWanderer(creepMemory.target)<0) ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'onlyMineralDefender':
                 if (!(spawnToSpawn.createOnlyMineralDefender(creepMemory.target, creepMemory.home) < 0)) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'onlyMineralMiner':
                 if (!(spawnToSpawn.createOnlyMineralMiner(creepMemory.target, creepMemory.home) < 0)) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
             case 'onlyMineralHauler':
                 if (!(spawnToSpawn.createOnlyMineralHauler(creepMemory.target, creepMemory.home) < 0)) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
-                break;
+                return;
+            case 'redneck':
+                if (!(spawnToSpawn.createRedneck(creepMemory.target) < 0)) {
+                    removeElementInArrayByElement(creepInfo, spawnQ);
+                }
+                return;
+            case 'oneWayInterSharder':
+                if (!(spawnToSpawn.createOneWayInterSharder(creepMemory.targetShardName, creepMemory.portalRoomName, creepMemory.portalId, creepMemory.targetRoomName, creepMemory.roleWillBe, creepMemory.body, creepMemory.route) < 0)) {
+                    removeElementInArrayByElement(creepInfo, spawnQ);
+                }
+                return;
+            case 'noLegWorker':
+                if (!(spawnToSpawn.createNoLegWorker(creepMemory.energy)<0) ) {
+                    removeElementInArrayByElement(creepInfo, spawnQ);
+                }
+                return;
             default:
                 if ( spawnToSpawn.createCustomCreep(creepMemory.energy, creepMemory.role, creepMemory.target) == OK ) {
                     removeElementInArrayByElement(creepInfo, spawnQ);
                 }
+                return
         }
-
-        return spawnQ
+        }
+        return
     }
 }
 
@@ -253,23 +271,76 @@ global.updateSpawnQueueTimer = function(room) {
     else {
         let spawnQueueTimer = room.memory.spawnQueueTimer;
         let noOfSpawns = room.find(FIND_STRUCTURES,{filter:s=>s.structureType==STRUCTURE_SPAWN}).length;
-        let spawnTimeThreshold = 3*Math.pow(noOfSpawns,2) + 2;
-        if ( noOfSpawns>0 && room.memory.forSpawning.spawningQueue.length>20) { // to clear bad spawns in queue
-            console.log('bad spawn queue in room: '+room.name);
-            clearSpawnQueue()
-        }
-        if (spawnQueueTimer>spawnTimeThreshold) {
+        let spawnTimeThreshold = 197*noOfSpawns;
+        if (spawnQueueTimer > spawnTimeThreshold) { // to clear bad spawns in queue
             room.memory.spawnQueueTimer = 0;
-            //console.log(room.name + ' spawn queue updated');
-            return true
+            console.log('bad spawn queue in room: '+room.name);
+            clearSpawnQueue(room.name)
         }
         else {
             let noOfAvailableSpawns = ifSpawnAvailable(room.name).length;
             room.memory.spawnQueueTimer += noOfAvailableSpawns;
             //console.log(room.name + ' timer ', spawnQueueTimer)
-            return false
+            return true
         }
     }
+}
+
+global.balanceNoLegWorkerAndMover = function (r) {
+    let rn = r.name;
+    let currentRCL = r.controller.level;
+    let spq = r.memory.forSpawning.spawningQueue;
+    
+    if (r.storage == undefined) {
+        r.memory.forSpawning.roomCreepNo.creepEnergy.noLegWorker = r.memory.ECap;
+        r.memory.forSpawning.roomCreepNo.creepEnergy.mover = r.memory.ECap;
+        if (spq.length == 0) {
+            if (r.memory.forSpawning.roomCreepNo.minCreeps.noLegWorker<3) {
+                r.memory.forSpawning.roomCreepNo.minCreeps.noLegWorker++;
+                r.memory.forSpawning.roomCreepNo.minCreeps.mover = r.memory.forSpawning.roomCreepNo.minCreeps.noLegWorker;
+                r.memory.forSpawning.spawningQueue.push({ memory: { role: 'mover', ifRescue: false }, priority: 10 });
+                return false
+            }
+        }
+        
+        /*r.memory.forSpawning.roomCreepNo.minCreeps.noLegWorker = 0;
+        r.memory.forSpawning.roomCreepNo.minCreeps['builder'] = updateBuilderNo(rn);
+        r.memory.forSpawning.roomCreepNo.creepEnergy['builder'] = r.memory.ECap;
+        
+        r.memory.forSpawning.roomCreepNo.minCreeps['upgrader'] = earlyRoomUpgraderBalancing(r, r.memory.ECap, r.memory.forSpawning.roomCreepNo.creepEnergy['upgrader']);
+        r.memory.forSpawning.roomCreepNo.creepEnergy['upgrader'] = r.memory.ECap;
+        */
+    }
+    else {
+        r.memory.forSpawning.roomCreepNo.minCreeps.noLegWorker = 0;
+        r.memory.forSpawning.roomCreepNo.minCreeps.mover = 1;
+        r.memory.forSpawning.roomCreepNo.minCreeps.lorry = 2;
+        r.memory.forSpawning.roomCreepNo.minCreeps.pickuper = 1;
+        r.memory.forSpawning.roomCreepNo.creepEnergy.lorry = Math.min(800, r.memory.ECap);
+        r.memory.forSpawning.roomCreepNo.creepEnergy.pickuper = 600;
+        
+        if (Game.time % 1876 == 0) {
+        r.memory.forSpawning.roomCreepNo.minCreeps['builder'] = updateBuilderNo(rn);
+        r.memory.forSpawning.roomCreepNo.creepEnergy['builder'] = r.memory.ECap;
+        
+        r.memory.forSpawning.roomCreepNo.minCreeps['upgrader'] = earlyRoomUpgraderBalancing(r, r.memory.ECap, r.memory.forSpawning.roomCreepNo.creepEnergy['upgrader']);
+        r.memory.forSpawning.roomCreepNo.creepEnergy['upgrader'] = r.memory.ECap;
+        
+        r.memory.forSpawning.roomCreepNo.minCreeps['wallRepairer'] = updateWallRampartRepairerNo(r.name);
+        r.memory.forSpawning.roomCreepNo.creepEnergy['wallRepairer'] = r.memory.ECap;
+        }
+        
+        if (currentRCL == 8) {
+            r.memory.forSpawning.roomCreepNo.minCreeps['builder'] = 0;
+
+            r.memory.forSpawning.roomCreepNo.minCreeps['upgrader'] = 0;
+        }
+    }
+    return true
+}
+
+global.newEarlyRemoteMing = function (r) {
+    
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

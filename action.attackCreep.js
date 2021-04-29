@@ -1,3 +1,5 @@
+// Game.spawns['Spawn_E92N11_2'].createTeezer(0, 'E91N19', 'E92N11', false)
+
 var actionRunAway = require('action.flee');
 
 module.exports = {

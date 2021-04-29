@@ -60,3 +60,67 @@ global.costMatrizesInitialisation = function() {
         Game.rooms['E92N11'].memory.costMatrizes[roomName] = costs;
     }
 }
+
+global.findPathInRoomSafeZone = function (posi, goalPosi, range = 0) {
+    var roomName = posi.roomName;
+    var goals = { pos: goalPosi, range: range };
+
+    let ret = PathFinder.search(
+        posi, goals,
+        {
+            // We need to set the defaults costs higher so that we
+            // can set the road cost lower in `roomCallback`
+            plainCost: 1,
+            swampCost: 2,
+
+            roomCallback: function (roomName) {
+
+                let room = Game.rooms[roomName];
+                let cp = room.memory.anchor;
+                // In this example `room` will always exist, but since 
+                // PathFinder supports searches which span multiple rooms 
+                // you should be careful!
+                if (!room) return;
+                let costs = new PathFinder.CostMatrix;
+
+                let terrain = Game.map.getRoomTerrain(posi.roomName);
+                // set oppo even/odd cost fucking high so they are not planned
+                for (let i = 0; i < 50; i++) {
+                    for (let j = 0; j < 50; j++) {
+                        if ((terrain.get(i, j) == TERRAIN_MASK_SWAMP)) {
+                            costs.set(i, j, (Math.abs(cp.x - i) + Math.abs(cp.y - j)) * 1 + 30);
+                        }
+                        else if ((terrain.get(i, j) == TERRAIN_MASK_WALL)) {
+                            costs.set(i, j, 0xff);
+                        }
+                        else {
+                            costs.set(i, j, (Math.abs(cp.x - i) + Math.abs(cp.y - j)) * 1 + 10);
+                        }
+                    }
+                }
+
+                /*room.find(FIND_STRUCTURES).forEach(function (site) {
+                    if (site.structureType === STRUCTURE_ROAD) {
+                        // Favor roads over plain tiles
+                        costs.set(site.pos.x, site.pos.y, 1);
+                    }
+                });*/
+
+                room.find(FIND_STRUCTURES).forEach(function (site) {
+                    if ((site.structureType === STRUCTURE_WALL) ||(site.structureType === STRUCTURE_EXTENSION) ||(site.structureType === STRUCTURE_TOWER)||(site.structureType === STRUCTURE_SPAWN)) {
+                        // Favor roads over plain tiles
+                        costs.set(site.pos.x, site.pos.y, 0xff);
+                    }
+                });
+
+                // Avoid creeps in the room
+                /*room.find(FIND_CREEPS).forEach(function (creep) {
+                    costs.set(creep.pos.x, creep.pos.y, 0xff);
+                });*/
+
+                return costs;
+            },
+        }
+    );
+    return ret;
+}

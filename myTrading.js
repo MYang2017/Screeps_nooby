@@ -1019,7 +1019,39 @@ global.placeSellOrderWithOverFlowingMinerals = function (terminal, mineralType) 
 }
 
 // sell one mineral imediately
-global.sellOneMineralImediately = function (terminal, mineralType) {
+global.sellOneMineralImediately = function (rn, mineralType) {
+    const amountToSell = 300, maxTransferEnergyCost = 200;
+    const orders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: mineralType });
+
+    for (let i = 0; i < orders.length; i++) {
+        const transferEnergyCost = Game.market.calcTransactionCost(
+            amountToSell, rn, orders[i].roomName);
+
+        if (transferEnergyCost < maxTransferEnergyCost && orders[i].price > 0.1) {
+            if (Game.market.deal(orders[i].id, amountToSell, rn) == 0) {
+                fo('sold ' + mineralType);
+                return true
+            }
+        }
+    }
+}
+
+// desparate all sell
+global.desparateHouseWife = function (rn) {
+    let t = Game.rooms[rn].terminal;
+    for (let tp in t.store) {
+        if (tp !== 'energy') {
+            let res = sellOneMineralImediately(rn, tp);
+            if (res) {
+                return
+            }
+        }
+    }
+
+    let e = sellOneMineralImediately(rn, 'energy');
+    if (e) {
+        fo(rn + ' true dead');
+    }
 }
 
 // dependent functions:

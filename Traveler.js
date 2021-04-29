@@ -2,8 +2,8 @@
  * To start using Traveler, require it in main.js:
  * Example: var Traveler = require('Traveler.js');
  */
-// https://github.com/bonzaiferroni/Traveler/
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 class Traveler {
     /**
      * move creep to destination
@@ -20,12 +20,12 @@ class Traveler {
         }
         if (creep.fatigue > 0) {
             Traveler.circle(creep.pos, "aqua", .3);
-            return ERR_BUSY;
+            return ERR_TIRED;
         }
         destination = this.normalizePos(destination);
         // manage case where creep is nearby destination
         let rangeToDestination = creep.pos.getRangeTo(destination);
-        if (rangeToDestination <= options.range) {
+        if (options.range && rangeToDestination <= options.range) {
             return OK;
         }
         else if (rangeToDestination <= 1) {
@@ -47,7 +47,7 @@ class Traveler {
         let travelData = creep.memory._trav;
         let state = this.deserializeState(travelData, destination);
         // uncomment to visualize destination
-        // this.circle(destination.pos, "orange");
+        // this.circle(destination, "orange");
         // check if creep is stuck
         if (this.isStuck(creep, state)) {
             state.stuckCount++;
@@ -119,7 +119,10 @@ class Traveler {
         let nextDirection = parseInt(travelData.path[0], 10);
         if (options.returnData) {
             if (nextDirection) {
-                options.returnData.nextPos = Traveler.positionAtDirection(creep.pos, nextDirection);
+                let nextPos = Traveler.positionAtDirection(creep.pos, nextDirection);
+                if (nextPos) {
+                    options.returnData.nextPos = nextPos;
+                }
             }
             options.returnData.state = state;
             options.returnData.path = travelData.path;
@@ -143,7 +146,7 @@ class Traveler {
      * @returns {RoomMemory|number}
      */
     static checkAvoid(roomName) {
-        return Memory.rooms[roomName] && Memory.rooms[roomName].avoid;
+        return Memory.rooms && Memory.rooms[roomName] && Memory.rooms[roomName].avoid;
     }
     /**
      * check if a position is an exit
@@ -223,7 +226,10 @@ class Traveler {
         let roomDistance = Game.map.getRoomLinearDistance(origin.roomName, destination.roomName);
         let allowedRooms = options.route;
         if (!allowedRooms && (options.useFindRoute || (options.useFindRoute === undefined && roomDistance > 2))) {
-            allowedRooms = this.findRoute(origin.roomName, destination.roomName, options);
+            let route = this.findRoute(origin.roomName, destination.roomName, options);
+            if (route) {
+                allowedRooms = route;
+            }
         }
         let roomsSearched = 0;
         let callback = (roomName) => {
@@ -293,6 +299,7 @@ class Traveler {
                     console.log(`TRAVELER: second attempt was ${ret.incomplete ? "not " : ""}successful`);
                     return ret;
                 }
+                // TODO: handle case where a wall or some other obstacle is blocking the exit assumed by findRoute
             }
             else {
             }
@@ -335,7 +342,7 @@ class Traveler {
                     return Number.POSITIVE_INFINITY;
                 }
                 let parsed;
-                if (options.highwayBias) {
+                if (options.preferHighway) {
                     parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
                     let isHighway = (parsed[1] % 10 === 0) || (parsed[2] % 10 === 0);
                     if (isHighway) {
@@ -391,8 +398,9 @@ class Traveler {
      * @returns {any}
      */
     static getStructureMatrix(room, freshMatrix) {
-        if (!this.structureMatrixCache[room.name] || (freshMatrix && Game.time !== this.structureMatrixTick)) {
-            this.structureMatrixTick = Game.time;
+        if (!this.structureMatrixTick) this.structureMatrixTick = {};
+        if (!this.structureMatrixCache[room.name] || (freshMatrix && Game.time !== this.structureMatrixTick[room.name])) {
+            this.structureMatrixTick[room.name] = Game.time;
             let matrix = new PathFinder.CostMatrix();
             this.structureMatrixCache[room.name] = Traveler.addStructuresToMatrix(room, matrix, 1);
         }
@@ -404,8 +412,9 @@ class Traveler {
      * @returns {any}
      */
     static getCreepMatrix(room) {
-        if (!this.creepMatrixCache[room.name] || Game.time !== this.creepMatrixTick) {
-            this.creepMatrixTick = Game.time;
+        if (!this.creepMatrixTick) this.creepMatrixTick = {};
+        if (!this.creepMatrixCache[room.name] || Game.time !== this.creepMatrixTick[room.name]) {
+            this.creepMatrixTick[room.name] = Game.time;
             this.creepMatrixCache[room.name] = Traveler.addCreepsToMatrix(room, this.getStructureMatrix(room, true).clone());
         }
         return this.creepMatrixCache[room.name];
@@ -421,7 +430,7 @@ class Traveler {
         let impassibleStructures = [];
         for (let structure of room.find(FIND_STRUCTURES)) {
             if (structure instanceof StructureRampart) {
-                if (!structure.my) {
+                if (!structure.my && !structure.isPublic) {
                     impassibleStructures.push(structure);
                 }
             }
@@ -539,7 +548,7 @@ class Traveler {
     }
     static serializeState(creep, destination, state, travelData) {
         travelData.state = [creep.pos.x, creep.pos.y, state.stuckCount, state.cpu, destination.x, destination.y,
-            destination.roomName];
+        destination.roomName];
     }
     static isStuck(creep, state) {
         let stuck = false;
@@ -563,7 +572,7 @@ exports.Traveler = Traveler;
 // need to repath to often or they aren't finding valid paths, it can sometimes point to problems elsewhere in your code
 const REPORT_CPU_THRESHOLD = 1000;
 const DEFAULT_MAXOPS = 20000;
-const DEFAULT_STUCK_VALUE = 2;
+const DEFAULT_STUCK_VALUE = 1;  // time wait before find path again when stuck
 const STATE_PREV_X = 0;
 const STATE_PREV_Y = 1;
 const STATE_STUCK = 2;

@@ -17,7 +17,7 @@ module.exports = {
             }
         }
 
-        if ((creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5).length > 0)) { // self destroy if not useful damages by NPC
+        if ((creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=> (c.getActiveBodyparts(ATTACK)+c.getActiveBodyparts(RANGED_ATTACK)>0)}).length > 0)) { // self destroy if not useful damages by NPC
             actionRunAway.run(creep);
         }
         else {
@@ -52,17 +52,56 @@ module.exports = {
                 }
                 else {
                     if (creep.room.name == creep.memory.target) { // if not in target room go to target room, if in:
-                        let energy = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {filter: {resourceType: RESOURCE_ENERGY}});
-                        if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
-                            creep.travelTo(energy,{maxRooms:1});
+                        let jobIdToDo = creep.memory.toGetId;
+                        let resType = creep.memory.resType;
+                        if (!resType) {
+                            delete creep.memory.toGetId;
                         }
-                        else {
-                            let container = creep.pos.findClosestByRange(FIND_STRUCTURES, {filter: s => s.structureType == STRUCTURE_CONTAINER && (s.store[RESOURCE_ENERGY] > 500)});
-                            if (container != undefined) { // if all containers are 0, take energy from storage
-                                if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                    creep.travelTo(container,{maxRooms:1});
+                        if (jobIdToDo) {
+                            let resObj = Game.getObjectById(jobIdToDo);
+                            if (resObj) { // if the resource is still there (not decayed)
+                                if (resType == 't') {
+                                    for (let mineralType in resObj.store) {
+                                        if (creep.withdraw(resObj, mineralType) == ERR_NOT_IN_RANGE) {
+                                            creep.travelTo(resObj, { maxRooms: 1 });
+                                        }
+                                    }
+                                    if (!resObj || _.sum(resObj.store) == 0) {
+                                        creep.memory.toGetId = undefined;
+                                        creep.memory.resType = undefined;
+                                    }
+                                }
+                                else if (resType == 'd') {
+                                    if (creep.pickup(resObj) == ERR_NOT_IN_RANGE) {
+                                        creep.travelTo(resObj, { maxRooms: 1 });
+                                    }
+                                    if (!resObj) {
+                                        creep.memory.toGetId = undefined;
+                                        creep.memory.resType = undefined;
+                                    }
+                                }
+                                else if (resType == 'c') {
+                                    if (!resObj || _.sum(resObj.store) < 100) {
+                                        creep.memory.toGetId = undefined;
+                                        creep.memory.resType = undefined;
+                                    }
+                                    else {
+                                        for (let mineralType in resObj.store) {
+                                            if (creep.withdraw(resObj, mineralType) == ERR_NOT_IN_RANGE) {
+                                                creep.travelTo(resObj, { maxRooms: 1 });
+                                                creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                            else {
+                                creep.memory.toGetId = undefined;
+                                creep.memory.resType = undefined;
+                            }
+                        }
+                        else { // does not have job to do but entred the room, avoid standing on edge
+                            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1 });
                         }
                     }
                     else {

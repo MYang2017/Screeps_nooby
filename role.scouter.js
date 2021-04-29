@@ -1,4 +1,5 @@
 var actionRunAway = require('action.flee');
+require('funcExpand');
 
 module.exports = {
     run: function(creep) {
@@ -11,8 +12,14 @@ module.exports = {
         }*/
         if (creep.room.name != creep.memory.target) {
             creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 24 });
+            creep.memory.takeNotes = true;
         }
         else {
+            if (creep.memory.takeNotes) {
+                logGrandeRoomInfo(creep.room);
+                creep.memory.takeNotes = false;
+            }
+            
             if (creep.ticksToLive < 1000) {
                 creep.memory.target = generateRoomnameWithDistance(creep.room.name);
             }

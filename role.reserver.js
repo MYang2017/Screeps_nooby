@@ -9,10 +9,17 @@ module.exports = {
             creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
         }
         else {
-            if (creep.reserveController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(creep.room.controller, { maxRooms: 1 });
+            if(false&&creep.room.controller && !creep.room.controller.my) {
+                if(creep.attackController(creep.room.controller) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(creep.room.controller);
+                }
             }
-            actionRunAway.run(creep)
+            else {
+                if (creep.reserveController(creep.room.controller) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(creep.room.controller, { maxRooms: 1 });
+                }
+                actionRunAway.run(creep)
+            }
         }
     }
 };

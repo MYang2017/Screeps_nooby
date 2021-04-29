@@ -246,3 +246,96 @@ module.exports = {
 
 // initializing which wall to build
 Game.rooms['E92N12'].memory.toBuild = whichWallToBuild(Game.rooms['E92N12']).;
+if (middleRoom) {
+    var creepsInmiddleRoom = middleRoom.find(FIND_MY_CREEPS);
+    let invaderNum = determineIfRoomInvaded(middleRoom);
+    let allMyCreepsWithSpawningAndQueueInCurrentRoom = getAllMyCreepsWithSpawning(room.name).concat(spawningQueue);
+
+    if (invaderNum == 0) { // if no invader
+        let sources = middleRoom.find(FIND_SOURCES);//.concat(keeperMiningRoom.find(FIND_MINERALS));
+        let mineral = middleRoom.find(FIND_MINERALS)[0];//.concat(keeperMiningRoom.find(FIND_MINERALS));
+        let noOfRequiredKeeperLairLorry = 0;
+        for (let source of sources) { // only spawn a miner if it cannot be found both in the spawn room and destination room
+            if (middleRoom.memory.sourceTravelTime) {
+                if (middleRoom.memory.sourceTravelTime[source.id]) {
+                    noOfRequiredKeeperLairLorry += 1;
+                    //console.log(middleRoom.memory.sourceTravelTime[source.id]);
+                    if (!_.some(allMyCreepsWithSpawningAndQueueInCurrentRoom,
+                        c => c.memory.role == 'miner' && c.memory.sourceID == source.id
+                            && (c.ticksToLive > (3 * 9 + middleRoom.memory.sourceTravelTime[source.id]) || c.ticksToLive == undefined))) {
+                        console.log(this.name + ' added remote miner ' + middleRoomName, source.id)
+                        spawningQueue.push({ memory: { role: 'miner', sourceID: source.id, target: middleRoomName, currentRCL: currentRCL, ifMineEnergy: true, ifLink: false, ifKeeper: true }, priority: rolePriority['miner'] });
+                    }
+                }
+                else {
+                    middleRoom.memory.sourceTravelTime[source.id] = 3 * calculateTicksBetweenObjects(room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType == STRUCTURE_SPAWN })[0], source);
+                }
+            }
+            else {
+                middleRoom.memory.sourceTravelTime = {}
+            }
+        }
+
+        // pioneer
+        if (_.sum(allMyCreepsWithSpawningAndQueueInCurrentRoom, (c) => c.memory.role == 'pioneer' && c.memory.target == middleRoomName) < 1) { // create pioneer as repairer
+            console.log('Remote middle room mining added pioneer repairer ' + middleRoomName);
+            spawningQueue.push({ memory: { energy: 1200, role: 'pioneer', target: middleRoomName, home: room.name, superUpgrader: false }, priority: 9 });
+        }
+
+        // extra lorries
+
+        // lorries
+        if (noOfKeeperLairLorry < noOfRequiredKeeperLairLorry) {
+            console.log('Remote keeper mining added lorry ' + middleRoomName);
+            let homeName = room.name;
+            /*if (homeName=='E94N22') {
+                homeName = 'E93N24';
+            }*/
+            spawningQueue.push({ memory: { role: 'keeperLairLorry', target: middleRoomName, home: homeName }, priority: (rolePriority['keeperLairLorry'] - 1) });
+        }
+        else {
+            if (middleRoom.memory.sourceTravelTime[mineral.id]) {
+                if ((mineral.mineralAmount > 0) && (middleRoom.memory.sourceTravelTime)) {
+                    //console.log(middleRoom.memory.sourceTravelTime[source.id]);
+                    if (!_.some(allMyCreepsWithSpawningAndQueueInCurrentRoom,
+                        c => c.memory.role == 'miner' && c.memory.sourceID == mineral.id
+                            && (c.ticksToLive > (3 * 9 + middleRoom.memory.sourceTravelTime[mineral.id]) || c.ticksToLive == undefined))) {
+                        console.log(this.name + ' added remote mineral  miner ' + middleRoomName, mineral.id)
+                        spawningQueue.push({ memory: { role: 'miner', sourceID: mineral.id, target: middleRoomName, currentRCL: currentRCL, ifMineEnergy: false, ifLink: false, ifKeeper: true }, priority: rolePriority['miner'] });
+                    }
+                }
+            }
+            else { // register mineral source travel time
+                middleRoom.memory.sourceTravelTime[mineral.id] = 3 * calculateTicksBetweenObjects(room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType == STRUCTURE_SPAWN })[0], mineral);
+            }
+        }
+    }
+    else {
+        console.log('middle room fucked ' + middleRoomName + ' sending invader killers group');
+        let noOfKeeperLairInvaderAttacker = _.sum(allMyCreepsWithSpawningAndQueueInCurrentRoom, (c) => c.memory.role == 'keeperLairInvaderAttacker' && c.memory.target == middleRoomName);
+        let noOfKeeperLairInvaderHealer = _.sum(allMyCreepsWithSpawningAndQueueInCurrentRoom, (c) => c.memory.role == 'keeperLairInvaderHealer' && c.memory.target == middleRoomName);
+        let keeperLairInvaderAttackerName = Game.time + middleRoomName;
+
+        if (noOfKeeperLairInvaderAttacker < 1 && noOfKeeperLairInvaderHealer < 1) {
+            console.log('Remote middle room mining added invader killers group ' + middleRoomName);
+            spawningQueue.push({ memory: { role: 'keeperLairInvaderAttacker', target: middleRoomName, home: room.name, name: keeperLairInvaderAttackerName }, priority: rolePriority['keeperLairInvaderAttacker'] });
+            spawningQueue.push({ memory: { role: 'keeperLairInvaderHealer', target: middleRoomName, home: room.name, toHeal: keeperLairInvaderAttackerName }, priority: rolePriority['keeperLairInvaderHealer'] });
+        }
+        else {
+            if (noOfKeeperLairInvaderAttacker < 1) {
+                console.log('Remote keeper mining added meleeKeeper ' + middleRoomName);
+                spawningQueue.push({ memory: { role: 'keeperLairInvaderAttacker', target: middleRoomName, home: room.name, name: keeperLairInvaderAttackerName }, priority: rolePriority['keeperLairInvaderAttacker'] });
+            }
+        }
+    }
+}
+else { // send scouter there
+    let allMyCreepsWithSpawningAndQueueInCurrentRoom = getAllMyCreepsWithSpawning(room.name).concat(spawningQueue);
+    // count scouter
+    let noOfMiddleRoomScouter = _.sum(allMyCreepsWithSpawningAndQueueInCurrentRoom, (c) => c.memory.role == 'scouter' && c.memory.target == middleRoomName);
+    //console.log(keeperMiningRoomName,noOfKeeperLairMeleeKeeper)
+    if (noOfMiddleRoomScouter < 1) {
+        console.log(room.name + ' creates remote middle mining added scouter ' + middleRoomName);
+        spawningQueue.push({ memory: { role: 'scouter', target: middleRoomName }, priority: rolePriority['scouter'] });
+    }
+}
