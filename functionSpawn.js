@@ -737,12 +737,14 @@ global.balanceNoLegWorkerAndMover = function (r) {
                 r.memory.forSpawning.roomCreepNo.minCreeps['pickuper'] = 0;
                 r.memory.forSpawning.roomCreepNo.minCreeps['balancer'] = 1;
                 r.memory.forSpawning.roomCreepNo.creepEnergy['lorry'] = Math.min(800, r.memory.ECap);
-
+                
+                /*
                 // extra lorry for scoring
                 let thisDecoderTp = Memory.mapInfo[r.name].decoderInfo.t;
                 if (r.storage.store[thisDecoderTp] > 50000) {
                     r.memory.forSpawning.roomCreepNo.minCreeps['lorry'] = 2;
                 }
+                */
             }
         }
     }

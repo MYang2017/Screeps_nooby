@@ -196,7 +196,8 @@ global.findAllResourcesNeedsToTakeInRoom = function (roomName) {
                     alreadyWorkingIds.push(keeperLairLorry.memory.toGetId);
                 }
             }
-
+            
+            /*
             // add in resources to memory
             // season 2 symbol
             let symbctns = room.find(FIND_SYMBOL_CONTAINERS, { filter: s => _.sum(s.store) > 0 });
@@ -212,6 +213,7 @@ global.findAllResourcesNeedsToTakeInRoom = function (roomName) {
                     resMem[symbctn.id].resAmount = _.sum(symbctn.store);
                 }
             }
+            */
 
             // dropped non energy
             let droppeds = room.find(FIND_DROPPED_RESOURCES);

@@ -128,18 +128,6 @@ module.exports = {
                 else { // get
                     let hasJobtd = false;
 
-                    if (creep.room.storage) {
-                        let sbs = creep.room.find(FIND_SYMBOL_CONTAINERS);
-                        if (sbs.length > 0) {
-                            for (let resType in sbs[0].store) {
-                                if (creep.withdraw(sbs[0], resType) == ERR_NOT_IN_RANGE) {
-                                    creep.travelTo(sbs[0], { maxRooms: 1 });
-                                }
-                            }
-                            hasJobtd = true;
-                        }
-                    }
-
                     if (!hasJobtd) {
                         let cs = creep.room.find(FIND_STRUCTURES, { filter: s => (s.structureType == STRUCTURE_CONTAINER) });
                         for (c of cs) {
@@ -202,8 +190,9 @@ module.exports = {
 
                         let newLabBoostBoo = checkIfCarryIsBoostLab(creep);
                         let powerSpawn = Game.getObjectById(creep.room.memory.powerSpawnId);
-
-                        if (RCL == 8 && creep.store[Memory.mapInfo[creep.room.name].decoderInfo.t] > 0) {
+                        
+                        
+                        if (RCL == 8 && Memory.mapInfo[creep.room.name].decoderInfo && creep.store[Memory.mapInfo[creep.room.name].decoderInfo.t] > 0) {
                             let decoder = creep.room.find(FIND_SYMBOL_DECODERS)[0];
                             if (creep.transfer(decoder, Memory.mapInfo[creep.room.name].decoderInfo.t) == ERR_NOT_IN_RANGE) {
                                 creep.moveTo(decoder);
@@ -387,21 +376,7 @@ module.exports = {
                                     creep.travelTo(terminal);
                                 }
                             }*/
-
-                            // season 2 special
-                            // find spawned container
-                            if (creep.room.storage) {
-                                let sbs = creep.room.find(FIND_SYMBOL_CONTAINERS);
-                                if (sbs.length > 0) {
-                                    for (let resType in sbs[0].store) {
-                                        if (creep.withdraw(sbs[0], resType) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(sbs[0], { maxRooms: 1 });
-                                        }
-                                    }
-                                    return;
-                                }
-                            }
-
+                            
                             if (ifBoostLabJob) { // new check boost lab code
                                 if (boostLab.mineralType && (boostLab.mineralType != boostMat)) {
                                     if (creep.withdraw(boostLab, boostLab.mineralType) == ERR_NOT_IN_RANGE) {

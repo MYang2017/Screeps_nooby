@@ -252,7 +252,7 @@ module.exports.loop = function () {
     // season 2 special
     //scanForSymb(false);
     try { 
-        scanForSymb(false);
+        //scanForSymb(false);
     }
     catch (err) {
         fo('symbol scanning failed')
@@ -507,7 +507,12 @@ module.exports.loop = function () {
                             energyGetTaskManager(roomName);
                         }
                         calcCpuProcesses.tasks += Game.cpu.getUsed()-cpucnt;
-
+                    }
+                    catch (err) {
+                        fo(roomName + ' room manage code bugged')
+                    }
+                    
+                    try {
                         // update room build plan and place site
                         cpucnt = Game.cpu.getUsed();
                         if (Game.time%777 == 3 || room.memory.newAnchor == undefined || (room.controller.level<=3 && Game.time%55==0) || (room.memory.forSpawning && room.memory.forSpawning.roomCreepNo && room.memory.forSpawning.roomCreepNo.minCreeps['builder'] > 0 && Game.time%7 == 3)) {
@@ -527,7 +532,12 @@ module.exports.loop = function () {
                             spawnCreepByRoomSpawnQueue(room);
                         }
                         calcCpuProcesses.sp += Game.cpu.getUsed()-cpucnt;
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' spawning code bugged')
+                    }
+                    
+                    try {
                         // remote mining
                         cpucnt = Game.cpu.getUsed();
                         try {
@@ -544,7 +554,12 @@ module.exports.loop = function () {
                         cpucnt = Game.cpu.getUsed();
                         manageRemoteRoomsResourceGetting(roomName);
                         calcCpuProcesses.remoteRes += Game.cpu.getUsed()-cpucnt;
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' remote code bugged')
+                    }
+                    
+                    try {
                         cpucnt = Game.cpu.getUsed();
                         if (Game.time % 499 == 0) {
                             //checkIfCreepInfoUpdateRequired(roomName);
@@ -560,7 +575,12 @@ module.exports.loop = function () {
 
                         //season 2 special
                         sendMappers(room);
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' link/mapper code bugged')
+                    }
+                    
+                    try {
                         // high way
                         try {
                             highwayManager(room);
@@ -568,7 +588,12 @@ module.exports.loop = function () {
                         catch (err) {
                             fo(room.name + ' highway bugged');
                         }
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' highway code bugged')
+                    }
+                    
+                    try {
                         // power
                         try {
                             //powerHarvestingAndScanningMaintainner(room);
@@ -576,13 +601,23 @@ module.exports.loop = function () {
                         catch (err) {
                             console.log('error: power harvesting code!');
                         }
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' power code bugged')
+                    }
+                    
+                    try {
                         // room defend activate bubble
                         if (Game.time%77==0) {
                             popBubble(room);
                         }
                         calcCpuProcesses.misc += Game.cpu.getUsed()-cpucnt;
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' bubble code bugged')
+                    }
+                    
+                    try {
                         cpucnt = Game.cpu.getUsed();
                         // initial mineral storage variables
                         initiateMineralKeepThresholdInRoom(room, false);
@@ -590,7 +625,12 @@ module.exports.loop = function () {
                             allMineralsSituation(room);
                         }
                         calcCpuProcesses.mineralManage += Game.cpu.getUsed()-cpucnt;
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' res flow code bugged')
+                    }
+                    
+                    try {    
                         cpucnt = Game.cpu.getUsed();
                         // labbing
                         if (Game.time%50==7) {
@@ -614,7 +654,12 @@ module.exports.loop = function () {
                             labRun(Game.rooms[roomName]);
                         }
                         calcCpuProcesses.lab += Game.cpu.getUsed()-cpucnt;
-                        
+                    }
+                    catch (err) {
+                        fo(roomName + ' lab code bugged')
+                    }
+                    
+                    try {    
                         cpucnt = Game.cpu.getUsed();
                         if (determineIfFucked(room)[0] < 1) {
                             towerRepairInPeace(room);
@@ -622,7 +667,7 @@ module.exports.loop = function () {
                        calcCpuProcesses.tower += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
-                        fo(roomName + ' new code bugged')
+                        fo(roomName + ' def code bugged')
                     }
             }
 
