@@ -1584,7 +1584,7 @@ global.seasonTwoSendSymbol = function (thisrn) {
         let r = Game.rooms[rn];
         if (r.terminal && r.terminal.my && (Memory.mapInfo[rn] && Memory.mapInfo[rn].decoderInfo && Memory.mapInfo[rn].decoderInfo.t !== thisDecoderTp) && ((symbolFlowStorage()[rn]==undefined)||(symbolFlowStorage()[rn] && !symbolFlowStorage()[rn].includes(thisDecoderTp)))) {
         // condition: sender has terminal && sender decoder different && sender does not hold it for s2c
-            if (r.name=='E11S16' && togives.includes(thisDecoderTp)) {
+            if (r.name=='E22S12' && togives.includes(thisDecoderTp)) {
                 // pass
             }
             else {// send
@@ -1628,6 +1628,7 @@ global.seasonTwoSendSymbol = function (thisrn) {
                     for (let symbolTp of symbolsToSend) {
                         // if resource is not needed && E11S16 has less than 10k, send to E11S16
                         let receiveThresh = 50000;
+                        /*
                         if (thisrn!='E11S16' && togives.includes(symbolTp) && (_.sum(Game.rooms.E11S16.storage.store[symbolTp])+_.sum(Game.rooms.E11S16.terminal.store[symbolTp])<10000)) {
                             receiver = 'E11S16';
                             receiveThresh = 10000;
@@ -1635,6 +1636,7 @@ global.seasonTwoSendSymbol = function (thisrn) {
                         else { 
                             // else do normally
                         }
+                        */
                         
                         if (thisR.storage.store[symbolTp]>0 && Game.rooms[receiver].terminal.store.getFreeCapacity(symbolTp)>100000) {
                             addResFlowTask(thisrn, thisR.storage.id, thisR.terminal.id, symbolTp, thisR.storage.store[symbolTp]);

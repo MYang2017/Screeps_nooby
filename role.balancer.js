@@ -1,4 +1,5 @@
 let byHand = require('action.ontheway');
+var dupCheck = require('action.dupCheck');
 
 module.exports = {
     run: function(creep) {
@@ -150,6 +151,7 @@ module.exports = {
             }
             else {
                 creep.moveTo(tobe.x+1,tobe.y-2, {maxRooms: 1});
+                dupCheck.run(creep);
             }
             
             // add spawn when about to die

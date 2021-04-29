@@ -1330,12 +1330,22 @@ Room.prototype.newUpdateSpawnQueue = function () {
                 if (room.memory.maintainerCheck == undefined) {
                     room.memory.maintainerCheck = [false, false, false, true, true, true];
                 }
+                let anch = room.memory.anchor;
+                if (anch == undefined) {
+                    anch = room.memory.newAnchor;
+                }
+                let numToPos = [[anch.x-3, anch.y-2],[anch.x-3, anch.y-4],[anch.x-1, anch.y-4],[anch.x+1, anch.y-4],[anch.x+3, anch.y-4],[anch.x+3, anch.y-2]];
                 for (let checkerInd in room.memory.maintainerCheck) {
-                    if (room.memory.maintainerCheck[checkerInd] == false) {
-                        let posiNum = parseInt(checkerInd)+1;
-                        spawningQueue.push({ memory: { role: 'maintainer', posiNum: posiNum }, priority: rolePriority['maintainer'] });
-                        room.memory.maintainerCheck[checkerInd] = true;
-                        fo(room.name + ' spawn maintainer ' + posiNum);
+                    if (checkerInd<3) {
+                        if (room.lookForAt(LOOK_TERRAIN, numToPos[checkerInd][0], numToPos[checkerInd][1]) == 'wall') {
+                            room.memory.maintainerCheck[checkerInd] = true;
+                        }
+                        else if (room.memory.maintainerCheck[checkerInd] == false || room.find(FIND_MY_CREEPS, {filter: c=>c.memory.role=='maintainer'&&c.memory.posiNum==parseInt(checkerInd)+1}).length<1) {
+                            let posiNum = parseInt(checkerInd)+1;
+                            spawningQueue.push({ memory: { role: 'maintainer', posiNum: posiNum }, priority: rolePriority['maintainer'] });
+                            room.memory.maintainerCheck[checkerInd] = true;
+                            fo(room.name + ' spawn maintainer ' + posiNum);
+                        }
                     }
                 }
             }
@@ -1358,7 +1368,6 @@ Room.prototype.newUpdateSpawnQueue = function () {
                         room.memory.maintainerCheck[checkerInd] = true;
                         fo(room.name + ' spawn maintainer ' + posiNum);
                     }
-                    
                 }
             }
             

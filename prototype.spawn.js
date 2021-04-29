@@ -45,7 +45,11 @@ StructureSpawn.prototype.createCustomCreep = function (energy, roleName, home) {
             }
         }
         //console.log(energy, roleName, home,body);
-        return this.spawnCreep(body, randomIdGenerator(), { memory: { role: roleName, working: false, target: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
+        let idn = false;
+        if (roleName == 'linkKeeper') {
+            idn=true;
+        }
+        return this.spawnCreep(body, randomIdGenerator(), { memory: { role: roleName, working: false, target: home, isNeeded:idn, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
     }
     /*else if (roleName == 'linkKeeper') {
         let lvl = Game.rooms[home].controller.level;
@@ -155,7 +159,7 @@ StructureSpawn.prototype.createCustomCreep = function (energy, roleName, home) {
 StructureSpawn.prototype.createMaintainer = function(posiNum) {
     var body = [CARRY, CARRY];
     let spDir = [undefined, [BOTTOM_LEFT], [TOP_LEFT], [TOP_RIGHT], [TOP_LEFT], [TOP_RIGHT], [BOTTOM_RIGHT]];
-    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'maintainer', spawnTime: 3*body.length, posiNum: posiNum, spawnedBy: this.id}, directions: spDir[posiNum]});
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'maintainer', spawnTime: 3*body.length, isNeeded:true, posiNum: posiNum, spawnedBy: this.id}, directions: spDir[posiNum]});
 }
 
 StructureSpawn.prototype.createAnnoyer = function(trn, hrn) {
@@ -390,7 +394,7 @@ StructureSpawn.prototype.createBalancer = function() {
         if (this.room.terminal.store.energy>100000 && _.sum(this.room.terminal.store)>200000) {
             body = [CARRY, CARRY, MOVE, CARRY, CARRY, MOVE, CARRY, CARRY, MOVE, CARRY, CARRY, MOVE];
         }
-        return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'balancer', spawnTime: 3*body.length, spawnedBy: this.id}, directions: this.getDefaultSpawningDir()});
+        return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'balancer', spawnTime: 3*body.length, isNeeded:true, spawnedBy: this.id}, directions: this.getDefaultSpawningDir()});
     //}
 }
 

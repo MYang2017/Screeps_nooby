@@ -1,4 +1,5 @@
 var loader = require('role.loader');
+var dupCheck = require('action.dupCheck');
 
 module.exports = {
     run: function(creep) {
@@ -65,7 +66,12 @@ module.exports = {
                 
                 if (taken) { // change
                     let go = findSpotTogo(creep, linkx, linky);
-                    creep.memory.togo = {x: go.x, y: go.y};
+                    if (go==undefined) {
+                        dupCheck.run(creep, 4);
+                    }
+                    else {
+                        creep.memory.togo = {x: go.x, y: go.y};
+                    }
                 }
                 else { 
                     // if my pos == togo
@@ -78,6 +84,7 @@ module.exports = {
                     }
                 }
             }
+            dupCheck.run(creep, 4);
         }
         else { // in position
             let toFill = creep.memory.toFill;

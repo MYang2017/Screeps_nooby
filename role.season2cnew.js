@@ -71,7 +71,7 @@ module.exports = {
                                     if (creep.memory.transferTime != undefined) { // not first time
                                         if (creep.ticksToLive < 25 + (creep.memory.transferTime-creep.memory.bornTime)) { // creep cannot make a round trip
                                             creep.memory.recycle = true;
-                                            creep.transfer(creep.room.storage, creep,memory.stp);
+                                            creep.transfer(creep.room.storage, creep.memory.stp);
                                         }
                                     }
                                     if (creep.memory.dests) { // refresh intermediate checkpoints

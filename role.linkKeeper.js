@@ -1,6 +1,7 @@
 var loading = require('role.loader');
 var actionAvoid = require('action.idle');
 var byhand = require('action.ontheway');
+var dupCheck = require('action.dupCheck');
 
 module.exports = {
     run: function(creep) {
@@ -176,6 +177,7 @@ module.exports = {
             }
             else {
                 creep.moveTo(tobe.x-1,tobe.y-2);
+                dupCheck.run(creep);
             }
             
             // add spawn when about to die

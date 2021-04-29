@@ -1979,3 +1979,12 @@ global.recachAllConstructionSitesInRoom = function (r, t) {
     }
     //r.memory.cachedRoad = toCach;
 }
+
+
+global.getCreepCost = function (body) {
+    let coste = 0;
+    for (let b of body) {
+        coste += BODYPART_COST[b.type];
+    }
+    return coste
+}

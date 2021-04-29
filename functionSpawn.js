@@ -91,16 +91,27 @@ global.spawnCreepWithHighestPriority = function(spawnToSpawn, room) {
             anch = room.memory.newAnchor;
         }
         
+        let totToSpawn = spawnQ.length;
+        let maintainerCount = 0;
+        let spawnFlag = false;
         for (let creepToSpawn of spawnQ) {
+            if (creepToSpawn.memory.role == 'maintainer') {
+                maintainerCount ++;
+            }
             if (creepToSpawn.priority > spawnPriority) { // get creep with highest priority to spawn
                 if (creepToSpawn.memory.role == 'maintainer' && ((creepToSpawn.memory.posiNum>3 && spawnToSpawn.pos.x <= anch.x)||(creepToSpawn.memory.posiNum<4 && spawnToSpawn.pos.x >= anch.x))) {
                     // pass
                 }
                 else {
+                    spawnFlag = true
                     spawnPriority = creepToSpawn.priority;
                     creepInfo = creepToSpawn;
                 }
             }
+        }
+        
+        if (totToSpawn == maintainerCount && !spawnFlag) { // if only maintainer in queue, we pause to spawn
+            return
         }
 
         let creepMemory = creepInfo.memory;

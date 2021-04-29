@@ -336,6 +336,7 @@ module.exports.loop = function () {
             //kiterSpawner('E24S27', 'E26S29', 6);
         }
         
+        /*
         if (Game.time%1500==0) {
             traderSpawner('E11S16', 'E11S18');
         }
@@ -345,6 +346,7 @@ module.exports.loop = function () {
         if (Game.time%1500==1000) {
             traderSpawner('E11S16', 'E15S13')
         }
+        */
         
         if (Game.time%1250==0 && !Memory.rooms['E25S16'].avoid) {
             Game.rooms.E23S16.memory.forSpawning.spawningQueue.push({memory:{role: 'keeperLairMeleeKeeper', target: 'E25S16', home: 'E23S16', ranged: false}, priority: 5});
@@ -440,22 +442,6 @@ module.exports.loop = function () {
             //Game.rooms['E11S16'].memory.forSpawning.spawningQueue.push({memory:{role: 'stealer', home: 'E11S16', target: 'E10S16'}, priority: 13.5});
             //symbolStealerSpawner('E9S22', 'E7S19')
         }
-        if (false) {
-            //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'claimer', [CLAIM, MOVE])
-            //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'pioneer', [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE])
-            //Game.creeps['shard3_E11S47_claimer_4vltu'].memory = {role: 'oneWayInterSharder', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59'}
-            //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'claimer', body: [CLAIM, MOVE]},priority: 0.4});
-            //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'pioneer', body: [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE]},priority: 0.4});
-            let rr = Game.rooms['E11S47']
-            if (rr) {
-                Game.getObjectById('5ff250926f1bf740eea4f622').destroy();
-                rr.createConstructionSite(14, 16, STRUCTURE_SPAWN);
-            }
-            //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 300, role: 'pioneer', target: 'E13S53' , home: 'E9S49', superUpgrader: false, route:  { 'E9S49': 'E10S51', 'E10S51': 'E11S50', 'E11S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'} }, priority: 102 });
-        //(targetShardName, portalRoomName, portalId, targetRoomName, roleWillBe, body)
-        }
-        
-        
     }
     catch (err) {
         fo(err)
@@ -469,8 +455,6 @@ module.exports.loop = function () {
             if (true) {
                 let room = Game.rooms[roomName];
                     try {
-                        
-                        
                         let cpucnt = Game.cpu.getUsed();
                         // movement task manager
                         let taskScanInterv = 3;

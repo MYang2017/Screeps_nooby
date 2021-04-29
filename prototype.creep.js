@@ -1,7 +1,12 @@
+var addToQ= require('action.addToSQ');
+
 Creep.prototype.runRole = function (roles) {
     //roles[this.memory.role].run(this);
     try {
         roles[this.memory.role].run(this);
+        if (this.memory.isNeeded) {
+            addToQ.run(this);
+        }
     }
     catch(err) {
         console.log('error: role name fault: '+this.memory.role+this.pos);

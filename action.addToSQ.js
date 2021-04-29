@@ -9,6 +9,8 @@ module.exports = {
             for (let inf in creep.memory) {
                 meminfo[inf] = creep.memory[inf];
             }
+            meminfo['energy'] = getCreepCost(creep.body);
+            fo('added creep to sq');
             Game.rooms[h].memory.forSpawning.spawningQueue.push({memory: meminfo, priority: 13});
         }
     }
