@@ -23,7 +23,6 @@ require('funcBuildingPlanner')
 var findMinCut = require('funcRoomPlan');
 var taskMove = require('task.move');
 require('task.energy');
-<<<<<<< HEAD
 var creepLogPosi = require('action.logPosi');
 require('process.highway');
 require('funcStats');
@@ -118,8 +117,6 @@ try {
 catch (err) {
     fo('map maze failed');
 }
-=======
->>>>>>> master
 
 //const profiler = require('screeps-profiler');
 //profiler.enable();
@@ -129,7 +126,6 @@ module.exports.loop = function () {
     
     let too = Game.cpu.getUsed();
 
-<<<<<<< HEAD
     let trackRoleCpuCost = true;
     let calcCpuProcesses = {'parse_mem': 0, 'symbol_scan': 0, 'role_recycle': 0, 'role': 0, 'tow_def': 0, 'misc_sp': 0, 'tasks': 0, 'roomPlan': 0, 'sp': 0, 'remote': 0, 'remoteRes': 0, 'misc': 0, 'mineralManage': 0, 'lab': 0, 'tower': 0, 'resFlow': 0, 'logPos': 0};
     
@@ -200,7 +196,7 @@ module.exports.loop = function () {
                 thisCreep.runRole(roles);
             }
             
-            // cpu per fole track
+            // cpu per role track
             if (trackRoleCpuCost) {
                 //previousCPU = calculateCPUUsageOfProcesses(previousCPU, thisCreep.memory.role);
                 if (Object.keys(roleCPU) == 0) {
@@ -232,38 +228,7 @@ module.exports.loop = function () {
     
     let scancpucount = Game.cpu.getUsed();
     //previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'all role usage', true);
-=======
-    //profiler.wrap(function() {
 
-    //assignController()
-
-    //console.log('=== '+Game.time+' ticks === '+Game.cpu.bucket+' CPUs left ============================================================================')
-    let previousCPU = 0;
-
-    // clear memory
-    for (let name in Memory.creeps) {
-        if (Game.creeps[name] == undefined) {
-            delete Memory.creeps[name];
-        }
-        else if (_.isEmpty(Game.creeps[name].memory)) {
-            unpackCreepMemory(name);
-        }
-    }
-
-    // let different creep do its job
-    for (let name in Game.creeps) {
-        /*if (Game.creeps[name].memory.spawnTime == undefined||Game.creeps[name].memory.spawnTime == null) {
-            Game.creeps[name].memory.spawnTime = 3*Game.creeps[name].getActiveBodyparts();
-        }*/
-        let thisCreep = Game.creeps[name];
-        if (!thisCreep.spawning) {
-            thisCreep.runRole();
-        }
-        //previousCPU = calculateCPUUsageOfProcesses(previousCPU, thisCreep.memory.role, true);
-    }
-    previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'Run all roles');
-
->>>>>>> master
     // loop through rooms over shard
     currentShard = Game.shard.name;
     Memory.myRoomList = {}
@@ -271,19 +236,14 @@ module.exports.loop = function () {
     for (let roomName in Game.rooms) {
         let r = Game.rooms[roomName];
         try {
-<<<<<<< HEAD
             
             cacheInvaderCore(r);
             
             if (r!==undefined && r.controller && r.controller.my) {
-=======
-            if (r!==undefined && r.controller.my) {
->>>>>>> master
                 myRoomList.push(roomName);
             }
         }
         catch (err) {
-<<<<<<< HEAD
             fo(roomName + ' shard rooming failed')
         }
     }
@@ -299,13 +259,6 @@ module.exports.loop = function () {
     }
     calcCpuProcesses.symbol_scan = Game.cpu.getUsed() - scancpucount;
     
-=======
-            
-        }
-
-    }
-    Memory.myRoomList[currentShard] = myRoomList;
->>>>>>> master
     // temp section for tower placing
     /*if (currentShard == 'shard1') {
         Game.rooms.E45N2.createConstructionSite(36,7,STRUCTURE_TOWER);
@@ -322,33 +275,21 @@ module.exports.loop = function () {
     catch (err) {
         console.log('error: E31S6 construction placement wrong.');
     }*/
-<<<<<<< HEAD
     let towdefcnt = Game.cpu.getUsed();
-=======
 
->>>>>>> master
     var towers = _.filter( Game.structures, c => c.structureType == STRUCTURE_TOWER );
             for (let tower of towers) {
                 tower.defend();
             }
-<<<<<<< HEAD
     calcCpuProcesses.tow_def = Game.cpu.getUsed()-towdefcnt;
     
     let misc_sp = Game.cpu.getUsed();
     try {
-=======
-    try {
-        //remoteMiningManager(Game.rooms['E1S47']);
-        //remoteMiningManager(Game.rooms['E5S47']);
-        //remoteMiningManager(Game.rooms['E3S46']);
-        //remoteMiningManager(Game.rooms['E9S49']);
->>>>>>> master
         //var funcB = require('funcBuildingPlanner')
         //funcB.visualizePath(Game.getObjectById('60257847c5cd6d17f41a52e6').pos, generateLineBasedOnDir('E3S46', 5));
         //removeAllConstructionSitesInRoom(Game.rooms['E1S47']);
         //removeAllConstructionSitesInRoom(Game.rooms['E5S47']);
         //recachAllConstructionSitesInRoom(Game.rooms['E1S47'], STRUCTURE_ROAD);
-<<<<<<< HEAD
         /*if (Game.time%1298==0) {
             fo('awu');
             Game.rooms['E7S28'].memory.forSpawning.spawningQueue.push({memory:{role: 'digger', target: 'E10S22', posi: {x:23, y:20}, toEatId: '602c72a062f1b63ed41e47d6'},priority: 15});
@@ -500,21 +441,19 @@ module.exports.loop = function () {
             //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['ZH2O'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
             //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['XZH2O'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
         }
-        if (Game.time%1446==1) { // stealer for dismanted wall
+        if (Game.time % 1446 == 1) { // stealer for dismanted wall
             //Game.rooms['E11S16'].memory.forSpawning.spawningQueue.push({memory:{role: 'stealer', home: 'E11S16', target: 'E10S16'}, priority: 13.5});
             //symbolStealerSpawner('E9S22', 'E7S19')
-=======
-        
+        }
+
+        /////////////////////////// old shit
         if (false) {
             //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'claimer', [CLAIM, MOVE])
             //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'pioneer', [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE])
             //Game.creeps['shard3_E11S47_claimer_4vltu'].memory = {role: 'oneWayInterSharder', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59'}
             //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'claimer', body: [CLAIM, MOVE]},priority: 0.4});
             //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'pioneer', body: [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE]},priority: 0.4});
-            let rr = Game.rooms['E11S47']
-            if (rr) {
-                rr.createConstructionSite(14, 16, STRUCTURE_SPAWN);
-            }
+            
             //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 300, role: 'pioneer', target: 'E13S53' , home: 'E9S49', superUpgrader: false, route:  { 'E9S49': 'E10S51', 'E10S51': 'E11S50', 'E11S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'} }, priority: 102 });
         //(targetShardName, portalRoomName, portalId, targetRoomName, roleWillBe, body)
         }
@@ -540,13 +479,11 @@ module.exports.loop = function () {
         }
         if (Game.time% 350 == 0) {
             Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1200, role: 'pioneer', target: 'E9S31' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
->>>>>>> master
         }
     }
     catch (err) {
         fo(err)
     }
-<<<<<<< HEAD
     calcCpuProcesses.tow_def = Game.cpu.getUsed()-misc_sp;
 
     //previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'pre-room CPU usage', true);
@@ -667,78 +604,11 @@ module.exports.loop = function () {
                             if (startLabber(Game.rooms[roomName])) {
                                 Game.rooms[roomName].memory.forSpawning.roomCreepNo.minCreeps.labber = 1;
                                 Game.rooms[roomName].memory.forSpawning.roomCreepNo.creepEnergy.labber = 600;
-=======
-    
-        for (let roomNameIdx in Memory.myRoomList[currentShard]) {
-            let roomName = Memory.myRoomList[currentShard][roomNameIdx];
-            if (false) { // (!(roomName == 'E4S49') && !(roomName == 'E11S47') && !(roomName == 'E13S53')) {
-                let r = Game.rooms[roomName];
-                if (r.controller && r.controller.my) {
-                    let room = r;
-                    //removeAllConstructionSitesInRoom(r)
-                    if (room) {
-                        // separate shooter and normal room management
-                        let motherRoomName = room.memory.startMB;
-                        if (!motherRoomName) { // normal room
-                            //cacheLabsInAndOut(roomName); // for lab caching
-                            //if (Game.ticks % 1234 == 0) { // need to find link complete event
-                            initiateLinksInRoom(room); // for links caching
-                            //}
-                            //initiateCreepsSpawnInfo(roomName);
-
-                            // initial mineral storage variables
-                            initiateMineralKeepThresholdInRoom(room, false);
-                            if (Game.time % 1 == 0) {
-                                allMineralsSituation(room);
-                            }
-
-                            // link transfer
-                            //previousCPU = calculateCPUUsageOfProcesses(previousCPU, ' link transfer cost of '+roomName);
-                            try {
-                                linkTransfer(room);
-                            }
-                            catch (err) {
-                                console.log(room.name + ' link transfer error');
-                            }
-                            //previousCPU = calculateCPUUsageOfProcesses(previousCPU, ' link transfer cost of '+roomName,true);
-
-                            if (!room.memory.needHelp) {  // for subroom spawning
-                                if (updateSpawnQueueTimer(room)) {
-                                    //if (Game.time % 11 == 0) { //
-                                    //if (true) {
-                                    room.updateSpawnQueue();
-                                }
-                                if (room.memory.forSpawning.spawningQueue.length > 0 && ifSpawnAvailable(roomName).length > 0) { // if there is some creeps waiting to be spawned in the queue and spawn is free, then spawn
-                                    spawnCreepByRoomSpawnQueue(room);
-                                }
-                            }
-
-                            if (determineIfFucked(room)[0] < 1) {
-                                towerRepairInPeace(room);
-                            }
-
-                            // manage remote resource getting order and assign tasks to remote lorries
-                            manageRemoteRoomsResourceGetting(roomName);
-
-                            try {
-                                powerHarvestingAndScanningMaintainner(room);
-                            }
-                            catch (err) {
-                                console.log('error: power harvesting code!');
-                            }
-                            //powerspawnProcessPower(room);
-
-                            if (Game.time % 499 == 0) {
-                                checkIfCreepInfoUpdateRequired(roomName);
-                                superUpgraderPosisCach(roomName);
-                                superUpgraderBalancing(roomName);
->>>>>>> master
                             }
 
                             if (Game.time % 678 == 0) {
                                 mainBuildSub(room, undefined);
                             }
-<<<<<<< HEAD
                         }
                         if ((Game.time+7) % reactionTimeInterval(Game.rooms[roomName]) == 0) {
                             labRun(Game.rooms[roomName]);
@@ -777,113 +647,6 @@ module.exports.loop = function () {
                                 allMineralsSituation(room);
                             }
 
-=======
-
-                            let tradingTimeInterval = 17;
-                            //let sellingFrequency = 15;
-                            if (Game.time % tradingTimeInterval == 0) {
-                                /*if (Game.time % (tradingTimeInterval * sellingFrequency) == 0) {
-                                    checkMineralAndSell(roomName)
-                                }
-                                else {*/
-                                try {
-                                    superEverthingManagement(room);
-                                }
-                                catch (err) {
-                                    console.log('error: super mineral management bug!');
-                                }
-                                //}
-                            }
-
-                            if (Game.time % 7676 == 0) {
-                                try {
-                                    changeMineralProductionInRoom(roomName);
-                                }
-                                catch (err) {
-                                    console.log('error: change lab reaction bug!');
-                                }
-                            }
-
-                            // labbing
-                            /*if (Game.time % 1439 == 0) {
-                                if (startLabber(Game.rooms[roomName])) {
-                                    Game.rooms[roomName].memory.forSpawning.roomCreepNo.minCreeps.labber = 1;
-                                }
-                                else {
-                                    Game.rooms[roomName].memory.forSpawning.roomCreepNo.minCreeps.labber = 0;
-                                }
-                            }
-                            if ((Game.time+7) % reactionTimeInterval(Game.rooms[roomName]) == 0) {
-                                labRun(Game.rooms[roomName]);
-                            }*/
-
-                            // disabled due to Traveler stucking issue
-                            if (Game.time % 223 == 0) {
-                                //spawnScouterAround(roomName);
-                                Game.getObjectById('602bac4ed3e25b0b8653b1e8').spawnCreep([MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY, MOVE, CARRY,], randomIdGenerator(), { memory: { role: 'stealer', working: false, target: 'E9S46', home: 'E9S49' } });
-                            }
-
-                            try {
-                                earlyAndLateRemoteMiningManager(roomName);
-                            }
-                            catch (err) {
-                                fo(roomName + ' remote failed');
-                            }
-
-                            //desparateHouseWife('E1S47');
-
-                            buildRoom(roomName);
-                            
-
-                            /*if (Game.time % 1650 == 0) {
-                                Game.rooms['E1S47'].memory.forSpawning.spawningQueue.push({ memory: { role: 'transporter', fromStorage: true, resourceType: 'energy' }, priority: 0.001 });
-
-                            }*/
-                            
-                            
-                            
-                            /*if (Game.rooms['E1S47'].storage.store.getUsedCapacity() < 900000) { //(Game.time % 1601 == 0) {
-                                // terminal all send energy to E1S47
-                                if (roomName !== 'E1S47' ) {
-                                    if (room.terminal) {
-                                        room.terminal.send('energy',5000,'E1S47','chu chu!');
-                                    }
-                                }
-                                // move res from terminal to storage
-                                else if (Game.time % 2331 == 0 && roomName == 'E1S47') {
-                                    if (Game.rooms['E1S47'].terminal.store.energy > 135000) {
-                                        console.log('preparing transporters');
-                                        Game.rooms['E1S47'].memory.forSpawning.spawningQueue.push({ memory: { role: 'transporter', fromStorage: false, resourceType: 'energy' }, priority: 0.4 });
-                                    }
-                                }
-                            }*/
-                        }
-                        else {
-                            // shooter room
-
-                            if (Game.time % 1 == 0) {
-                                allMineralsSituation(room);
-                            }
-
-                            if (updateSpawnQueueTimer(room)) {
-                                //if (Game.time % 11 == 0) { //
-                                //if (true) {
-                                room.updateSpawnQueue();
-                            }
-                            if (room.memory.forSpawning.spawningQueue.length > 0 && ifSpawnAvailable(roomName).length > 0) { // if there is some creeps waiting to be spawned in the queue and spawn is free, then spawn
-                                spawnCreepByRoomSpawnQueue(room);
-                            }
-
-                            if (determineIfFucked(room)[0] < 1) {
-                                towerRepairInPeace(room);
-                            }
-
-                            if (Game.time % 499 == 0) {
-                                checkIfCreepInfoUpdateRequired(roomName);
-                                superUpgraderBalancing(roomName);
-                            }
-
->>>>>>> master
                             // link transfer
                             //previousCPU = calculateCPUUsageOfProcesses(previousCPU, ' link transfer cost of '+roomName);
                             try {
@@ -892,7 +655,6 @@ module.exports.loop = function () {
                             catch (err) {
                                 console.log(room.name + ' link transfer error');
                             }
-<<<<<<< HEAD
                             //previousCPU = calculateCPUUsageOfProcesses(previousCPU, ' link transfer cost of '+roomName,true);
 
                             if (!room.memory.needHelp) {  // for subroom spawning
@@ -1043,8 +805,6 @@ module.exports.loop = function () {
                             catch (err) {
                                 console.log(room.name + ' link transfer error');
                             }
-=======
->>>>>>> master
 
                             let tradingTimeInterval = 17;
                             //let sellingFrequency = 15;
@@ -1071,7 +831,6 @@ module.exports.loop = function () {
                             }
 
                         }
-<<<<<<< HEAD
                     }
                     else {
                         console.log(roomName + ' does not have access');
@@ -1079,16 +838,6 @@ module.exports.loop = function () {
                         console.log('delete main room memory of room ' + roomName + ' in shard ' + currentShard);
                     }
                 }
-=======
-                    }
-                    else {
-                        console.log(roomName + ' does not have access');
-                        removeElementInArrayByElement(roomName, Memory.myRoomList[currentShard]);
-                        console.log('delete main room memory of room ' + roomName + ' in shard ' + currentShard);
-                    }
-                }
-                previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'Check and spawn roles');
->>>>>>> master
 
                 //////////// temperory code section ////////////////////////////////////////////////
                 // tranposrter
@@ -1238,7 +987,6 @@ module.exports.loop = function () {
                     Game.rooms.E95N25.memory.sourceTravelTime['58dbc96b03d440ea4e4dbac3'] = 1420;
                 }*/
             }
-<<<<<<< HEAD
         }
         
         try {
@@ -1254,55 +1002,9 @@ module.exports.loop = function () {
         }
         
     //fo(JSON.stringify(calcCpuProcesses));
-=======
-            else {
-                    //try {
-                        // movement task manager
-                        structureGetE(roomName);
-                        resourceOfferE(roomName);
-                        taskMove.moveTaskManager(roomName);
-                        energyTaskManager(roomName);
-                        energyGetTaskManager(roomName);
-
-                        // update room build plan and place site
-                        updateRoomPlan(roomName);
-                        
-                        let room = Game.rooms[roomName];
-                        
-                        // update spawn queue and spawn
-                        room.newUpdateSpawnQueue();
-                        if (room.memory.forSpawning.spawningQueue.length > 0 && ifSpawnAvailable(roomName).length > 0) { // if there is some creeps waiting to be spawned in the queue and spawn is free, then spawn
-                            spawnCreepByRoomSpawnQueue(room);
-                        }
-                        
-                        manageRemoteRoomsResourceGetting(roomName);
-                        
-                        if (Game.time % 499 == 0) {
-                            //checkIfCreepInfoUpdateRequired(roomName);
-                            newLinkSuperUpgraderPosisCach(roomName);
-                            superUpgraderBalancing(roomName);
-                        }
-                        
-                        if (Game.time % 678 == 0) {
-                            mainBuildSub(room, undefined);
-                        }
-                        
-                        linkTransfer(room);
-                    /*}
-                    catch (err) {
-                        fo(roomName + ' new code bugged')
-                    }*/
-            }
-        }
-
->>>>>>> master
     
     //previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'post-room CPU usage', true);
 
-<<<<<<< HEAD
-=======
-    
->>>>>>> master
     //findMinCut.floodFill('E1S47')
     //findMinCut.test('E11S47', findMinCut.generateRectArrayForMinCut({x:15, y:16}));
     //findMinCut.planEverythingInRoom('E3S46');
@@ -1344,4 +1046,3 @@ module.exports.loop = function () {
     too = Game.cpu.getUsed()-too;
     new RoomVisual().text(too.toFixed(1), 45.5, 0, {align: 'right'}); 
 };
-
