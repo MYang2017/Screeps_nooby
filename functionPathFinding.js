@@ -124,6 +124,7 @@ global.findPathInRoomSafeZone = function (posi, goalPosi, range = 0) {
     );
     return ret;
 }
+<<<<<<< HEAD
 
 global.visualizePaths = function (posi, goalPosi, range = 1, ifEO = true, mr = 1) {
     let ret = findPathBasedOnGridEvenOddGlobal(posi, goalPosi, range, ifEO, mr);
@@ -388,3 +389,5 @@ global.ifReachableWithinRoom = function(pos1, pos2) {
 
 
 
+=======
+>>>>>>> master

@@ -251,6 +251,16 @@ var seekBuildingToBuild = function (r, roomLvl) {
     }
 }
 
+<<<<<<< HEAD
+=======
+var findTotolNumberOfStructure = function (r, type) {
+    let alreadyExisted = r.find(FIND_STRUCTURES, {filter: { structureType: type } }).length
+    let ongoing = r.find(FIND_CONSTRUCTION_SITES, {filter: { structureType: type } }).length
+    return alreadyExisted + ongoing;
+}
+
+
+>>>>>>> master
 var visualizePath = function (posi, goalPosi) {
     let ret = findPathBasedOnGridEvenOdd(posi, goalPosi);
     let path = ret.path
@@ -264,9 +274,13 @@ var convertPosToRoompos = function (posi) {
 }
 
 
+<<<<<<< HEAD
 var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = true, avoidRaod = false) {
     //if(roomName=='E8S28'){fo(1)}
     
+=======
+var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = true) {
+>>>>>>> master
     var roomName = posi.roomName;
 
     if (goalPosi.length) { // if array of posis
@@ -322,12 +336,16 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
                 room.find(FIND_STRUCTURES).forEach(function (struct) {
                     if (struct.structureType === STRUCTURE_ROAD) {
                         // Favor roads over plain tiles
+<<<<<<< HEAD
                         if (avoidRaod) {
                             costs.set(struct.pos.x, struct.pos.y, 5);
                         }
                         else {
                             costs.set(struct.pos.x, struct.pos.y, 0.1);
                         }
+=======
+                        costs.set(struct.pos.x, struct.pos.y, 1);
+>>>>>>> master
                     } else if (struct.structureType !== STRUCTURE_CONTAINER &&
                         (struct.structureType !== STRUCTURE_RAMPART ||
                             !struct.my)) {
@@ -339,7 +357,11 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
                 room.find(FIND_CONSTRUCTION_SITES).forEach(function (site) {
                     if (site.structureType === STRUCTURE_ROAD) {
                         // Favor roads over plain tiles
+<<<<<<< HEAD
                         costs.set(site.pos.x, site.pos.y, 0.1);
+=======
+                        costs.set(site.pos.x, site.pos.y, 1);
+>>>>>>> master
                     }
                 });
 
@@ -355,6 +377,7 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
     return ret;
 }
 
+<<<<<<< HEAD
 var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range = 1, ifEO = true, avoidRoad = false) {
     var roomName = r.name;
     let anchx;
@@ -378,6 +401,12 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
         return false
     }
     
+=======
+var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range = 1, ifEO = true) {
+    var roomName = r.name;
+    let anchx = r.memory.anchor.x;
+    let anchy = r.memory.anchor.y;
+>>>>>>> master
     let posi= new RoomPosition(anchx, anchy, roomName);
 
     if (goalPosi.length) { // if array of posis
@@ -398,7 +427,11 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
             // We need to set the defaults costs higher so that we
             // can set the road cost lower in `roomCallback`
             plainCost: 2,
+<<<<<<< HEAD
             swampCost: 6,
+=======
+            swampCost: 5,
+>>>>>>> master
             
             maxRooms: 1,
 
@@ -439,12 +472,18 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
 
                 room.find(FIND_STRUCTURES).forEach(function (struct) {
                     if (struct.structureType === STRUCTURE_ROAD) {
+<<<<<<< HEAD
                         costs.set(struct.pos.x, struct.pos.y, roadCost);
                     }
                     else if (struct.structureType == STRUCTURE_CONTAINER) {
                         costs.set(struct.pos.x, struct.pos.y, 0xff);
                     }
                     else if (struct.structureType !== STRUCTURE_CONTAINER &&
+=======
+                        // Favor roads over plain tiles
+                        costs.set(struct.pos.x, struct.pos.y, 1);
+                    } else if (struct.structureType !== STRUCTURE_CONTAINER &&
+>>>>>>> master
                         (struct.structureType !== STRUCTURE_RAMPART ||
                             !struct.my)) {
                         // Can't walk through non-walkable buildings
@@ -455,7 +494,11 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
                 room.find(FIND_CONSTRUCTION_SITES).forEach(function (site) {
                     if (site.structureType === STRUCTURE_ROAD) {
                         // Favor roads over plain tiles
+<<<<<<< HEAD
                         costs.set(site.pos.x, site.pos.y, roadCost);
+=======
+                        costs.set(site.pos.x, site.pos.y, 1);
+>>>>>>> master
                     }
                 });
                 
@@ -486,6 +529,7 @@ global.findUpgradePosition = function (r) {
             
             if ((lx>1 && lx<48) && (ly>1 && ly<48) && (Math.abs(i)==2 || Math.abs(j)==2) ) { // linear range 2 to controller
                 let freeSpace = 0;
+<<<<<<< HEAD
                 let ts = r.lookForAtArea(LOOK_TERRAIN, ly-1, lx-1, ly+1, lx+1, true)
 
                 for (let t of ts) {
@@ -494,6 +538,15 @@ global.findUpgradePosition = function (r) {
                     }
                 }
                 fo(freeSpace)
+=======
+                let ts = r.lookForAtArea(LOOK_TERRAIN, 39, 19, 41, 21, true)
+
+                for (let t of ts) {
+                    if (t.terrain!==TERRAIN_MASK_WALL) { // all around posis
+                        freeSpace++;
+                    }
+                }
+>>>>>>> master
                 if (freeSpace>numOpenSpot) {
                     numOpenSpot = freeSpace;
                     res = {x: lx, y: ly}
@@ -504,8 +557,13 @@ global.findUpgradePosition = function (r) {
     return res
 }
 
+<<<<<<< HEAD
 global.checkIfRoomNeedRerunPlan = function(r) { // depricated
     return Game.time%1==0
+=======
+global.checkIfRoomNeedRerunPlan = function(r) {
+    return Game.time%111==0 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+>>>>>>> master
 }
 
 global.updateRoomPlan = function(rn) {
@@ -513,13 +571,18 @@ global.updateRoomPlan = function(rn) {
     let r = Game.rooms[rn];
     let roomPlanList = r.memory.roomLayout;
     
+<<<<<<< HEAD
     if (checkIfRoomNeedRerunPlan(r) || r.memory.newAnchor == undefined) { // set condition to run room plan <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for example: when building destroyed or finished...
+=======
+    if (checkIfRoomNeedRerunPlan(r)) { // set condition to run room plan <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for example: when building destroyed or finished...
+>>>>>>> master
         runUltraToBuildPlan(r);
     }
     
     if (roomPlanList) {
         for (let toBuild of roomPlanList) {
             let found = r.lookForAt(LOOK_STRUCTURES, toBuild.posi.x, toBuild.posi.y);
+<<<<<<< HEAD
             if (toBuild.posi.x<2||toBuild.posi.x>47||toBuild.posi.y<2||toBuild.posi.y>47) {
                 // pass
             }
@@ -545,6 +608,16 @@ global.updateRoomPlan = function(rn) {
                 else if ( placeRes == ERR_INVALID_TARGET) {
                     return
                 }
+=======
+            if (found.length>0 && found[0].structureType == toBuild.t) {
+                // next
+            }
+            else {
+                if (r.createConstructionSite(toBuild.posi.x, toBuild.posi.y, toBuild.t) == OK) {
+                    fo('try to creat CS ' + toBuild.t + ' in room  ' + rn + ' at ' + JSON.stringify(toBuild.posi) );
+                }
+                return
+>>>>>>> master
             }
         }
     }
@@ -556,6 +629,7 @@ global.updateRoomPlan = function(rn) {
     
 }
 
+<<<<<<< HEAD
 global.fantacyRoomPlanStored = function(anchor, r) { // anchor is first spawn position
     let x = anchor.x;
     let y = anchor.y;
@@ -645,6 +719,44 @@ global.fantacyRoomPlanStored = function(anchor, r) { // anchor is first spawn po
             }
         }
     }
+=======
+global.fantacyRoomPlanStored = function(anchor) { // anchor is first spawn position
+    let x = anchor.x;
+    let y = anchor.y;
+    let pl = [];
+    
+    pl.push({posi: {x: x+2, y: y+2}, t: STRUCTURE_STORAGE});  // 1
+    pl.push({posi: {x: x+1, y: y}, t: STRUCTURE_EXTENSION}); // 2
+    pl.push({posi: {x: x+2, y: y+1}, t: STRUCTURE_EXTENSION}); // 3
+    pl.push({posi: {x: x, y: y+1}, t: STRUCTURE_ROAD});  // 4
+    pl.push({posi: {x: x+1, y: y+2}, t: STRUCTURE_ROAD});
+    pl.push({posi: {x: x+2, y: y+3}, t: STRUCTURE_ROAD});
+    pl.push({posi: {x: x+3, y: y+2}, t: STRUCTURE_ROAD}); // 7
+    pl.push({posi: {x: x+4, y: y+1}, t: STRUCTURE_ROAD});
+    pl.push({posi: {x: x+3, y: y}, t: STRUCTURE_EXTENSION}); // 9
+    pl.push({posi: {x: x+2, y: y-1}, t: STRUCTURE_EXTENSION}); // 10
+    pl.push({posi: {x: x+1, y: y-2}, t: STRUCTURE_EXTENSION}); // 11
+    pl.push({posi: {x: x+3, y: y-2}, t: STRUCTURE_EXTENSION}); // 12
+    pl.push({posi: {x: x+1, y: y-3}, t: STRUCTURE_EXTENSION}); // 13
+    pl.push({posi: {x: x+3, y: y-3}, t: STRUCTURE_EXTENSION}); // 14
+    pl.push({posi: {x: x+2, y: y-4}, t: STRUCTURE_EXTENSION}); // 15
+    pl.push({posi: {x: x, y: y-4}, t: STRUCTURE_EXTENSION}); // 16
+    pl.push({posi: {x: x+4, y: y-4}, t: STRUCTURE_EXTENSION}); // 17
+    pl.push({posi: {x: x+1, y: y-5}, t: STRUCTURE_EXTENSION}); // 18
+    pl.push({posi: {x: x+3, y: y-5}, t: STRUCTURE_EXTENSION}); // 19
+    pl.push({posi: {x: x, y: y-6}, t: STRUCTURE_EXTENSION}); // 20
+    pl.push({posi: {x: x+2, y: y-6}, t: STRUCTURE_EXTENSION}); // 21
+    pl.push({posi: {x: x+4, y: y-6}, t: STRUCTURE_EXTENSION}); // 22
+    pl.push({posi: {x: x+1, y: y-7}, t: STRUCTURE_EXTENSION}); // 23
+    pl.push({posi: {x: x+3, y: y-7}, t: STRUCTURE_EXTENSION}); // 24
+    pl.push({posi: {x: x, y: y+2}, t: STRUCTURE_LINK}); // 25
+    pl.push({posi: {x: x-1, y: y+2}, t: STRUCTURE_EXTENSION}); // 26
+    pl.push({posi: {x: x-2, y: y+2}, t: STRUCTURE_EXTENSION}); // 27
+    pl.push({posi: {x: x-2, y: y+1}, t: STRUCTURE_EXTENSION}); // 28
+    pl.push({posi: {x: x-2, y: y}, t: STRUCTURE_EXTENSION}); // 29
+    pl.push({posi: {x: x-1, y: y}, t: STRUCTURE_EXTENSION}); // 30
+
+>>>>>>> master
     return pl
 }
 
@@ -653,6 +765,7 @@ global.runUltraToBuildPlan = function(r) {
     let bigPlan = [];
     let containerCount = 0;
     let extensionCount = 0;
+<<<<<<< HEAD
     let flagO = Game.flags[rn+'_anch']; // true anch (below storage position)
     let sp = undefined;
     
@@ -675,6 +788,17 @@ global.runUltraToBuildPlan = function(r) {
             }
             return
         }
+=======
+    
+    // initial spawn 
+    let sp = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType == STRUCTURE_SPAWN});
+    if (sp.length>0) {
+        bigPlan.push({posi: sp[0].pos, t: STRUCTURE_SPAWN});
+    }
+    else {
+        fo('Please build first spawn to initiate room build plan');
+        return
+>>>>>>> master
     }
     
     // extension first
@@ -693,11 +817,21 @@ global.runUltraToBuildPlan = function(r) {
         } 
     }
     
+<<<<<<< HEAD
+=======
+    // if extension not 5, place on planned site
+    if (extensionCount<5) { // <<<<<<<<<<<<<<<<<<<<<<<<<<<<< load pre-planned layout
+        //bigPlan.push({posi: containerSurroundings[i], t: STRUCTURE_EXTENSION});
+        //extensionCount ++;
+    }
+    
+>>>>>>> master
     // upgrade tower
     if (r.memory.upgradeVirtual == undefined) {
         r.memory.upgradeVirtual = findUpgradePosition(r);
     }
     else {
+<<<<<<< HEAD
         if (r.controller.level>=3) {
             if ( r.memory.forLinks == undefined || (_.isEmpty(r.memory.forLinks) == true) ) {
                 bigPlan.push({posi: r.memory.upgradeVirtual, t: STRUCTURE_TOWER}); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< canceled here
@@ -752,6 +886,22 @@ global.runUltraToBuildPlan = function(r) {
     // continue building extensions around e source;
     // extension first
     /*for (let sourceId in Memory.mapInfo[rn].eRes) {
+=======
+        if ( r.memory.forLinks == undefined || (_.isEmpty(r.memory.forLinks) == true) ) {
+            bigPlan.push({posi: r.memory.upgradeVirtual, t: STRUCTURE_TOWER});
+        }
+        else {
+            deleteElementFromArray(bigPlan, {posi: r.memory.upgradeVirtual, t: STRUCTURE_TOWER});
+            /*myArray = myArray.filter(function( obj ) {
+                return obj.field !== 'money';
+            });*/
+        }
+    }
+    
+    // continue building extensions around e source;
+    // extension first
+    for (let sourceId in Memory.mapInfo[rn].eRes) {
+>>>>>>> master
         let containerPosi = Memory.mapInfo[rn].eRes[sourceId].easyContainerPosi
         //bigPlan.push({posi: containerPosi, t: STRUCTURE_CONTAINER});
         //containerCount++;
@@ -762,7 +912,34 @@ global.runUltraToBuildPlan = function(r) {
                 extensionCount ++;
             }
         } 
+<<<<<<< HEAD
     }*/
+=======
+    }
+    
+    // source container
+    for (let sourceId in Memory.mapInfo[rn].eRes) {
+        let containerPosi = Memory.mapInfo[rn].eRes[sourceId].easyContainerPosi
+        bigPlan.push({posi: containerPosi, t: STRUCTURE_CONTAINER});
+        containerCount++;
+    }
+    
+    // now build room plan
+    let plannedList = [];
+    let flagO = Game.flags[rn+'_anch']; // true anch (below storage position)
+    if (flagO) {
+        r.memory.anchor = new RoomPosition(flagO.pos.x, GflagO.pos.y, flagO.pos.roomName);
+        plannedList = fantacyRoomPlanStored({x: flagO.pos.x-2, y: flagO.pos.y-3});
+    }
+    else {
+        r.memory.anchor = new RoomPosition(sp[0].pos.x+2, sp[0].pos.y+3, sp[0].pos.roomName);
+        plannedList = fantacyRoomPlanStored(sp[0].pos);
+    }
+    
+    for (let plannedStruct of plannedList) {
+        bigPlan.push({posi: plannedStruct.posi, t: plannedStruct.t});
+    }
+>>>>>>> master
     
     if (true) { // check if link is ready
         initiateLinksInRoom(r);

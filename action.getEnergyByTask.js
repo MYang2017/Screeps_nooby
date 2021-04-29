@@ -33,7 +33,11 @@ module.exports = {
                             let droppedRes = Game.getObjectById(contract.offerId);
                             let pickupRes = creep.pickup(droppedRes);
                             if ( pickupRes == ERR_NOT_IN_RANGE) {
+<<<<<<< HEAD
                                 creep.travelTo(droppedRes, { maxRooms: 1, range: 1 });
+=======
+                                creep.travelTo(droppedRes, { maxRooms: 1 });
+>>>>>>> master
                             }
                             else if (pickupRes == OK || pickupRes == ERR_FULL || pickupRes == ERR_INVALID_TARGET) {
                                 creep.room.memory.resourcePrototype[contract.offerId].eGetTaskId = undefined;
@@ -49,7 +53,11 @@ module.exports = {
                             else {
                                 for (let mineralType in tombObj.store) {
                                     if (creep.withdraw(tombObj, mineralType) == ERR_NOT_IN_RANGE) {
+<<<<<<< HEAD
                                         creep.travelTo(tombObj, { maxRooms: 1, range: 1 });
+=======
+                                        creep.travelTo(tombObj, { maxRooms: 1 });
+>>>>>>> master
                                     }
                                 }
                             }
@@ -58,7 +66,11 @@ module.exports = {
                             let tarStoreObj = Game.getObjectById(contract.offerId);
                             let withdrawRes = creep.withdraw(tarStoreObj, 'energy');
                             if ( withdrawRes == ERR_NOT_IN_RANGE) {
+<<<<<<< HEAD
                                 creep.travelTo(tarStoreObj, { maxRooms: 1, range: 1 });
+=======
+                                creep.travelTo(tarStoreObj, { maxRooms: 1 });
+>>>>>>> master
                             }
                             else if (withdrawRes == OK || withdrawRes == ERR_FULL || withdrawRes == ERR_NOT_ENOUGH_RESOURCES || withdrawRes == ERR_INVALID_TARGET) {
                                 creep.room.memory.resourcePrototype[contract.offerId].eGetTaskId = undefined;

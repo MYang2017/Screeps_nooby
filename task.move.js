@@ -5,7 +5,11 @@ exports.moveTaskManager = moveTaskManager;
  */
 function moveTaskManager(rn) {
     let r = Game.rooms[rn];
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> master
     if (r.memory.taskMove == undefined) {
         r.memory.taskMove = {};
     }
@@ -41,12 +45,20 @@ function moveTaskManager(rn) {
             }
         }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> master
     for (let offer of offers) {
         for (let ask of asks) {
             if (Game.creeps[ask.askerName]) {
                 if (Game.creeps[offer]) {
+<<<<<<< HEAD
                     if ( Game.creeps[offer].memory.moveTaskId ) { // Game.creeps[offer].memory.eTaskId || 
+=======
+                    if (Game.creeps[offer].memory.moveTaskId ) {
+>>>>>>> master
                         // pass
                     }
                     else {

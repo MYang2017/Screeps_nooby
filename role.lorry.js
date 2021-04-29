@@ -12,6 +12,7 @@ module.exports = {
             return
         }
         else {
+<<<<<<< HEAD
             /*
             if (_.sum(creep.room.storage.store)>990000) {
                 let emerg = false;
@@ -107,6 +108,16 @@ module.exports = {
                     creep.memory.working = false;
                 }
     
+=======
+            if (creep.room.name == creep.memory.target) { // if in target room work
+                ifMineral = mineralNeedsCollect(creep.room);
+                creepCarrying = _.sum(creep.carry);
+                
+                if (creep.memory.working == undefined) {
+                    creep.memory.working = false;
+                }
+
+>>>>>>> master
                 if (creep.memory.working == true && creepCarrying == 0) {
                     creep.memory.working = false;
                 }
@@ -351,6 +362,7 @@ module.exports = {
                             }
                         }
                     }
+<<<<<<< HEAD
                     else { // if not working: find a none empty container and get energy from containers //
                         //console.log('take')fo(creep.pos)
                         if (creep.room.energyAvailable<0.5*creep.room.energyCapacityAvailable) {
@@ -362,9 +374,26 @@ module.exports = {
                                 if (creep.room.terminal.store.energy>0 && (creep.withdraw(creep.room.terminal, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE)) {
                                     creep.travelTo(creep.room.terminal);
                                 }
+=======
+                }
+                else { // if not working: find a none empty container and get energy from containers //
+                    //console.log('take')
+                    if (true) {
+                        let terminal = creep.room.terminal;
+                        if (terminal.store.energy>0) {
+                            if (creep.withdraw(terminal, 'energy') == ERR_NOT_IN_RANGE) {
+                                creep.travelTo(terminal);
                             }
                             return
                         }
+                        else {
+                            if (creep.withdraw(creep.room.storage, 'energy') == ERR_NOT_IN_RANGE) {
+                                creep.travelTo(creep.room.storage);
+>>>>>>> master
+                            }
+                            return
+                        }
+<<<<<<< HEAD
                         else {
                             let terminal = creep.room.terminal;
                             let storage = creep.room.storage;
@@ -450,6 +479,97 @@ module.exports = {
                                                 // upgrade container
                                                 if (container.pos.getRangeTo(creep.room.controller) < 3) {
                                                     takeThis = false;
+=======
+                    }
+                    else {
+                        let terminal = creep.room.terminal;
+                        let storage = creep.room.storage;
+                        let boostLabStates = checkRoomBoostLabState(creep.room, 'take');
+                        let ifBoostLabJob = boostLabStates[0];
+                        let boostMat = boostLabStates[1];
+                        let boostLabId = boostLabStates[2];
+                        let boostLab = Game.getObjectById(boostLabId);
+    
+                        // removal of old XGH2O boost code
+                        /*if (creep.room.memory.upgradeLabId&&Game.getObjectById(creep.room.memory.upgradeLabId).mineralAmount<1860&&terminal.store['XGH2O']>2000&&creep.ticksToLive>100) {
+                            if (Game.getObjectById(creep.room.memory.upgradeLabId).mineralType&&Game.getObjectById(creep.room.memory.upgradeLabId).mineralType!='XGH2O') {
+                                if (creep.withdraw(Game.getObjectById(creep.room.memory.upgradeLabId),Game.getObjectById(creep.room.memory.upgradeLabId).mineralType)== ERR_NOT_IN_RANGE) {
+                                    creep.travelTo(Game.getObjectById(creep.room.memory.upgradeLabId));
+                                }
+                            }
+                            else if (creep.withdraw(terminal,'XGH2O')== ERR_NOT_IN_RANGE) {
+                                creep.travelTo(terminal);
+                            }
+                        }*/
+                        if (ifBoostLabJob) { // new check boost lab code
+                            if (boostLab.mineralType && (boostLab.mineralType != boostMat)) {
+                                if (creep.withdraw(boostLab, boostLab.mineralType) == ERR_NOT_IN_RANGE) {
+                                    creep.travelTo(boostLab);
+                                }
+                            }
+                            else {
+                                if (terminal.store[boostLabStates[1]]) {
+                                    if (creep.withdraw(terminal, boostLabStates[1]) == ERR_NOT_IN_RANGE) {
+                                        creep.travelTo(terminal);
+                                    }
+                                }
+                                else {
+                                    if (creep.withdraw(storage, boostLabStates[1]) == ERR_NOT_IN_RANGE) {
+                                        creep.travelTo(storage);
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            let linkMem = creep.room.memory.forLinks;
+                            if (linkMem != undefined && (Object.keys(linkMem).length > 0) && linkMem.receiverLinkId) {
+                                var link = Game.getObjectById(linkMem.receiverLinkId);
+                            }
+    
+                            if (true) {//(linkMem == undefined || link.energy == 0 ) { // no link work to do
+                                var containers = creep.room.find(FIND_STRUCTURES, {filter : c => (c.structureType == STRUCTURE_CONTAINER) && (_.sum(c.store) > creep.carryCapacity) });
+                                if (containers.length > 0) {
+                                    // if any container has too much energy
+                                    let container = containers[0]
+                                    for (let mineralType in container.store) {
+                                        if (creep.withdraw(container, mineralType) == ERR_NOT_IN_RANGE) {
+                                            creep.travelTo(container, { maxRooms: 1 });
+                                        }
+                                    }
+                                }
+                                else {
+                                    let storage = creep.room.storage;
+                                    let powerVariable = hasPowerJobToDo(creep.room);
+                                    if (powerVariable && ((!creep.carry.power) || (creep.carry.power && creep.carry.power < 60))) {
+                                        // take power
+                                        let toGo = powerVariable;
+                                        let powerStoreAmout = toGo.store['power'];
+                                        if (creep.withdraw(toGo, RESOURCE_POWER, Math.min(60, powerStoreAmout)) == ERR_NOT_IN_RANGE) {
+                                            creep.travelTo(toGo);
+                                        }
+                                    }
+                                    else {
+                                        if (creep.room.energyAvailable < creep.room.energyCapacityAvailable) {
+                                            let ifShooterRoom = creep.room.memory.startMB;
+                                            if (ifShooterRoom && creep.room.terminal) {
+                                                if (creep.withdraw(terminal, 'energy') == ERR_NOT_IN_RANGE) {
+                                                    creep.travelTo(terminal);
+                                                }
+                                            }
+                                            else {
+                                                if (terminal) { // if terminal is defined
+                                                    // chech if terminal threshold is met
+                                                    if (terminal.store['energy'] > creep.room.memory.mineralThresholds.terminalThreshold['energy']) {
+                                                        if (creep.withdraw(terminal, 'energy', Math.min(creep.carryCapacity - _.sum(creep.carry), terminal.store['energy'] - creep.room.memory.mineralThresholds.terminalThreshold['energy'])) == ERR_NOT_IN_RANGE) {
+                                                            creep.travelTo(terminal);
+                                                        }
+                                                    }
+                                                    else {
+                                                        if (creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                                            creep.travelTo(storage);
+                                                        }
+                                                    }
+>>>>>>> master
                                                 }
                                                 // middle place container
                                                 for (let sp of sps) {
@@ -458,6 +578,7 @@ module.exports = {
                                                     }
                                                 }
                                             }
+<<<<<<< HEAD
                                             if (takeThis) {
                                                 for (let mineralType in container.store) {
                                                     if (creep.withdraw(container, mineralType) == ERR_NOT_IN_RANGE) {
@@ -564,11 +685,66 @@ module.exports = {
                                                         }
                                                     }
                                                 }
+=======
+                                        }
+                                        else {
+                                            let ifShooterRoom = creep.room.memory.startMB;
+                                            if (ifShooterRoom && creep.room.terminal) {
+                                                if (creep.withdraw(terminal, 'energy') == ERR_NOT_IN_RANGE) {
+                                                    creep.travelTo(terminal);
+                                                }
+                                            }
+                                            else {
+                                                if (terminal) { // if terminal is defined
+                                                    // check if terminal threshold is met
+                                                    for (let mineralType in creep.room.memory.mineralThresholds.terminalThreshold) {
+                                                        let TorSToTake = whereToTake(creep.room, mineralType);
+                                                        // threshold decider is in myTrading.js
+                                                        if (TorSToTake) {
+                                                            let amountToTake = 800;
+                                                            if (TorSToTake.storeCapacity == 300000) { // if terminal
+                                                                amountToTake = TorSToTake.store[mineralType] - creep.room.memory.mineralThresholds.terminalThreshold[mineralType];
+                                                            }
+                                                            else if (TorSToTake.storeCapacity == 1000000) { // if storage
+                                                                amountToTake = TorSToTake.store[mineralType] - creep.room.memory.mineralThresholds.storageThreshold[mineralType];
+                                                            }
+                                                            else {
+                                                                console.log('impossible mistake in lorry code.')
+                                                            }
+    
+                                                            if (creep.withdraw(TorSToTake, mineralType, Math.min(creep.carryCapacity - _.sum(creep.carry), amountToTake)) == ERR_NOT_IN_RANGE) {
+                                                                creep.travelTo(TorSToTake);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    // storage and terminal is in equivallent state
+                                                    if (storage.store.energy > 100000) {
+                                                        if (creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                                            creep.travelTo(storage);
+                                                        }
+                                                    }
+                                                }
+                                                else {
+                                                    if (creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                                        creep.travelTo(storage);
+                                                    }
+                                                }
+>>>>>>> master
                                             }
                                         }
                                     }
                                 }
                             }
+<<<<<<< HEAD
+=======
+                            else {
+                                //console.log(creep.withdraw(link, RESOURCE_ENERGY))
+                                if (creep.withdraw(link, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                    creep.travelTo(link);
+                                }
+                            }
+>>>>>>> master
                         }
                     }
                 }

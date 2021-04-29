@@ -1,4 +1,69 @@
+<<<<<<< HEAD
 var addToQ= require('action.addToSQ');
+=======
+var roles = {
+    attacker : require('role.attacker'),
+    healer : require('role.healer'),
+    harvester : require('role.harvester'),
+    miner : require('role.miner'),
+    lorry : require('role.lorry'),
+    upgrader : require('role.upgrader'),
+    builder : require('role.builder'),
+    repairer : require('role.repairer'),
+    wallRepairer : require('role.wallRepairer'),
+    longDistanceHarvester : require('role.longDistanceHarvester'),
+    longDistanceLorry : require('role.longDistanceLorry'),
+    longDistanceBuilder : require('role.longDistanceBuilder'),
+    reserver : require('role.reserver'),
+    claimer : require('role.claimer'),
+    pickuper : require('role.pickuper'),
+    scouter : require('role.scouter'),
+    teezer : require('role.teezer'),
+    rampartRepairer : require('role.rampartRepairer'),
+    begger : require('role.begger'),
+    longDistanceUpgrader : require('role.longDistanceUpgrader'),
+    controllerAttacker : require('role.controllerAttacker'),
+    dismantler: require('role.dismantler'),
+    linkKeeper: require('role.linkKeeper'),
+    traveller: require('role.traveller'),
+    transporter: require('role.transporter'),
+    antiTransporter: require('role.antiTransporter'),
+    pioneer: require('role.pioneer'),
+    melee: require('role.melee'),
+    stealer: require('role.stealer'),
+    ranger: require('role.ranger'),
+    powerSourceAttacker: require('role.powerSourceAttacker'),
+    powerSourceHealer: require('role.powerSourceHealer'),
+    powerSourceLorry: require('role.powerSourceLorry'),
+    powerSourceRanger: require('role.powerSourceRanger'),
+    labber: require('role.labber'),
+    superUpgrader: require('role.superUpgrader'),
+    keeperLairMeleeKeeper: require('role.keeperLairMeleeKeeper'),
+    keeperLairInvaderAttacker: require('role.keeperLairInvaderAttacker'),
+    keeperLairInvaderHealer: require('role.keeperLairInvaderHealer'),
+    keeperLairLorry: require('role.keeperLairLorry'),
+    captain: require('role.captain'),
+    firstMate: require('role.firstMate'),
+    crew: require('role.crew'),
+    nothinger: require('role.nothinger'),
+    ultimateWorrior: require('role.ultimateWorrior'),
+    ultimateUpgrader: require('role.ultimateUpgrader'),
+    oneWayInterSharder: require('role.oneWayInterSharder'),
+    wanderer: require('role.wanderer'),
+    portalTransporter: require('role.portalTransporter'),
+    twoWayInterSharder: require('role.twoWayInterSharder'),
+    scientist: require('role.scientist'),
+    wanker: require('role.wanker'),
+    shooter: require('role.shooter'),
+    onlyMineralDefender: require('role.onlyMineralDefender'),
+    onlyMineralMiner: require('role.onlyMineralMiner'),
+    onlyMineralHauler: require('role.onlyMineralHauler'),
+    redneck: require('role.redneck'),
+    mover: require('role.mover'),
+    kiter: require('role.kiter'),
+    noLegWorker: require('role.noLegWorker'),
+};
+>>>>>>> master
 
 Creep.prototype.runRole = function (roles) {
     //roles[this.memory.role].run(this);
@@ -9,6 +74,10 @@ Creep.prototype.runRole = function (roles) {
         }
     }
     catch(err) {
+<<<<<<< HEAD
+=======
+        unpackCreepMemory(this.name);
+>>>>>>> master
         console.log('error: role name fault: '+this.memory.role+this.pos);
         //unpackCreepMemory(this.name);
     }
@@ -85,6 +154,7 @@ Creep.prototype.smartHeal = function (anotherCreep) {
     }
 }
 
+<<<<<<< HEAD
 Creep.prototype.travelToWithCachedPath = function (tarPosi, param = {}) {
     this.travelTo(tarPosi, param);
     return
@@ -116,6 +186,8 @@ Creep.prototype.travelToWithCachedPath = function (tarPosi, param = {}) {
     }
 }
 
+=======
+>>>>>>> master
 Creep.prototype.trackDeadTaskTimer = function () {
     if (this.memory.timer == undefined) { // timer structure defined
         this.memory.timer = {};
@@ -148,7 +220,11 @@ Creep.prototype.trackDeadTaskTimer = function () {
         if (myContract != undefined) {
             for (let contractId in this.room.memory.taskMove.contracts) {
                 let contract = this.room.memory.taskMove.contracts[contractId]
+<<<<<<< HEAD
                 if ( (contract == undefined) || (contract.offerName == myContract.offerName) && (contractId !== this.memory.moveTaskId) ) { // different contract id but same offer, bad contract remove
+=======
+                if ( (contract.offerName == myContract.offerName) && (contractId !== this.memory.moveTaskId) ) { // different contract id but same offer, bad contract remove
+>>>>>>> master
                     this.room.memory.taskMove.contracts[contractId] = undefined;
                     this.memory.moveTaskId = undefined;
                 }

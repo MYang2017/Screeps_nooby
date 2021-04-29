@@ -6,6 +6,7 @@ module.exports = {
         let tarObj = undefined;
         let ctrler = creep.room.controller;
         let needToFindPos = true;
+<<<<<<< HEAD
         let upgrade_container_only = false;
         
         if (upgrade_container_only == false) {
@@ -23,6 +24,22 @@ module.exports = {
             }
         }
         
+=======
+        
+        // get tar obj
+        if (css.length>0) {
+            tarObj = css[0];
+        }
+        else {
+            tarObj = ctrler;
+        }
+        
+        if (tar && (creep.pos.x == creep.memory.workingPos.x) && (creep.pos.y == creep.memory.workingPos.y)) {
+            needToFindPos = false;
+        }
+        
+        
+>>>>>>> master
         if (needToFindPos) {
             let spots = returnALLAvailableNoStructureLandCoords3(creep.room, tarObj.pos);
             for (let spotId in spots) {

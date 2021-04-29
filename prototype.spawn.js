@@ -1,4 +1,5 @@
 require('myFunctions');
+<<<<<<< HEAD
 
 StructureSpawn.prototype.getDefaultSpawningDir = function () {
     if (this.room.memory.forSpawning && this.room.memory.forSpawning.defaultDir == undefined) {
@@ -22,6 +23,8 @@ StructureSpawn.prototype.getDefaultSpawningDir = function () {
         }
     }
 }
+=======
+>>>>>>> master
 
 StructureSpawn.prototype.createCustomCreep = function (energy, roleName, home) {
     //console.log(home)
@@ -45,11 +48,15 @@ StructureSpawn.prototype.createCustomCreep = function (energy, roleName, home) {
             }
         }
         //console.log(energy, roleName, home,body);
+<<<<<<< HEAD
         let idn = false;
         if (roleName == 'linkKeeper') {
             idn=true;
         }
         return this.spawnCreep(body, randomIdGenerator(), { memory: { role: roleName, working: false, target: home, isNeeded:idn, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
+=======
+        return this.spawnCreep(body, randomIdGenerator(), { memory: { role: roleName, working: false, target: home, spawnTime: 3 * body.length } });
+>>>>>>> master
     }
     /*else if (roleName == 'linkKeeper') {
         let lvl = Game.rooms[home].controller.level;
@@ -152,6 +159,7 @@ StructureSpawn.prototype.createCustomCreep = function (energy, roleName, home) {
             }
         }*/
         //console.log(energy, roleName, home, body);
+<<<<<<< HEAD
         return this.spawnCreep(body, randomIdGenerator(), { memory: {role: roleName, working: false, target: home, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
     }
 }
@@ -410,6 +418,12 @@ StructureSpawn.prototype.createDriver = function(energy, path, purp, from, to) {
 }
 
 
+=======
+        return this.spawnCreep(body, randomIdGenerator(), { memory: {role: roleName, working: false, target: home, spawnTime: 3*body.length}});
+    }
+}
+
+>>>>>>> master
 StructureSpawn.prototype.createNoLegWorker = function(energy) {
     var body = [];
     var NoCarryMoveParts = Math.floor((energy-50)/100);
@@ -420,12 +434,16 @@ StructureSpawn.prototype.createNoLegWorker = function(energy) {
     
     body.push(CARRY);
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'noLegWorker', spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
 }
 
 StructureSpawn.prototype.createMapper = function(target) {
     var body = [MOVE];
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'mapper', target: target, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'noLegWorker', spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createSuperUpgrader = function(energyMax) {
@@ -473,7 +491,11 @@ StructureSpawn.prototype.createSuperUpgrader = function(energyMax) {
         }
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'superUpgrader', working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'superUpgrader', working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createLongDistanceHarvester = function(energy, home, target) {
@@ -487,7 +509,11 @@ StructureSpawn.prototype.createLongDistanceHarvester = function(energy, home, ta
         body.push(MOVE);
     }
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceHarvester', home: home, target: target, working: false, toCentre: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceHarvester', home: home, target: target, working: false, toCentre: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createStealer = function(energy, home, target, toTp, big=false, stc=undefined) {
@@ -700,9 +726,13 @@ StructureSpawn.prototype.createSymbolPicker = function(target, home, sybId, part
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'symbolPicker', home: home, target: target, working: false, sybId: sybId, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
 }
 
+<<<<<<< HEAD
 StructureSpawn.prototype.createSymbolFactorier = function() {
     var body = [CARRY, CARRY, MOVE, CARRY, CARRY, MOVE];
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'symbolFactorier', spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceLorry', home: home, target: target, working: false, toCentre: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createBegger = function(energy, home, target) {
@@ -730,7 +760,11 @@ StructureSpawn.prototype.createLongDistanceUpgrader = function(energy, home, tar
     for (let i = 0; i < NoParts; i++) {
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceUpgrader', home: home, target: target, working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceUpgrader', home: home, target: target, working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createAttacker = function(target, home, uniqueString) {
@@ -742,7 +776,11 @@ StructureSpawn.prototype.createAttacker = function(target, home, uniqueString) {
     for (let i = 0; i < NoParts; i++) {
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'attacker', target: target, home: home, uniqueString: uniqueString, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'attacker', target: target, home: home, uniqueString: uniqueString, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createHealer = function(target, boosted) {
@@ -766,7 +804,11 @@ StructureSpawn.prototype.createHealer = function(target, boosted) {
       body.push(MOVE);
       */
 
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'healer', target: target, boosted: boosted, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'healer', target: target, boosted: boosted, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createControllerAttacker = function(target) {
@@ -816,7 +858,11 @@ StructureSpawn.prototype.createTeezer = function (energy, target, home, preferre
         }
     }*/
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'teezer', target: target, home: home, preferredLocation: preferredLocation, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'teezer', target: target, home: home, preferredLocation: preferredLocation, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createScouter = function(scouterName, target) {
@@ -836,7 +882,11 @@ StructureSpawn.prototype.createLongDistanceBuilder = function(energy, target, ho
     for (let i = 0; i < NoCarryMoveParts; i++) {
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceBuilder', target: target, home: home, working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'longDistanceBuilder', target: target, home: home, working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createPioneer = function(energy, target, home, superUpgrader, route) {
@@ -864,12 +914,17 @@ StructureSpawn.prototype.createPioneer = function(energy, target, home, superUpg
             body.push(MOVE);
         }
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'pioneer', target: target, home: home, working: false, spawnTime: 3*body.length, route: route}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'pioneer', target: target, home: home, working: false, spawnTime: 3*body.length, route: route}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createClaimer = function(target, attack) {
   //return this.spawnCreep([WORK, CARRY, ATTACK, CLAIM, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], undefined, {role: 'claimer', target: target});
     let body = [CLAIM, MOVE, MOVE];
+<<<<<<< HEAD
     if (this.room.energyCapacityAvailable<=600) {
         body = [CLAIM, MOVE];
     }
@@ -887,6 +942,9 @@ StructureSpawn.prototype.createClaimer = function(target, attack) {
         }
     }
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'claimer', target: target, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'claimer', target: target, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createReserver = function(target, big, roomEnergyMax) {
@@ -909,6 +967,7 @@ StructureSpawn.prototype.createReserver = function(target, big, roomEnergyMax) {
         body = [CLAIM, MOVE];
 
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'reserver', target: target, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
 }
 
@@ -920,11 +979,24 @@ StructureSpawn.prototype.createMover = function (ifRescue, lvl=1) {
     }
     else if (ifRescue) {
         body = [MOVE, CARRY];
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'reserver', target: target, spawnTime: 3*body.length}});
+}
+
+StructureSpawn.prototype.createMover = function (ifRescue) {
+    let body = [];
+    if (ifRescue) {
+        body = [MOVE, MOVE, CARRY, CARRY];
+>>>>>>> master
     }
     else {
         body = [MOVE, MOVE, MOVE, CARRY, CARRY, CARRY];
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'mover', ifRescue: ifRescue, spawnTime: 3 * body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'mover', ifRescue: ifRescue, spawnTime: 3 * body.length} });
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createMiner = function(sourceID, target, RCL, ifMineEnergy, ifLink, ifKeeper, home, ifRescue, ifEarly) {
@@ -936,6 +1008,7 @@ StructureSpawn.prototype.createMiner = function(sourceID, target, RCL, ifMineEne
             
             for (let i = 0; i < NoCarryMoveParts; i++) {
                 body.push(WORK);
+<<<<<<< HEAD
             }
             if (eCap>550) {
                 body.push(CARRY);
@@ -987,10 +1060,57 @@ StructureSpawn.prototype.createMiner = function(sourceID, target, RCL, ifMineEne
                     body = [WORK, WORK, WORK, WORK, WORK, MOVE];
                     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, link: false, spawnTime: 3 * body.length, home: home }, directions: this.getDefaultSpawningDir() });
                 }
+=======
+            }
+            if (eCap>=550) {
+                body.push(CARRY);
+>>>>>>> master
+            }
+            else if (eCap>=650) {
+                body.push(CARRY);
+                body.push(WORK);
+            }
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home , ifRescue: true, workingPos: {x: ifEarly.x, y: ifEarly.y}} });
+
+        }
+        else {
+            let body = [WORK]
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home , ifRescue: true} });
+        }
+<<<<<<< HEAD
+        else { // if mining minerals mine big!
+            var NoCarryMoveParts = Math.min(16,Math.floor((Game.rooms[home].memory.ECap - 150) / 250));
+=======
+    }
+    else {
+        let body = [];
+        if (ifMineEnergy) { // if mining energy
+            if (ifKeeper) {
+                body = [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home } });
+            }
+            else if (RCL == 0) { // if remote mining, run faster, more MOVE parts
+                var NoCarryMoveParts = Math.min(Math.floor((eCap-700)/50), 5);
+                let body = [WORK, WORK, WORK, WORK, WORK, CARRY, WORK, MOVE];
+                for (let i = 0; i < NoCarryMoveParts; i++) {
+                    body.push(MOVE);
+                }
+                return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home } });
+            }
+            else { // current room miner, no need to move very fast
+                if (ifLink) { // if link mining
+                    body = [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE];
+                    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, link: true, spawnTime: 3 * body.length, home: home } });
+                }
+                else {
+                    body = [WORK, WORK, WORK, WORK, WORK, MOVE];
+                    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, link: false, spawnTime: 3 * body.length, home: home } });
+                }
             }
         }
         else { // if mining minerals mine big!
-            var NoCarryMoveParts = Math.min(16,Math.floor((Game.rooms[home].memory.ECap - 150) / 250));
+            var NoCarryMoveParts = Math.floor((Game.rooms[home].memory.ECap - 150) / 250);
+>>>>>>> master
             let body = [];
             for (let i = 0; i < NoCarryMoveParts; i++) {
                 body.push(WORK);
@@ -1007,19 +1127,31 @@ StructureSpawn.prototype.createMiner = function(sourceID, target, RCL, ifMineEne
             }
             body.push(MOVE);
 
+<<<<<<< HEAD
             return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home }, directions: this.getDefaultSpawningDir() });
+=======
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'miner', sourceID: sourceID, target: target, spawnTime: 3 * body.length, home: home } });
+>>>>>>> master
         }
     }
 }
 
 StructureSpawn.prototype.createLorry = function(energy) {
     let body = [CARRY,CARRY,MOVE];
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'lorry', working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'lorry', working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createTraveller = function(target) {
     let body = [MOVE];
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'traveller', target: target, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'traveller', target: target, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createTransporter = function (mineralType, fromStorage) {
@@ -1029,7 +1161,11 @@ StructureSpawn.prototype.createTransporter = function (mineralType, fromStorage)
         body.push(CARRY);
         body.push(CARRY);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'transporter', resourceType: mineralType, working: false, fromStorage: fromStorage, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'transporter', resourceType: mineralType, working: false, fromStorage: fromStorage, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 /*
@@ -1048,6 +1184,7 @@ StructureSpawn.prototype.createRanger = function (target, home, rcl=undefined) {
     if (target == home) {
         if (rcl && rcl <= 3) {
             let body = [MOVE, ATTACK, MOVE, RANGED_ATTACK];
+<<<<<<< HEAD
             return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'ranger', target: target, home: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir() });
         }
         else {
@@ -1070,6 +1207,23 @@ StructureSpawn.prototype.createRanger = function (target, home, rcl=undefined) {
         else {
             let body = [MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, RANGED_ATTACK];
             return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'ranger', target: target, home: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir() });
+=======
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'ranger', target: target, home: home, spawnTime: 3 * body.length } });
+        }
+        else {
+            fo('nothing, everything is undercontrol');
+            return 
+        }
+    }
+    else {
+        if (rcl && rcl <= 3) {
+            let body = [MOVE, ATTACK, MOVE, RANGED_ATTACK];
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'ranger', target: target, home: home, spawnTime: 3 * body.length } });
+        }
+        else {
+            let body = [MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, ATTACK, MOVE, RANGED_ATTACK];
+            return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'ranger', target: target, home: home, spawnTime: 3 * body.length } });
+>>>>>>> master
         }
     }
 }
@@ -1097,7 +1251,11 @@ StructureSpawn.prototype.createPowerSourceHealer = function(target, toHeal) {
         body.push(HEAL);
     }
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'powerSourceHealer', target: target, home: this.room.name, toHeal: toHeal, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'powerSourceHealer', target: target, home: this.room.name, toHeal: toHeal, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createPowerSourceRanger = function(target) {
@@ -1115,7 +1273,11 @@ StructureSpawn.prototype.createPowerSourceRanger = function(target) {
         }
     }
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'powerSourceRanger', target: target, home: this.room.name, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'powerSourceRanger', target: target, home: this.room.name, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createPowerSourceLorry = function(target, home) {
@@ -1129,7 +1291,11 @@ StructureSpawn.prototype.createPowerSourceLorry = function(target, home) {
     }
     body.push(CARRY);
     body.push(MOVE);
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'powerSourceLorry', home: home, target: target, working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'powerSourceLorry', home: home, target: target, working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createKeeperLairMeleeKeeper = function(target, home, ranged) {
@@ -1163,6 +1329,7 @@ StructureSpawn.prototype.createKeeperLairMeleeKeeper = function(target, home, ra
         }
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairMeleeKeeper', target: target, home: home, ranged: ranged, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
 }
 
@@ -1179,6 +1346,9 @@ StructureSpawn.prototype.createMelee = function(target, home) {
     }
     
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'melee', target: target, home: home, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairMeleeKeeper', target: target, home: home, ranged: ranged, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createKeeperLairInvaderAttacker = function(target, home, name) {
@@ -1210,7 +1380,11 @@ StructureSpawn.prototype.createKeeperLairInvaderHealer = function(target, home, 
         body.push(HEAL);
     }
 
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairInvaderHealer', target: target, home: home, toHeal: toHeal, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairInvaderHealer', target: target, home: home, toHeal: toHeal, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createKeeperLairLorry = function(target, home) {
@@ -1229,7 +1403,11 @@ StructureSpawn.prototype.createKeeperLairLorry = function(target, home) {
         body.push(CARRY);
         body.push(MOVE);
     }*/
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairLorry', target: target, home: home, working: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'keeperLairLorry', target: target, home: home, working: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createCaptain = function(groupName) {
@@ -1242,7 +1420,11 @@ StructureSpawn.prototype.createCaptain = function(groupName) {
           body.push(ATTACK);
       }
 
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'captain', groupName: groupName, followed: false, ungrouped: true, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'captain', groupName: groupName, followed: false, ungrouped: true, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createFirstMate = function(groupName, boostMats) {
@@ -1253,7 +1435,11 @@ StructureSpawn.prototype.createFirstMate = function(groupName, boostMats) {
       for (let i = 0; i < 25; i++) {
           body.push(HEAL);
       }
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'firstMate', groupName: groupName, followed: false, ungrouped: true, boosted: false, boostMats: boostMats, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'firstMate', groupName: groupName, followed: false, ungrouped: true, boosted: false, boostMat: boostMat, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createCrew = function(groupName, boostMat) {
@@ -1264,7 +1450,11 @@ StructureSpawn.prototype.createCrew = function(groupName, boostMat) {
       for (let i = 0; i < 25; i++) {
           body.push(HEAL);
       }
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'crew', groupName: groupName, followed: false, ungrouped: true, boosted: false, boostMat: boostMat, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'crew', groupName: groupName, followed: false, ungrouped: true, boosted: false, boostMat: boostMat, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createUltimateWorrior = function(target) {
@@ -1282,6 +1472,7 @@ StructureSpawn.prototype.createUltimateWorrior = function(target) {
           body.push(MOVE);
           body.push(HEAL);
       }
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'ultimateWorrior', target: target, boosted: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
 }
 
@@ -1349,6 +1540,9 @@ StructureSpawn.prototype.createKiter = function(target, home, lvl=6) {
         body.push(HEAL);
     }
     return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'kiter', target: target, home: home, boostMats: boostMats, boosted: false, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'ultimateWorrior', target: target, boosted: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createDismantler = function(target, boostMats, tarId=undefined, dry=undefined) {
@@ -1392,6 +1586,7 @@ StructureSpawn.prototype.createDismantler = function(target, boostMats, tarId=un
           body.push(WORK);
           body.push(MOVE);
       }
+<<<<<<< HEAD
       else {
           let energy = this.room.energyCapacityAvailable;
           let NoParts = Math.min(Math.floor(energy / 150), 25);
@@ -1406,6 +1601,9 @@ StructureSpawn.prototype.createDismantler = function(target, boostMats, tarId=un
           body = [WORK, MOVE];
       }
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'dismantler', target: target, boosted: false, boostMats: boostMats, tarId: tarId, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'dismantler', target: target, boosted: false, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createUltimateUpgrader = function(boosted) {
@@ -1418,16 +1616,28 @@ StructureSpawn.prototype.createUltimateUpgrader = function(boosted) {
           body.push(MOVE);
       }
 
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'ultimateUpgrader', boosted: boosted, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'ultimateUpgrader', boosted: boosted, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createWanderer = function(target) {
       var body = [MOVE];
+<<<<<<< HEAD
       return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'wanderer', target: target}, directions: this.getDefaultSpawningDir()});
 }
 
 StructureSpawn.prototype.createOneWayInterSharder = function(targetShardName, portalRoomName, portalId, targetRoomName, roleWillBe, body, route) {
     return this.spawnCreep(body, targetShardName + '_' + targetRoomName + '_' + roleWillBe + '_' + generateRandomStrings() + '_' + JSON.stringify(route), {memory: {role: 'oneWayInterSharder', targetShardName: targetShardName, portalRoomName: portalRoomName, portalId: portalId, targetRoomName: targetRoomName, roleWillBe: roleWillBe, spawnTime: 3*body.length}, directions: this.getDefaultSpawningDir()});
+=======
+      return this.spawnCreep(body, randomIdGenerator(), { memory: {role: 'wanderer', target: target}});
+}
+
+StructureSpawn.prototype.createOneWayInterSharder = function(targetShardName, portalRoomName, portalId, targetRoomName, roleWillBe, body, route) {
+    return this.spawnCreep(body, targetShardName + '_' + targetRoomName + '_' + roleWillBe + '_' + generateRandomStrings() + '_' + JSON.stringify(route), {memory: {role: 'oneWayInterSharder', targetShardName: targetShardName, portalRoomName: portalRoomName, portalId: portalId, targetRoomName: targetRoomName, roleWillBe: roleWillBe, spawnTime: 3*body.length}});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createPortalTransporter = function (portalRoomName, energy, parsedMemoryAfterTeleportation) {
@@ -1442,7 +1652,11 @@ StructureSpawn.prototype.createPortalTransporter = function (portalRoomName, ene
     for (let i = 0; i < NoParts; i++) {
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'portalTransporter', portalRoomName: portalRoomName, parsedMemoryAfterTeleportation: parsedMemoryAfterTeleportation }, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'portalTransporter', portalRoomName: portalRoomName, parsedMemoryAfterTeleportation: parsedMemoryAfterTeleportation }});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createOnlyMineralDefender = function (target, home) {
@@ -1456,7 +1670,11 @@ StructureSpawn.prototype.createOnlyMineralDefender = function (target, home) {
     for (let i = 0; i < 3; i++) {
         body.push(HEAL);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralDefender', target: target, home: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralDefender', target: target, home: home, spawnTime: 3 * body.length }});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createOnlyMineralMiner = function (target, home) {
@@ -1467,11 +1685,15 @@ StructureSpawn.prototype.createOnlyMineralMiner = function (target, home) {
     for (let i = 0; i < 14; i++) {
         body.push(CARRY);
     }
+<<<<<<< HEAD
     for (let i = 0; i < 18; i++) {
         body.push(MOVE);
     }
     
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralMiner', target: target, home: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralMiner', target: target, home: home, spawnTime: 3 * body.length }});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createOnlyMineralHauler = function (target, home) {
@@ -1482,7 +1704,11 @@ StructureSpawn.prototype.createOnlyMineralHauler = function (target, home) {
     for (let i = 0; i < 14; i++) {
         body.push(MOVE);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralHauler', target: target, home: home, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir()});
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'onlyMineralHauler', target: target, home: home, spawnTime: 3 * body.length }});
+>>>>>>> master
 }
 
 StructureSpawn.prototype.createRedneck = function (target, home) {
@@ -1498,5 +1724,9 @@ StructureSpawn.prototype.createRedneck = function (target, home) {
         body.push(ATTACK);
         body.push(ATTACK);
     }
+<<<<<<< HEAD
     return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'redneck', target: target, spawnTime: 3 * body.length }, directions: this.getDefaultSpawningDir() });
+=======
+    return this.spawnCreep(body, randomIdGenerator(), { memory: { role: 'redneck', target: target, spawnTime: 3 * body.length } });
+>>>>>>> master
 }

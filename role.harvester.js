@@ -9,6 +9,7 @@ module.exports = {
         }
         else {
             if (creep.room.name == home) {
+<<<<<<< HEAD
                 
                 let carrier = creep.room.find(FIND_MY_CREEPS, {filter: c=> c.memory.role == 'pickuper' || c.memory.role == 'lorry' || c.memory.role == 'loader' || c.memory.role == 'balancer' || c.memory.role == 'dickHead' || c.memory.role == 'maintainer' || c.memory.role == 'mover'});
                 let miner = creep.room.find(FIND_MY_CREEPS, {filter: c=> c.memory.role == 'miner'});
@@ -25,6 +26,14 @@ module.exports = {
                 else if (creep.memory.working == false && creep.carry.energy == creep.carryCapacity) {
                     creep.memory.working = true;
                 }
+=======
+                if (creep.memory.working == true && creep.carry.energy == 0) {
+                    creep.memory.working = false;
+                }
+                else if (creep.memory.working == false && creep.carry.energy == creep.carryCapacity) {
+                    creep.memory.working = true;
+                }
+>>>>>>> master
         
                 if (creep.memory.working == true) {
                     var structure = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ( (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION || (s.energy < 0.95*s.energyCapacity && s.structureType == STRUCTURE_TOWER) ) && s.energy < s.energyCapacity) })
@@ -43,20 +52,31 @@ module.exports = {
                 }
                 else {
                   if (creep.memory.sourceIndex == undefined) { // if there is not a fixed source index 0 or 1, go to the closest source
+<<<<<<< HEAD
                     getE.run(creep);
                     return
+=======
+>>>>>>> master
                     var [resourceID, ifDropped] = evaluateEnergyResources(creep, true, true, true, true); // find energy function in myFunctoins
                     //console.log(creep.room.name,resourceID, ifDropped)
                     if (resourceID != undefined) {
                       energy = Game.getObjectById(resourceID);
                       if (ifDropped) { // if energy is dropped
                         if (creep.pickup(energy) == ERR_NOT_IN_RANGE) {
+<<<<<<< HEAD
                             creep.moveTo(energy, { maxRooms: 1 });
+=======
+                            creep.moveTo(energy);
+>>>>>>> master
                         }
                       }
                       else { // energy is from container, storage or link
                         if (creep.withdraw(energy, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+<<<<<<< HEAD
                             creep.moveTo(energy, { maxRooms: 1 });
+=======
+                            creep.moveTo(energy);
+>>>>>>> master
                         }
                       }
                     }

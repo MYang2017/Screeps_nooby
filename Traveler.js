@@ -453,7 +453,11 @@ class Traveler {
         if (!this.creepMatrixTick) this.creepMatrixTick = {};
         if (!this.creepMatrixCache[room.name] || Game.time !== this.creepMatrixTick[room.name]) {
             this.creepMatrixTick[room.name] = Game.time;
+<<<<<<< HEAD
             this.creepMatrixCache[room.name] = Traveler.addCreepsToMatrix(room, this.getStructureMatrix(room, true).clone(), creepCost);
+=======
+            this.creepMatrixCache[room.name] = Traveler.addCreepsToMatrix(room, this.getStructureMatrix(room, true).clone());
+>>>>>>> master
         }
         return this.creepMatrixCache[room.name];
     }
@@ -663,10 +667,16 @@ Traveler.creepMatrixCache = {};
 exports.Traveler = Traveler;
 // this might be higher than you wish, setting it lower is a great way to diagnose creep behavior issues. When creeps
 // need to repath to often or they aren't finding valid paths, it can sometimes point to problems elsewhere in your code
+<<<<<<< HEAD
 const REPORT_CPU_THRESHOLD = 50;
 const DEFAULT_MAXOPS = 2000;
 const ROAD_COST_VAL = 1;
 const DEFAULT_STUCK_VALUE = 2;  // time wait before find path again when stuck
+=======
+const REPORT_CPU_THRESHOLD = 1000;
+const DEFAULT_MAXOPS = 20000;
+const DEFAULT_STUCK_VALUE = 1;  // time wait before find path again when stuck
+>>>>>>> master
 const STATE_PREV_X = 0;
 const STATE_PREV_Y = 1;
 const STATE_STUCK = 2;

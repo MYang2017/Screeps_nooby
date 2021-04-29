@@ -32,10 +32,13 @@ global.helpSubroom = function (home, target) { // send claimer and first pioneer
 
 global.sendPioneer = function (roomName,toHelpName,ifSuper,energy) {
     Game.rooms[roomName].memory.forSpawning.spawningQueue.push({ memory: { energy: energy, role: 'pioneer', target: toHelpName, home: roomName, superUpgrader: ifSuper, route: undefined }, priority: 16 });
+<<<<<<< HEAD
 }
 
 global.sendSacrificer = function (rn, tarrn) {
     Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{role: 'sacrificer', home: rn, target: tarrn},priority: 9.5});
+=======
+>>>>>>> master
 }
 
 global.ifKeepHelping = function (home, target) { // if keep sending pioneers
@@ -93,6 +96,7 @@ global.mainBuildSub = function (room,route) {
                 console.log('Room ' + room.name + ' sent claimer ' + subRoomName);
                 room.memory.forSpawning.spawningQueue.push({ memory: { role: 'claimer', target: subRoomName }, priority: 18 });
             }
+<<<<<<< HEAD
             
             let ecap = room.energyCapacityAvailable;
             if (ecap>1800) {
@@ -103,6 +107,11 @@ global.mainBuildSub = function (room,route) {
                 room.memory.forSpawning.spawningQueue.push({ memory: { energy: ecap, role: 'pioneer', target: subRoomName, home: room.name, superUpgrader: false, route: route }, priority: 0.4 });
                 console.log('Room ' + room.name + ' sent pioneer to room ' + subRoomName);
             }
+=======
+
+            room.memory.forSpawning.spawningQueue.push({ memory: { energy: room.energyCapacityAvailable, role: 'pioneer', target: subRoomName, home: room.name, superUpgrader: false, route: route }, priority: 0.4 });
+            console.log('Room ' + room.name + ' sent pioneer to room ' + subRoomName);
+>>>>>>> master
         }
         else {
             return false
@@ -176,13 +185,18 @@ global.ifWaitForRenew = function (creep) {
 
 }
 
+<<<<<<< HEAD
 global.logGrandeRoomInfo = function (r, rerun=false) {
+=======
+global.logGrandeRoomInfo = function (r) {
+>>>>>>> master
     let rName = r.name;
     
     if (!Memory.mapInfo) {
         Memory.mapInfo = {};
     }
     
+<<<<<<< HEAD
     if (!Memory.mapInfo[rName] || rerun) {
         Memory.mapInfo[rName] = {};
         
@@ -243,6 +257,61 @@ global.logGrandeRoomInfo = function (r, rerun=false) {
         let controObj = r.controller;
         if (Memory.mapInfo[rName]['owner'] && Memory.mapInfo[rName]['owner'] !== controObj.owner) {
             Memory.mapInfo[rName]['owner'] = controObj.owner;
+=======
+    if (!Memory.mapInfo[rName]) {
+        Memory.mapInfo[rName] = {};
+    }
+
+    // energy res
+    if (!Memory.mapInfo[rName]['eRes']) {
+        Memory.mapInfo[rName]['eRes'] = {};
+    }
+    let energyResources = r.find(FIND_SOURCES);
+    if (energyResources) {
+        for (let energyResource of energyResources) {
+            if (true) { //(energyResource.resourceType == RESOURCE_ENERGY) {
+                let posi = returnFirstAvailableNoStructureLandCoords(r, energyResource.pos);
+                let posis = returnALLAvailableNoStructureLandCoords(r, energyResource.pos);
+                if (posi) {
+                    Memory.mapInfo[rName]['eRes'][energyResource.id] = { posi: energyResource.pos, easyContainerPosi: posi, }
+                }
+                if (posis.length>0) {
+                    Memory.mapInfo[rName]['eRes'][energyResource.id]['posis'] = posis;
+                }
+            }
+            else { // other resource
+
+            }
+        }
+    } else {
+        Memory.mapInfo[rName]['eRes'] = undefined
+    }
+
+    // controller
+    
+    if (r.controller) {
+        let controObj = r.controller;
+
+        if (!Memory.mapInfo[rName]['contreId']) {
+            Memory.mapInfo[rName]['contreId'] = {};
+        }
+
+        Memory.mapInfo[rName]['contreId'] = controObj.id;
+
+        // owner
+        if (!Memory.mapInfo[rName]['owner']) {
+            Memory.mapInfo[rName]['owner'] = {};
+        }
+        if (controObj) {
+            Memory.mapInfo[rName]['owner'] = controObj.owner;
+        }
+
+        // RCL
+        if (!Memory.mapInfo[rName]['RCL']) {
+            Memory.mapInfo[rName]['RCL'] = {};
+        }
+        if (controObj && controObj.owner) {
+>>>>>>> master
             Memory.mapInfo[rName]['RCL'] = controObj.level;
         }
     }
@@ -277,6 +346,7 @@ global.returnALLAvailableNoStructureLandCoords = function (r, posi) {
                 let y = cy + j - 1;
                 let terrain = Game.map.getRoomTerrain(r.name);
                 if (!(terrain.get(x, y) == TERRAIN_MASK_WALL)) {
+<<<<<<< HEAD
                     let structs = r.lookForAt(LOOK_STRUCTURES, x, y);
                     if (structs.length == 0) {
                         let sites = r.lookForAt(LOOK_CONSTRUCTION_SITES, x, y);
@@ -284,6 +354,9 @@ global.returnALLAvailableNoStructureLandCoords = function (r, posi) {
                             posis.push({ x: x, y: y });
                         }
                     }
+=======
+                    posis.push({ x: x, y: y });
+>>>>>>> master
                 }
             }
         }
@@ -356,6 +429,7 @@ global.returnALLAvailableNoStructureCreepLandCoords = function (r, posi) {
     return posis
 }
 
+<<<<<<< HEAD
 global.generateTDLRRoomnames = function (rn) {
     let ok = parseRoomName(rn);
     let ret = []
@@ -369,6 +443,8 @@ global.generateTDLRRoomnames = function (rn) {
     return ret
 }
 
+=======
+>>>>>>> master
 global.parseRoomName = function(roomName) {
   let kWorldSize=Game.map.getWorldSize();
   let room = /^([WE])([0-9]+)([NS])([0-9]+)$/.exec(roomName);

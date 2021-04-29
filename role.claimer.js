@@ -3,10 +3,13 @@ require('funcExpand');
 
 module.exports = {
     run: function (creep) {
+<<<<<<< HEAD
         if (creep.memory.home==undefined) {
             creep.memory.home = creep.room.name;
         }
         
+=======
+>>>>>>> master
         if (false) { //(creep.memory.prepareToDie && creep.memory.prepareToDie == true) {
             selfRecycling.run(creep);
             //console.log(creep.room.name)
@@ -42,6 +45,11 @@ module.exports = {
                         }
                         creep.signController(creep.room.controller, '💕 Your friendly neighbour open for collaboration, whisper me to add to white list 💕 ');
                     }
+<<<<<<< HEAD
+=======
+                    //creep.signController(creep.room.controller, '‍♂‍♀ 💕 May the world full of peace and love 💕 ‍♂‍♀');
+                    creep.signController(creep.room.controller, '🐯 一二三四五，上🏔干什么来着? 🐯');
+>>>>>>> master
                 }
             }
             else { // go to target room

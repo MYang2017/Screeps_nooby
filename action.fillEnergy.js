@@ -21,12 +21,15 @@ module.exports = {
                                     creep.drop(RESOURCE_ENERGY);
                                 }*/
                                 //actionAvoid.run(creep);
+<<<<<<< HEAD
                                 
                                 // early level upgrader feeding
                                 let babies = creep.pos.findClosestByRange(FIND_MY_CREEPS, {filter: c=>c.memory.role=='upgrader' && c.store.energy<0.5*c.store.getCapacity()})
                                 if ((babies) &&(creep.transfer(babies, resourceType) == ERR_NOT_IN_RANGE)) {
                                     creep.travelTo(babies);
                                 }
+=======
+>>>>>>> master
                             }
                         }
                         if (creep.transfer(structure, resourceType) == ERR_NOT_IN_RANGE) {

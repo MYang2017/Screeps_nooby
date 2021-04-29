@@ -1,6 +1,10 @@
 'use strict'
 
+<<<<<<< HEAD
 const STRUCTURE_FILL_LEVEL = {spawn: 1, extension: 1, tower: 0.7, container: 1};
+=======
+const STRUCTURE_FILL_LEVEL = {spawn: 1, extension: 1, tower: 0.7};
+>>>>>>> master
 
 global.structureGetE = function (rn) {
     let r = Game.rooms[rn];
@@ -33,6 +37,7 @@ global.structureGetE = function (rn) {
         r.memory.toFillE = [];
     }
     // ORDER MATTERS! implement priority later <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+<<<<<<< HEAD
     // core containers
     let sps = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_SPAWN});
     let conts = r.find(FIND_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_CONTAINER});
@@ -51,10 +56,14 @@ global.structureGetE = function (rn) {
     }
     
     // spawns
+=======
+    let sps = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_SPAWN});
+>>>>>>> master
     for (let sp of sps) {
         r.memory.toFillE.push({id: sp.id, posi: sp.pos, t: sp.structureType});
     }
     
+<<<<<<< HEAD
     // extensions
     let exts = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_EXTENSION});
     for (let ext of exts) {
@@ -64,12 +73,26 @@ global.structureGetE = function (rn) {
     }
     
     // towers
+=======
+    let exts = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_EXTENSION});
+    for (let ext of exts) {
+        r.memory.toFillE.push({id: ext.id, posi: ext.pos, t: ext.structureType});
+    }
+    
+>>>>>>> master
     let towers = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_TOWER});
     for (let tower of towers) {
         r.memory.toFillE.push({id: tower.id, posi: tower.pos, t: tower.structureType});
     }
+<<<<<<< HEAD
     
     // asker working logic
+=======
+
+    // upgrade container
+    // asker working logic
+    
+>>>>>>> master
     for (let needFill of r.memory.toFillE) {
         let structObj = Game.getObjectById(needFill.id);
         if (r.memory.structurePrototype[needFill.id] == undefined) {// initiate structure memory
@@ -201,6 +224,7 @@ global.resourceOfferE = function (rn) {
             r.memory.toOfferE.push({id: containers[0].id, posi: containers[0].pos, t: 'c', amount: _.sum(containers[0].store)});
         }
     }
+<<<<<<< HEAD
     // if no more offering E
     if (r.memory.toOfferE.length == 0) {
         if (r.storage) {
@@ -209,6 +233,13 @@ global.resourceOfferE = function (rn) {
         if (r.terminal) {
             r.memory.toOfferE.push({id: r.terminal.id, posi: r.terminal.pos, t: 'ter', amount: r.terminal.store.energy});
         }
+=======
+    if (r.storage) {
+        r.memory.toOfferE.push({id: r.storage.id, posi: r.storage.pos, t: 's', amount: r.storage.store.energy});
+    }
+    if (r.terminal) {
+        r.memory.toOfferE.push({id: r.terminal.id, posi: r.terminal.pos, t: 'ter', amount: r.terminal.store.energy});
+>>>>>>> master
     }
     
     // offerer working logic

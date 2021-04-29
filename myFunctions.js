@@ -51,7 +51,11 @@ global.newInitiateBlankRoomCreepsSpawnInfo = function (roomName) {
     roomMem.minCreeps['lorry'] = 0;
     roomMem.minCreeps['pickuper'] = 0;
     roomMem.minCreeps['builder'] = 0;
+<<<<<<< HEAD
     roomMem.minCreeps['upgrader'] = 5;
+=======
+    roomMem.minCreeps['upgrader'] = 0;
+>>>>>>> master
     roomMem.minCreeps['linkKeeper'] = 0;
     roomMem.minCreeps['repairer'] = 0;
     roomMem.minCreeps['wallRepairer'] = 0;
@@ -60,7 +64,11 @@ global.newInitiateBlankRoomCreepsSpawnInfo = function (roomName) {
     roomMem.minCreeps['longDistanceBuilder'] = 0;
     roomMem.minCreeps['reserver'] = 0;
     roomMem.minCreeps['claimer'] = 0;
+<<<<<<< HEAD
     roomMem.minCreeps['attacker'] = 0;
+=======
+    roomMem.minCreeps['attacker'] = 1;
+>>>>>>> master
     roomMem.minCreeps['scouter'] = 0;
     roomMem.minCreeps['teezer'] = 0;
     roomMem.minCreeps['begger'] = 0;
@@ -585,6 +593,7 @@ global.initiateCreepsSpawnInfo = function (roomName) {
 global.updateWallRampartRepairerNo = function (rn) {
     let r = Game.rooms[rn];
     if (r.storage) {var eSitu = r.storage.store.energy};
+<<<<<<< HEAD
     if (r.terminal) {eSitu+=r.terminal.store.energy}
     
     let en = r.find(FIND_CONSTRUCTION_SITES, {
@@ -593,12 +602,21 @@ global.updateWallRampartRepairerNo = function (rn) {
 
     if ((eSitu>240000) && (r.memory.toRepairWallOrRampartId == undefined || Game.getObjectById(r.memory.toRepairWallOrRampartId).hits<680000)|| (r.controller.level==8 && en.length>0)) {
         let em = r.find(FIND_STRUCTURES, {
+=======
+    if (eSitu>300000) {
+        let em = r.find(FIND_STRUCTURES, {
+            filter: object => ((object.structureType == STRUCTURE_WALL) || (object.structureType == STRUCTURE_RAMPART))
+        });
+        
+        let en = r.find(FIND_CONSTRUCTION_SITES, {
+>>>>>>> master
             filter: object => ((object.structureType == STRUCTURE_WALL) || (object.structureType == STRUCTURE_RAMPART))
         });
     
         let tot = em.concat(en).length;
     
         if (tot > 0) {
+<<<<<<< HEAD
             return 1
         }
     }
@@ -608,11 +626,24 @@ global.updateWallRampartRepairerNo = function (rn) {
     else if (eSitu>100000) {
         return 0
     }
+=======
+            return Math.ceil(tot / 7)
+        }
+        else {
+            return 0
+        }
+    }
+    return 0
+>>>>>>> master
 }
 
 global.updateBuilderNo = function (rn) {
     let r = Game.rooms[rn];
+<<<<<<< HEAD
     let tot = r.find(FIND_CONSTRUCTION_SITES, {filter: o=> !(o.structureType == STRUCTURE_WALL||o.structureType == STRUCTURE_RAMPART)});
+=======
+    let tot = r.find(FIND_CONSTRUCTION_SITES);
+>>>>>>> master
 
     if (tot.length > 0) {
         return 1
@@ -745,7 +776,10 @@ global.determineIfFucked = function(myRoom) {
     var enemyAttkPartsCount = 0;
     for (let target of targets) {
         enemyPartsCount += target.getActiveBodyparts(ATTACK) + 2 * target.getActiveBodyparts(RANGED_ATTACK) + 3 * target.getActiveBodyparts(HEAL) + 30 * target.getActiveBodyparts(WORK);
+<<<<<<< HEAD
         enemyAttkPartsCount += target.getActiveBodyparts(ATTACK) + 2 * target.getActiveBodyparts(RANGED_ATTACK);
+=======
+>>>>>>> master
     }
     for (let name in Game.creeps) {
         var mine = Game.creeps[name];
@@ -826,6 +860,7 @@ global.bornToBeWrong = function() {
 
 global.linkTransfer = function(room) {
     if (room.memory.forLinks && Object.keys(room.memory.forLinks).length>0) {
+<<<<<<< HEAD
         if (room.memory.forLinks.receiverLinkId == undefined) {
             let linksInRoom = [];
             if (room.memory.forLinks.linksIdsInRoom) {
@@ -900,6 +935,46 @@ global.linkTransfer = function(room) {
             if (receiverLink && receiverLink.energy < 700) {
                 linkTransferToCentre(receiverLink, linksInRoom);
             }
+=======
+        let roomName = room.name
+        let receiverLink = Game.getObjectById(room.memory.forLinks.receiverLinkId);
+
+        let receiverUpLinkId = '?';
+        let receiverUpLink;
+        if (room.memory.forLinks.receiverUpLinkId) {
+            receiverUpLinkId = room.memory.forLinks.receiverUpLinkId;
+            receiverUpLink = Game.getObjectById(receiverUpLinkId);
+
+        }
+
+        let usedLink;
+        let linksInRoom = [];
+        if (room.memory.forLinks.linksIdsInRoom) {
+            for (let linkIdInRoom of room.memory.forLinks.linksIdsInRoom) {
+                linksInRoom.push(Game.getObjectById(linkIdInRoom));
+            }
+        }
+
+        /*if (receiverUpLink && receiverUpLink.energy == 800) { // if upgrade link is full (no upgrader there)
+            receiverUpLink.transferEnergy(receiverLink, Math.min(receiverUpLink.energy, receiverLink.energyCapacity - receiverLink.energy));
+        }*/
+        if (receiverUpLink && receiverUpLink.energy < 700) {
+            if (receiverLink) {
+                usedLink = linkTransferToCentre(receiverUpLink, linksInRoom.concat(receiverLink));
+                if (usedLink && usedLink.id != receiverLink.id) {
+                    removeElementInArrayByElement(usedLink, linksInRoom);
+                }
+            }
+            else {
+                usedLink = linkTransferToCentre(receiverUpLink, linksInRoom);
+                if (usedLink && usedLink.id != receiverLink.id) {
+                    removeElementInArrayByElement(usedLink, linksInRoom);
+                }
+            }
+        }
+        if (receiverLink && receiverLink.energy < 700) {
+            linkTransferToCentre(receiverLink, linksInRoom);
+>>>>>>> master
         }
     }
 }
@@ -921,6 +996,7 @@ global.initiateLinksInRoom = function(room) {
                 room.memory.forLinks.receiverUpLinkId = link.id;
             }
             else {
+<<<<<<< HEAD
                 let senderLink = true;
                 let sps = room.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_SPAWN});
                 for (let sp of sps) {
@@ -935,15 +1011,29 @@ global.initiateLinksInRoom = function(room) {
                 if (senderLink) {
                     room.memory.forLinks.linksIdsInRoom.push(link.id);
                 }
+=======
+                if (!room.memory.forLinks.linksIdsInRoom) {
+                    room.memory.forLinks.linksIdsInRoom = [];
+                }
+                room.memory.forLinks.linksIdsInRoom.push(link.id);
+>>>>>>> master
             }
         }
 
         room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 1;
+<<<<<<< HEAD
         room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
     }
     else {
         room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 0;
         room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
+=======
+        room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 800;
+    }
+    else {
+        room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 0;
+        room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 800;
+>>>>>>> master
     }
 }
 
@@ -1117,9 +1207,15 @@ global.evaluateEnergyResources = function(creep, ifLink, ifStorage, ifDropped, i
                   return [ruined.id,true]
                 }
                 else {
+<<<<<<< HEAD
                       let energyResources = room.find(FIND_SOURCES, {filter: c=>(c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0)})
                       if (energyResources.length>1) { // if two E resources go to the unoccupied one
                           let energySource = creep.pos.findClosestByRange(FIND_SOURCES, {filter: c=>(c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0)});// find closest energy source
+=======
+                      let energyResources = room.find(FIND_SOURCES)
+                      if (energyResources.length>1) { // if two E resources go to the unoccupied one
+                          let energySource = creep.pos.findClosestByRange(FIND_SOURCES);// find closest energy source
+>>>>>>> master
                           if (((energySource.energy>0)&&(ifSurrounded(energySource) == null)&&(creep.pos.getRangeTo(energySource)>1))||(energySource.energy==0)) { // if full
                               let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
                               goToId = energyResources[1-indexOfCurrent].id;
@@ -1171,7 +1267,10 @@ global.evaluateEnergyResources = function(creep, ifLink, ifStorage, ifDropped, i
             ifLink = false;
             if (creep.room.storage == undefined) {
                 ifStorage = false;
+<<<<<<< HEAD
                 /*
+=======
+>>>>>>> master
                 var dropped = room.find(FIND_DROPPED_RESOURCES, {filter: {resourceType: RESOURCE_ENERGY}})[0];
                 if ((dropped != undefined)&&(dropped['energy']>creep.carryCapacity/2)) {
                     return [dropped.id,true]
@@ -1179,6 +1278,7 @@ global.evaluateEnergyResources = function(creep, ifLink, ifStorage, ifDropped, i
                 else { // if no dropped find energy sources
                     let energyResources = room.find(FIND_SOURCES)
                     let energySource = creep.pos.findClosestByPath(FIND_SOURCES);// find closest energy source
+<<<<<<< HEAD
                     if (energyResources.length>1) { // 2 source room
                         if (energySource) {
                             if (((energySource.energy>0)&&(ifSurrounded(energySource) == null)&&(creep.pos.getRangeTo(energySource)>1))||(energySource.energy==0)) { // if full
@@ -1207,6 +1307,22 @@ global.evaluateEnergyResources = function(creep, ifLink, ifStorage, ifDropped, i
                     }
                 }
                 */
+=======
+                    if (energySource) {
+                    if (((energySource.energy>0)&&(ifSurrounded(energySource) == null)&&(creep.pos.getRangeTo(energySource)>1))||(energySource.energy==0)) { // if full
+                        let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
+                        goToId = energyResources[1-indexOfCurrent].id;
+                        }
+                        else { // not full go to the nearest one
+                            goToId = energySource.id;
+                        }
+                    }
+                    else {
+                        goToId = undefined;
+                    }
+                    return [undefined, goToId]
+                }
+>>>>>>> master
             }
             else {
                 
@@ -1583,6 +1699,7 @@ global.earlyRoomUpgraderBalancing = function (r, Ecap, upNumber) {
         return 4
     }
     else {
+<<<<<<< HEAD
         if (upNumber == null || upNumber == undefined) {
             upNumber = 0;
         }
@@ -1597,6 +1714,18 @@ global.earlyRoomUpgraderBalancing = function (r, Ecap, upNumber) {
         }
         return upNumber
     }
+=======
+        let droppedE = _.sum(r.find(FIND_DROPPED_RESOURCES, { filter: c => (c.resourceType == RESOURCE_ENERGY) }), 'amount');
+        if ((droppedE / (Ecap / 200 * 50)) > 2) {
+            upNumber += 1;
+        }
+        else if (droppedE<500) {
+            upNumber -= 1;
+        }
+        return upNumber
+    }
+
+>>>>>>> master
 }
 
 global.newLinkSuperUpgraderPosisCach = function (rn) {
@@ -1612,6 +1741,7 @@ global.newLinkSuperUpgraderPosisCach = function (rn) {
             r.memory.superUpgraderPosisCach = posis;
         }
     }
+<<<<<<< HEAD
     else {
         let ts = r.find(FIND_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_TOWER});
         for (let t of ts) {
@@ -1623,6 +1753,8 @@ global.newLinkSuperUpgraderPosisCach = function (rn) {
             }
         }
     }
+=======
+>>>>>>> master
     return 
 }
 
@@ -1752,6 +1884,7 @@ global.superUpgraderBalancing = function(roomName) {
         }
         else {
             if (lvl != 8) {
+<<<<<<< HEAD
                 if (room.storage != undefined) { // 4 5 6 7
                     let storageEnergy = room.storage.store.energy;
                     let termic = 0;
@@ -1762,6 +1895,11 @@ global.superUpgraderBalancing = function(roomName) {
                         storageEnergy = room.memory.mineralThresholds.currentMineralStats.energy;
                     }
                     if (storageEnergy > 300000 || (_.sum(room.storage.store)+termic>900000+260000)) { // room keeps being pumped
+=======
+                if (room.storage != undefined) {
+                    let storageEnergy = room.storage.store.energy;
+                    if (storageEnergy > 300000) {
+>>>>>>> master
                         room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 3;
                         console.log(roomName + ' superUpgrader No set to ' + '3');
                     }
@@ -1777,6 +1915,7 @@ global.superUpgraderBalancing = function(roomName) {
                         room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
                         console.log(roomName + ' superUpgrader No set to ' + '0');
                     }
+<<<<<<< HEAD
                     
                     room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
                     console.log(roomName + ' upgrader No set to 0');
@@ -1797,6 +1936,27 @@ global.superUpgraderBalancing = function(roomName) {
                 }
                 room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
                 console.log(roomName + ' superUpgrader and upgrader No set to 1 and 0');
+=======
+                    // room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = upgraderBalancing(totalProgress);
+                    if (lvl < 5) {
+                        let upNo = earlyRoomUpgraderBalancing(room, room.energyCapacityAvailable, room.memory.forSpawning.roomCreepNo.minCreeps['upgrader']);
+                        room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = upNo
+                        console.log(roomName + ' upgrader No set to ' + upNo);
+                    }
+                    else {
+                        room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
+                        console.log(roomName + ' upgrader No set to 0');
+                    }
+                }
+                else {
+                    console.log(roomName + ' no storage and no super upgrading.');
+                }
+            }
+            else {
+                room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                console.log(roomName + ' superUpgrader and upgrader No set to 1 and 0');
+                room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
+>>>>>>> master
                 room.memory.forSpawning.roomCreepNo.creepEnergy.upgrader = 2400;
             }
         }
@@ -1959,12 +2119,15 @@ global.removeAllConstructionSitesInRoom = function (r, t) {
     }
 }
 
+<<<<<<< HEAD
 global.findTotolNumberOfStructure = function (r, type) {
     let alreadyExisted = r.find(FIND_STRUCTURES, {filter: { structureType: type } }).length
     let ongoing = r.find(FIND_CONSTRUCTION_SITES, {filter: { structureType: type } }).length
     return alreadyExisted + ongoing;
 }
 
+=======
+>>>>>>> master
 global.recachAllConstructionSitesInRoom = function (r, t) {
     r.memory.cachedRoad = []
     let vs = r.find(FIND_STRUCTURES, { filter: { structureType: t } });
@@ -1978,6 +2141,7 @@ global.recachAllConstructionSitesInRoom = function (r, t) {
         }
     }
     //r.memory.cachedRoad = toCach;
+<<<<<<< HEAD
 }
 
 
@@ -1987,4 +2151,6 @@ global.getCreepCost = function (body) {
         coste += BODYPART_COST[b.type];
     }
     return coste
+=======
+>>>>>>> master
 }

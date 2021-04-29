@@ -43,7 +43,11 @@ module.exports = {
                             //creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
 
                             //creep.moveToWhenNeverTar(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name))
+<<<<<<< HEAD
                             creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name), {creepCost: 3});
+=======
+                            creep.travelTo(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
+>>>>>>> master
                             //creep.moveToAvoidAllOtherCreeps(new RoomPosition(tarPosi.x, tarPosi.y, creep.room.name));
                         }
                     }
