@@ -1,7 +1,12 @@
 var funcB = require('funcBuildingPlanner');
 
-global.remoteMiningProcess = function (rn) {
-
+global.remoteMiningProcessManager = function (rn) {
+    // neib explorer, gather eres position and estimate rough distance to anchor
+    // if room no construction sites && finished all pending remote builds
+    // run remote assigner, look all neib rooms and if closest in all rooms
+        // if room already managed, take over and remove old owner
+        // else if 
+    // 
 }
 
 global.startRemoteMining = function (roomName, role, no, cost) {
@@ -99,45 +104,57 @@ global.assignResourceToRemoteLorries = function (roomName) {
                 let resourcePrioV = 0;
                 let toGetId = undefined;
                 for (let resIdInResMem in resMem) {
-                    if (resMem[resIdInResMem].takenCareOf == false
-                        && (resMem[resIdInResMem].resType != 'c' || (resMem[resIdInResMem].resType == 'c' && resMem[resIdInResMem].resAmount > 300))
-                    ) {
-                        let res = Game.getObjectById(resIdInResMem);
-                        let resWeight = 1;
-                        if (_.sum(res.store) > 0 && (!res.store.energy || _.sum(res.store) - res.store.energy > 0)) {
-                            resWeight = 200;
-                        }
-                        let distanceToRes = keeperLairLorry.pos.getRangeTo(res) + 1;
-                        let currentResourcePrioV = resMem[resIdInResMem].resAmount * resWeight / distanceToRes;
-                        if (currentResourcePrioV > resourcePrioV) {
-                            resourcePrioV = currentResourcePrioV;
-                            toGetId = resIdInResMem;
-                            break;
+                    if (resMem[resIdInResMem] !== undefined) {
+                        if (!resMem[resIdInResMem].takenCareOf
+                            && (resMem[resIdInResMem].resType != 'c' || (resMem[resIdInResMem].resType == 'c' && resMem[resIdInResMem].resAmount > 300))
+                        ) {
+                            let res = Game.getObjectById(resIdInResMem);
+                            if (res) {
+                                let resWeight = 1;
+                                if (res.store) { // if not dropped
+                                    if (_.sum(res.store) > 0 && (!res.store.energy || _.sum(res.store) - res.store.energy > 0)) {
+                                        resWeight = 200;
+                                    }
+                                }
+                                else {  // dropped
+                                    if (res.resourceType != 'energy') {
+                                        resWeight = 400;
+                                    }
+                                    else {
+                                        resWeight = 50;
+                                    }
+                                }
+                                let distanceToRes = keeperLairLorry.pos.getRangeTo(res) + 1;
+                                let currentResourcePrioV = resMem[resIdInResMem].resAmount * resWeight / distanceToRes;
+                                if (currentResourcePrioV > resourcePrioV) {
+                                    resourcePrioV = currentResourcePrioV;
+                                    toGetId = resIdInResMem;
+                                    break;
+                                }
+                            }
+                            else {
+                                resMem[resIdInResMem] = undefined;
+                            }
                         }
                     }
-                    if (resMem[resIdInResMem].takenCareOf == undefined) {
-                        let res = Game.getObjectById(resIdInResMem);
-                        let resWeight = 1;
-                        if (_.sum(res.store) > 0 && (!res.store.energy || _.sum(res.store) - res.store.energy > 0)) {
-                            resWeight = 200;
-                        }
-                        let distanceToRes = keeperLairLorry.pos.getRangeTo(res) + 1;
-                        let currentResourcePrioV = resMem[resIdInResMem].resAmount * resWeight / distanceToRes;
-                        if (currentResourcePrioV > resourcePrioV) {
-                            resourcePrioV = currentResourcePrioV;
-                            toGetId = resIdInResMem;
-                            break;
-                        }
+                    else {
+                        resMem[resIdInResMem] = undefined;
                     }
                 }
                 if (toGetId) {
                     keeperLairLorry.memory['toGetId'] = toGetId;
                     keeperLairLorry.memory['resType'] = resMem[toGetId].resType;
-                    if ((resMem[toGetId].resAmount - 500) > 500) {
-                        //resMem[toGetId].resAmount = Math.max(0, resMem[toGetId].resAmount - (keeperLairLorry.carryCapacity - _.sum(keeperLairLorry.carry)));
+                    if (Game.getObjectById(toGetId)) {
+                        if (resMem[toGetId].resAmount - keeperLairLorry.store.getCapacity('energy') < 300) {
+                            resMem[toGetId].takenCareOf = true;
+                        }
+                        else {
+                            //resMem[toGetId].resAmount = Math.max(0, resMem[toGetId].resAmount - (keeperLairLorry.carryCapacity - _.sum(keeperLairLorry.carry)));
+                        }
                     }
                     else {
-                        resMem[toGetId].takenCareOf = true;
+                        keeperLairLorry.memory['toGetId'] = undefined;
+                        keeperLairLorry.memory['resType'] = undefined;
                     }
                 }
                 else { // no job to get
@@ -175,115 +192,114 @@ global.findAllResourcesNeedsToTakeInRoom = function (roomName) {
     let room = Game.rooms[roomName];
     if (room) { // if room has visibility
         let resMem = room.memory.resMem;
-        if (resMem) {
-            // erase resources that are not valid anymore
-            for (let resIdInResMem in resMem) {
-                let resObj = Game.getObjectById(resIdInResMem);
-                let resAmount = resMem[resIdInResMem].resAmount;
-                let resTakenCareOf = resMem[resIdInResMem].takenCareOf;
-                let resType = resMem[resIdInResMem].resType;
-
-                if (!resObj || resAmount == 0 || (resAmount < 100 && resType == 'c') || resTakenCareOf == true) {
-                    delete resMem[resIdInResMem];
-                }
-            }
-
-            // resources that creeps are already working on it
-            let alreadyWorkingIds = [];
-            let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => (((s.memory.role == ('keeperLairLorry')) || (s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName)) });
-            for (let keeperLairLorry of keeperLairLorrys) {
-                if (!keeperLairLorry.memory.toGetId) {
-                    alreadyWorkingIds.push(keeperLairLorry.memory.toGetId);
-                }
+        if (!resMem) {
+            room.memory.resMem = {};
+            resMem = room.memory.resMem;
+        }
+        
+        // erase resources that are not valid anymore
+        for (let resIdInResMem in resMem) {
+            let resObj = Game.getObjectById(resIdInResMem);
+            if (!resObj || !resMem[resIdInResMem] || !resMem[resIdInResMem].resAmount) {
+                resMem[resIdInResMem] = undefined;
+                continue
             }
             
-            /*
-            // add in resources to memory
-            // season 2 symbol
-            let symbctns = room.find(FIND_SYMBOL_CONTAINERS, { filter: s => _.sum(s.store) > 0 });
-            for (let symbctn of symbctns) {
-                if (!(symbctn.id in resMem) && !alreadyWorkingIds.includes(symbctn.id)) { // if resource not logged
-                    resMem[symbctn.id] = {};
-                    resMem[symbctn.id].resType = 'c';
-                    resMem[symbctn.id].resAmount = _.sum(symbctn.store);
-                    resMem[symbctn.id].resIfE = 0;
-                    resMem[symbctn.id].takenCareOf = false;
-                }
-                else { // update amount
-                    resMem[symbctn.id].resAmount = _.sum(symbctn.store);
-                }
-            }
-            */
+            let resAmount = resMem[resIdInResMem].resAmount;
+            let resTakenCareOf = resMem[resIdInResMem].takenCareOf;
+            let resType = resMem[resIdInResMem].resType;
 
-            // dropped non energy
-            let droppeds = room.find(FIND_DROPPED_RESOURCES);
-            for (dropped of droppeds) {
-                if (!(dropped.id in resMem) && !alreadyWorkingIds.includes(dropped.id)) { // if resource not logged
-                    resMem[dropped.id] = {};
-                    resMem[dropped.id].resType = 'd';
-                    resMem[dropped.id].resAmount = dropped.amount;
-                    if (dropped.resourceType !== 'energy') {
-                        resMem[dropped.id].resIfE = 0;
-                        resMem[dropped.id].takenCareOf = false;
-                    }
-                }
-                else if (Game.time % 50 == 0 && dropped.id in resMem) {
-                    resMem[dropped.id].resAmount = dropped.amount;
-                }
+            if (!resObj || resAmount == 0 || (resAmount < 100 && resType == 'c') || resTakenCareOf == true) {
+                delete resMem[resIdInResMem];
             }
-
-            let tombstones = room.find(FIND_TOMBSTONES, { filter: c => (_.sum(c.store) > 0) });
-            for (let tombstone of tombstones) {
-                if (!(tombstone.id in resMem) && !alreadyWorkingIds.includes(tombstone.id)) { // if resource not logged
-                    resMem[tombstone.id] = {};
-                    resMem[tombstone.id].resType = 't';
-                    resMem[tombstone.id].resAmount = _.sum(tombstone.store);
-                    if (tombstone.store['energy']) {
-                        resMem[tombstone.id].resIfE = 1;
+            else { // update amount
+                if (Game.time%5==0) {
+                    if (resType == 'd') {
+                        resMem[resIdInResMem].resAmount = resObj.amount;
                     }
                     else {
-                        resMem[tombstone.id].resIfE = 0;
+                        resMem[resIdInResMem].resAmount = _.sum(resObj.store);
                     }
-                    resMem[tombstone.id].takenCareOf = false;
-                }
-            }
-            let containers = room.find(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_CONTAINER && _.sum(s.store) > 100 });
-            for (let container of containers) {
-                if (!(container.id in resMem) && !alreadyWorkingIds.includes(container.id)) { // if resource not logged
-                    resMem[container.id] = {};
-                    resMem[container.id].resType = 'c';
-                    resMem[container.id].resAmount = _.sum(container.store);
-                    if (container.store['energy']) {
-                        resMem[container.id].resIfE = 1;
-                    }
-                    else {
-                        resMem[container.id].resIfE = 0;
-                    }
-                    resMem[container.id].takenCareOf = false;
-                }
-                else { // update amount
-                    resMem[container.id].resAmount = _.sum(container.store);
-                }
-            }
-
-            // dropped energy
-            for (dropped of droppeds) {
-                if (!(dropped.id in resMem) && !alreadyWorkingIds.includes(dropped.id)) { // if resource not logged
-                    resMem[dropped.id] = {};
-                    resMem[dropped.id].resType = 'd';
-                    resMem[dropped.id].resAmount = dropped.amount;
-                    if (dropped.resourceType == 'energy') {
-                        resMem[dropped.id].resIfE = 1;
-                        resMem[dropped.id].takenCareOf = false;
-                    }
-                }
-                else if (Game.time % 50 == 0 && dropped.id in resMem) {
-                    resMem[dropped.id].resAmount = dropped.amount;
                 }
             }
         }
-        else { // resource memory not defined
-            room.memory.resMem = {};
+        
+        // resources that creeps are already working on it
+        let alreadyWorkingIds = [];
+        let keeperLairLorrys = room.find(FIND_MY_CREEPS, { filter: (s) => (((s.memory.role == ('keeperLairLorry')) || (s.memory.role == ('longDistanceLorry'))) && (s.memory.target == roomName)) });
+        for (let keeperLairLorry of keeperLairLorrys) {
+            if (keeperLairLorry.memory.toGetId && Game.getObjectById(keeperLairLorry.memory.toGetId)) {
+                alreadyWorkingIds.push(keeperLairLorry.memory.toGetId);
+            }
+        }
+        
+        /*
+        // add in resources to memory
+        // season 2 symbol
+        let symbctns = room.find(FIND_SYMBOL_CONTAINERS, { filter: s => _.sum(s.store) > 0 });
+        for (let symbctn of symbctns) {
+            if (!(symbctn.id in resMem) && !alreadyWorkingIds.includes(symbctn.id)) { // if resource not logged
+                resMem[symbctn.id] = {};
+                resMem[symbctn.id].resType = 'c';
+                resMem[symbctn.id].resAmount = _.sum(symbctn.store);
+                resMem[symbctn.id].resIfE = 0;
+                resMem[symbctn.id].takenCareOf = false;
+            }
+            else { // update amount
+                resMem[symbctn.id].resAmount = _.sum(symbctn.store);
+            }
+        }
+        */
+
+        // dropped non energy
+        let droppeds = room.find(FIND_DROPPED_RESOURCES);
+        for (dropped of droppeds) {
+            if (!(dropped.id in resMem) && !alreadyWorkingIds.includes(dropped.id)) { // if resource not logged
+                resMem[dropped.id] = {};
+                resMem[dropped.id].resType = 'd';
+                resMem[dropped.id].resAmount = dropped.amount;
+                if (dropped.resourceType !== 'energy') {
+                    resMem[dropped.id].resIfE = 0;
+                }
+                else {
+                    resMem[dropped.id].resIfE = 1;
+                }
+                resMem[dropped.id].takenCareOf = false;
+            }
+            else if (Game.time % 50 == 0 && dropped.id in resMem) {
+                resMem[dropped.id].resAmount = dropped.amount;
+            }
+        }
+
+        let tombstones = room.find(FIND_TOMBSTONES, { filter: c => (_.sum(c.store) > 0) });
+        for (let tombstone of tombstones) {
+            if (!(tombstone.id in resMem) && !alreadyWorkingIds.includes(tombstone.id)) { // if resource not logged
+                resMem[tombstone.id] = {};
+                resMem[tombstone.id].resType = 't';
+                resMem[tombstone.id].resAmount = _.sum(tombstone.store);
+                if (tombstone.store['energy']) {
+                    resMem[tombstone.id].resIfE = 1;
+                }
+                else {
+                    resMem[tombstone.id].resIfE = 0;
+                }
+                resMem[tombstone.id].takenCareOf = false;
+            }
+        }
+        let containers = room.find(FIND_STRUCTURES, { filter: s => s.structureType == STRUCTURE_CONTAINER && _.sum(s.store) > 100 });
+        for (let container of containers) {
+            if (!(container.id in resMem) && !alreadyWorkingIds.includes(container.id)) { // if resource not logged
+                resMem[container.id] = {};
+                resMem[container.id].resType = 'c';
+                resMem[container.id].resAmount = _.sum(container.store);
+                if (container.store['energy']) {
+                    resMem[container.id].resIfE = 1;
+                }
+                else {
+                    resMem[container.id].resIfE = 0;
+                }
+                resMem[container.id].takenCareOf = false;
+            }
         }
     }
 }
@@ -316,17 +332,23 @@ global.checkIfMiddleRoom = function (roomName) {
 /******************************************************************/
 
 global.earlyAndLateRemoteMiningManager = function (roomName) {
-    let r = Game.rooms[roomName];
-    if (r == undefined) {
-        fo(roomName + ' ?')
-    }
-    else {
-        if (r.storage != undefined) {
-            remoteMiningManager(r);
+    if (Game.shard.name != 'shard3' && roomName!='E7S48') {
+        let r = Game.rooms[roomName];
+        if (r == undefined) {
+            fo(roomName + ' ?')
         }
         else {
-            earlyStageLongDistanceRemoteMiningManager(roomName);
+            if (r.storage != undefined || (r.memory.newBunker && r.memory.newBunker.layout && r.memory.newBunker.layout.recCtn && r.memory.newBunker.layout.recCtn.length>0)) {
+                Game.rooms[roomName].memory.startRemoteMining = 1;
+                remoteMiningManager(r);
+            }
+            else {
+                earlyStageLongDistanceRemoteMiningManager(roomName);
+            }
         }
+    }
+    else {
+        Game.rooms[roomName].memory.startRemoteMining = 0;
     }
 }
 
@@ -360,7 +382,7 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
                 }
             }
             else { // analyze if room is suitable for remote mining
-                if (determineIfRoomIsSuitableForRemoteMining(r, candidate) == false) {
+                if (determineIfRoomIsSuitableForRemoteMining(room, candidate) == false) {
                     room.memory.readyToRemoteMining[candidate] = undefined;
                     room.memory.earlyHarv[candidate] = undefinedl
                 }
@@ -409,12 +431,17 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
                                 logGrandeRoomInfo(Game.rooms[cacandi]);
                                 if (Memory.mapInfo[cacandi]) {
                                     // analyze if room is suitable for remote mining
-                                    determineIfRoomIsSuitableForRemoteMining(r, cacandi);
-                                    if (room.memory.earlyHarv) {
-                                        room.memory.earlyHarv[cacandi] = 2 * Object.keys(Memory.mapInfo[cacandi].eRes).length;
+                                    if (determineIfRoomIsSuitableForRemoteMining(r, candidate) == false) {
+                                        room.memory.readyToRemoteMining[candidate] = undefined;
+                                        room.memory.earlyHarv[candidate] = undefinedl
                                     }
                                     else {
-                                        room.memory.earlyHarv = {};
+                                        if (room.memory.earlyHarv) {
+                                            room.memory.earlyHarv[cacandi] = 2 * Object.keys(Memory.mapInfo[cacandi].eRes).length;
+                                        }
+                                        else {
+                                            room.memory.earlyHarv = {};
+                                        }
                                     }
                                 }
                             }
@@ -426,7 +453,7 @@ global.earlyStageLongDistanceRemoteMiningManager = function (roomName) {
     }
 }
 
-global.remoteMiningManager = function (r, execute = false) {
+global.remoteMiningManager = function (r, execute = true) {
     if (!execute) {
         return
     }
@@ -462,14 +489,19 @@ global.remoteMiningManager = function (r, execute = false) {
                             if (r.memory.earlyHarv && r.memory.earlyHarv[candidate] && r.memory.earlyHarv[candidate] > 0) {
                                 r.memory.earlyHarv[candidate] = 0;
                             }
-                            determineIfRoomIsSuitableForRemoteMining(r, candidate);
-
-                            if (buildRoadInMainRoomForRemoteMining(r, candidate, r.memory.readyToRemoteMining[candidate])) {
-                                return
+                            
+                            if (determineIfRoomIsSuitableForRemoteMining(r, candidate) == false) {
+                                r.memory.readyToRemoteMining[candidate] = undefined;
+                                r.memory.earlyHarv[candidate] = undefinedl
                             }
-                            if (r.memory.remoteMiningRoomNames[candidate] && r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady == true) {
-                                startRemoteMinigTeezing(r);
-                                buildContainerInRemoteMiningRoom(r, candidate, r.memory.readyToRemoteMining[candidate]);
+                            else {
+                                if (buildRoadInMainRoomForRemoteMining(r, candidate, r.memory.readyToRemoteMining[candidate])) {
+                                    return
+                                }
+                                if (r.memory.remoteMiningRoomNames[candidate] && r.memory.remoteMiningRoomNames[candidate].mainRoomRoadReady == true) {
+                                    startRemoteMinigTeezing(r);
+                                    buildContainerInRemoteMiningRoom(r, candidate, r.memory.readyToRemoteMining[candidate]);
+                                }
                             }
                         }
                     }
@@ -485,7 +517,7 @@ global.remoteMiningManager = function (r, execute = false) {
                     }
                 }
                 if (r.memory.remoteMiningRoomNames[candidate]) {
-                    reremoteMiningchecker = true && r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady;
+                    reremoteMiningchecker = false && r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady;
                 }
             }
 
@@ -713,22 +745,13 @@ global.returnRoomnameByDirectionNum = function (roomName, dirInd) {
 
 global.searchForAdjacentConnectedRoomnames = function (r, neib = false) {
     let connectedDirections = new Set();
-    let candidates = calculateNeighbourNames(r.name)
+    let candidates = calculateNeighbourNames(r.name);
+    let connectedRoomInfoObj = {};
     for (let candidate of candidates) {
+        // if next to and not highway
         let exitNum = r.findExitTo(candidate)
-        if (exitNum > 0) {
-            connectedDirections.add(exitNum);
-        }
-    }
-    connectedDirections = Array.from(connectedDirections);
-    let connectedRoomInfoObj = {}
-    for (let ind in connectedDirections) {
-        let connectedRoomName = returnRoomnameByDirectionNum(r.name, connectedDirections[ind]);
-        if (neib) {
-            connectedRoomInfoObj[connectedRoomName] = -1;
-        }
-        else {
-            connectedRoomInfoObj[connectedRoomName] = connectedDirections[ind];
+        if (!isHighway(candidate) && areRoomsDirectlyConnected(candidate, r.name)) {
+            connectedRoomInfoObj[candidate] = exitNum;
         }
     }
     return connectedRoomInfoObj
@@ -737,9 +760,15 @@ global.searchForAdjacentConnectedRoomnames = function (r, neib = false) {
 global.determineIfRoomIsSuitableForRemoteMining = function (r, candidate) {
     // if 4, middle room, other ppl's room, remove
     let candider = Game.rooms[candidate];
-    if (candider && candider.controller && candider.controller.owner) {
-        r.memory.readyToRemoteMining[candidate] = undefined;
+    //if (candider && candider.controller && (candider.controller.owner || (candider.controller.reservation && !(candider.controller.reservation.username == 'PythonBeatJava' || candider.controller.reservation.username == 'Invader')))) {
+    if (candider && candider.controller && (candider.controller.owner)) {
+        if (r.memory && r.memory.readyToRemoteMining && r.memory.readyToRemoteMining[candidate]) {
+            r.memory.readyToRemoteMining[candidate] = undefined;
+        }
         return false
+    }
+    if (Memory.mapInfo == undefined || Memory.mapInfo[candidate]==undefined || Memory.mapInfo[candidate].eRes==undefined) {
+        logGrandeRoomInfo(Game.rooms[candidate]);
     }
     let numERes = Object.keys(Memory.mapInfo[candidate].eRes).length;
     if (numERes > 2 || numERes == 0) {
@@ -927,10 +956,11 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
         for (let eResId in Memory.mapInfo[candidate].eRes) {
             allReadyCount += 1;
             let containerInfo = Memory.mapInfo[candidate].eRes[eResId].easyContainerPosi;
-            let conti = red.lookForAt(LOOK_STRUCTURES, containerInfo.x, containerInfo.y);
-            let contiCs = red.lookForAt(LOOK_CONSTRUCTION_SITES, containerInfo.x, containerInfo.y);
+            let eRes = Game.getObjectById(eResId);
+            let conti = eRes.pos.findInRange(FIND_STRUCTURES, 1, {structureType: STRUCTURE_CONTAINER});
+            let contiCs = eRes.pos.findInRange(LOOK_CONSTRUCTION_SITES, 1, {structureType: STRUCTURE_CONTAINER});
 
-            if ((conti.length + contiCs.length) !== 1) {
+            if ((conti.length + contiCs.length) < 1) {
                 red.createConstructionSite(containerInfo.x, containerInfo.y, STRUCTURE_CONTAINER);
             }
             else {
@@ -941,6 +971,7 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
         if (allReadyCount == numReady) {
             let roadPlanned = true;
             if (!r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady) {
+                let resCount = 0;
                 for (let eResId in Memory.mapInfo[candidate].eRes) {
                     let containerInfo = Memory.mapInfo[candidate].eRes[eResId].easyContainerPosi;
                     let ret;
@@ -957,11 +988,25 @@ global.buildContainerInRemoteMiningRoom = function (r, candidate, dir) {
                     let newStartPoint = new RoomPosition(x, y, candidate);
                     //fo(newStartPoint)
                     //fo(new RoomPosition(containerInfo.x, containerInfo.y, candidate))
-                    if (planRoadRemotely(r, candidate, newStartPoint, containerInfo)) {
+                    /*fo(candidate)
+                    fo(dir)
+                    fo(newStartPoint)
+                    */
+                    if (resCount>0) {
+                        if (planRoadRemotely(r, candidate, newStartPoint, containerInfo, true)) {
+                        }
+                        else {
+                            roadPlanned = false
+                        }
                     }
                     else {
-                        roadPlanned = false
+                        if (planRoadRemotely(r, candidate, newStartPoint, containerInfo, true)) {
+                        }
+                        else {
+                            roadPlanned = false
+                        }
                     }
+                    resCount++;
                 }
             }
             if (roadPlanned) {
@@ -1016,40 +1061,83 @@ global.buildContainerInReremoteMiningRoom = function (r, candidate, dir, startPo
     return true
 }
 
-global.planRoadRemotely = function (r, candidate, newStartPoint, containerInfo) {
-    let reto = funcB.findPathBasedOnGridEvenOdd(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
-    if (reto.incomplete == false) {
-        funcB.visualizePath(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
-        let pasto = reto.path.reverse();
-        let checkRoadPlaced = true;
-        for (let posiToCach of pasto) {
-            let placeSiteAction = Game.rooms[candidate].createConstructionSite(posiToCach.x, posiToCach.y, STRUCTURE_ROAD);
-            /*let lookedObj = Game.rooms[candidate].lookAt(posiToCach.x, posiToCach.y);
-            let ifPlaced = lookedObj.forEach(function (lookObject) {
-                fo(lookObject.type == LOOK_STRUCTURES)
-                if (lookObject.type && lookObject.type == LOOK_STRUCTURES) {
-                    return true
-                }
-            });
-    
-            fo(ifPlaced)*/
-
-            if (placeSiteAction == OK || placeSiteAction == -7) {
-                //posisToCach.concat(posiToCach)
-            }
-            else if (placeSiteAction == ERR_FULL) {
-                r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady = false;
-                checkRoadPlaced = false
-                //return
+global.planRoadRemotely = function (r, candidate, newStartPoint, containerInfo, enforce=false) {
+    let pasto = r.memory.remoteMiningRoomNames[candidate].roads;
+    if (enforce==false) {
+        if (pasto==undefined) {
+            let reto = funcB.findPathBasedOnGridEvenOdd(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
+            if (reto.incomplete == false) {
+                funcB.visualizePath(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
+                pasto = reto.path.reverse();
+                r.memory.remoteMiningRoomNames[candidate].roads = pasto;
             }
         }
-
-        if (checkRoadPlaced) {
-            return true
+        if (pasto) {
+            let checkRoadPlaced = true;
+            for (let posiToCach of pasto) {
+                let placeSiteAction = Game.rooms[candidate].createConstructionSite(posiToCach.x, posiToCach.y, STRUCTURE_ROAD);
+    
+                if (placeSiteAction == OK || placeSiteAction == -7) {
+                    //posisToCach.concat(posiToCach)
+                }
+                else if (placeSiteAction == ERR_FULL) {
+                    r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady = false;
+                    checkRoadPlaced = false
+                    //return
+                }
+            }
+    
+            if (checkRoadPlaced) {
+                return true
+            }
+            else {
+                return false
+            }
+        }
+    }
+    else { // second planning
+        let reto = funcB.findPathBasedOnGridEvenOdd(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
+        let foundps = undefined;
+        if (reto.incomplete == false) {
+            funcB.visualizePath(newStartPoint, new RoomPosition(containerInfo.x, containerInfo.y, candidate));
+            foundps = reto.path.reverse();
         }
         else {
+            fo(candidate + ' remote road planning failed');
             return false
         }
-        //r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady = true;
+        if (pasto==undefined) {
+            r.memory.remoteMiningRoomNames[candidate].roads = foundps;
+        }
+        else {
+            if (Object.keys(r.memory.remoteMiningRoomNames[candidate].roads).length<100) {
+                r.memory.remoteMiningRoomNames[candidate].roads = r.memory.remoteMiningRoomNames[candidate].roads.concat(foundps);
+            }
+            else {
+                fo(candidate + 'remote road planning memory overflow');
+            }
+        }
+        if (foundps) {
+            let checkRoadPlaced = true;
+            for (let posiToCach of foundps) {
+                let placeSiteAction = Game.rooms[candidate].createConstructionSite(posiToCach.x, posiToCach.y, STRUCTURE_ROAD);
+    
+                if (placeSiteAction == OK || placeSiteAction == -7) {
+                    //posisToCach.concat(posiToCach)
+                }
+                else if (placeSiteAction == ERR_FULL) {
+                    r.memory.remoteMiningRoomNames[candidate].subRoomRoadReady = false;
+                    checkRoadPlaced = false
+                    //return
+                }
+            }
+    
+            if (checkRoadPlaced) {
+                return true
+            }
+            else {
+                return false
+            }
+        }
     }
 }

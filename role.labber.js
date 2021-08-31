@@ -4,7 +4,6 @@ module.exports = {
     run: function (creep) {
         creepCarrying = _.sum(creep.carry);
         let toLab = labWorkToDo(creep);
-        
         if (toLab == false) {
             roleLorry.run(creep);
         }
@@ -21,11 +20,12 @@ module.exports = {
             if (creep.memory.working == true) { // if filled with mineral, transfer to terminal or lab depending on the lab action of creep
                 let target = Game.getObjectById(creep.memory.labWork.target);
                 creep.say('labin ' + carryMineral);
-                for (const resourceType in creep.carry) {
+                for (const resourceType in creep.store) {
                     if (resourceType == carryMineral) {
                         if (creep.transfer(target, resourceType) == ERR_NOT_IN_RANGE) {
                             creep.moveTo(target);
                         }
+                        return
                     }
                     else {
                         roleLorry.run(creep);

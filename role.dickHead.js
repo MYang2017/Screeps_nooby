@@ -1,8 +1,42 @@
 var loader = require('role.loader');
 var dupCheck = require('action.dupCheck');
+let idle = require('action.idle');
 
 module.exports = {
     run: function(creep) {
+        
+        let allowed_num = 4;
+        if (creep.room.memory.newBunker) {
+            allowed_num = 2;
+        }
+        
+        if (creep.memory.toStore==undefined || !Game.getObjectById(creep.memory.toStore)) {
+            if (creep.memory.in && creep.store.energy==0 && creep.room.storage && creep.room.storage.store.energy==0) {
+                let ss = creep.room.find(FIND_MY_STRUCTURES, {filter: t=>t.structureType==STRUCTURE_SPAWN && t.store.energy>0});
+                if (ss.length>0) {
+                    if (creep.pos.getRangeTo(ss[0])>1) {
+                        creep.travelTo(ss[0]);
+                    }
+                    else {
+                        creep.withdraw(ss[0], 'energy');
+                    }
+                }
+                else if (creep.room.terminal && creep.room.terminal.store.energy>0) {
+                    if (creep.pos.getRangeTo(creep.room.terminal)>1) {
+                        creep.travelTo(creep.room.terminal);
+                    }
+                    else {
+                        creep.withdraw(creep.room.terminal, 'energy');
+                    }
+                }
+                return
+            }
+            else if (creep.memory.in && creep.store.energy>0 && creep.memory.togo && (creep.pos.x!=creep.memory.togo.x||creep.pos.y!=creep.memory.togo.y)) {
+                creep.memory.togo=undefined;
+                creep.memory.in=undefined;
+                creep.memory.toFill=undefined;
+            }
+        }
         
         var findSpotTogo = function (creep, linkx, linky) {
             for (let yind in [1, -1]) {
@@ -18,6 +52,9 @@ module.exports = {
                         if (cp.type == LOOK_CREEPS) {
                             let lookCreep = Game.creeps[cp.creep.name];
                             if (lookCreep.memory.role == 'dickHead') {
+                                if (lookCreep.name==creep.name) {
+                                    return {x:lx, y:ly}
+                                }
                                 found = true; // pass
                             }
                         }
@@ -63,11 +100,10 @@ module.exports = {
                         }
                     }
                 }
-                
                 if (taken) { // change
                     let go = findSpotTogo(creep, linkx, linky);
                     if (go==undefined) {
-                        dupCheck.run(creep, 4);
+                        dupCheck.run(creep, allowed_num);
                     }
                     else {
                         creep.memory.togo = {x: go.x, y: go.y};
@@ -80,17 +116,29 @@ module.exports = {
                         creep.memory.in = true;
                     }
                     else {// keep moving
-                        creep.moveTo(creep.memory.togo.x, creep.memory.togo.y);
+                        creep.travelTo(new RoomPosition(creep.memory.togo.x, creep.memory.togo.y, creep.room.name));
                     }
                 }
             }
-            dupCheck.run(creep, 4);
+            dupCheck.run(creep, allowed_num);
         }
         else { // in position
+            creep.memory.fixed = true; // cannot be swapped
             let toFill = creep.memory.toFill;
             let toTake = creep.memory.toTake;
             let toStore = creep.memory.toStore;
-            if (toFill == undefined || toStore == undefined) {
+            // check if position correct
+            if (Game.time%50==0) {
+                if (creep.room.memory.coreBaseReady && creep.pos.findInRange(FIND_MY_STRUCTURES, 1, {filter:t=>t.structureType==STRUCTURE_LINK}).length==0) {
+                    creep.memory.in=undefined;
+                    creep.memory.fixed=undefined;
+                    creep.memory.togo=undefined;
+                    creep.memory.toFill=undefined;
+                    creep.memory.toTake=undefined;
+                    creep.memory.toStore=undefined;
+                }
+            }
+            if (toFill == undefined || toStore == undefined || Game.getObjectById(toStore)==null) {
                 let lands = returnALLAvailableLandCoords(creep.room, creep.pos);
                 let toFillIds = [];
                 for (let land of lands) {
@@ -111,6 +159,18 @@ module.exports = {
                      }
                 }
                 creep.memory.toFill = toFillIds;
+                if (toStore == undefined && creep.store.energy>0) {
+                    let jobInc;
+                    for (let toFillId of toFill) {
+                        let toFillStruct = Game.getObjectById(toFillId);
+                        if (toFillStruct.store.energy<toFillStruct.store.getCapacity('energy')) {
+                            jobInc = toFillStruct;
+                            break;
+                        }
+                    }
+                    creep.transfer(jobInc, 'energy')
+                    return
+                }
             }
             else { // all structure cached
                 let jobInc;

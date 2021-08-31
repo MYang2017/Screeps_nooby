@@ -39,7 +39,7 @@ module.exports = {
                           };*/
                         if (target==undefined) {
                             //let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))});
-                            target = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES);
+                            target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
                         }
                         if (target==undefined) {
                             //let target = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {filter: s => (!allyList().includes(s.owner))});

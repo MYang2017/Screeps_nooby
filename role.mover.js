@@ -35,8 +35,11 @@ module.exports = {
                 creep.memory.working = true;
             }
             
-            if ((creep.room.name != creep.memory.target) || ((creep.pos.x==0)||(creep.pos.y==0)||(creep.pos.x==49)||(creep.pos.y==49)) ) {
-                creep.travelTo(new RoomPosition(25, 25, creep.memory.target))
+            if (creep.room.name != creep.memory.target) {
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.target));
+            }
+            else if ((creep.pos.x==0)||(creep.pos.y==0)||(creep.pos.x==49)||(creep.pos.y==49)) {
+                creep.travelTo(new RoomPosition(25, 25, creep.memory.target, {range: 20, maxRooms: 1}));
             }
             else  { // at home
                 if (_.sum(creep.store)>0 && creep.store.energy == 0 && creep.room.storage) { // carrying mineral

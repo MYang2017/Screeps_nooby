@@ -85,24 +85,14 @@ module.exports = {
                         if (true) { //(creep.room.name == 'E35S5') { // new test code for the resource getting management
                             let jobIdToDo = creep.memory.toGetId;
                             let resType = creep.memory.resType;
-                            if (!resType) {
+                            if (!jobIdToDo) {
                                 delete creep.memory.toGetId;
+                                delete creep.memory.resType;
                             }
                             if (jobIdToDo) {
                                 let resObj = Game.getObjectById(jobIdToDo);
                                 if (resObj) { // if the resource is still there (not decayed)
-                                    if (resType == 't') {
-                                        for (let mineralType in resObj.store) {
-                                            if (creep.withdraw(resObj, mineralType) == ERR_NOT_IN_RANGE) {
-                                                creep.travelTo(resObj, { maxRooms: 1 });
-                                            }
-                                        }
-                                        if (!resObj || _.sum(resObj.store) == 0) {
-                                            creep.memory.toGetId = undefined;
-                                            creep.memory.resType = undefined;
-                                        }
-                                    }
-                                    else if (resType == 'd') {
+                                    if (!resObj.store) {
                                         if (creep.pickup(resObj) == ERR_NOT_IN_RANGE) {
                                             creep.travelTo(resObj, { maxRooms: 1 , ignoreCreeps: false });
                                         }
@@ -111,7 +101,7 @@ module.exports = {
                                             creep.memory.resType = undefined;
                                         }
                                     }
-                                    else if (resType == 'c') {
+                                    else {
                                         if (!resObj || _.sum(resObj.store) < 100) {
                                             creep.memory.toGetId = undefined;
                                             creep.memory.resType = undefined;
@@ -120,7 +110,12 @@ module.exports = {
                                             for (let mineralType in resObj.store) {
                                                 if (creep.withdraw(resObj, mineralType) == ERR_NOT_IN_RANGE) {
                                                     creep.travelTo(resObj, { maxRooms: 1 , ignoreCreeps: false});
-                                                    creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
+                                                    if (creep.room.memory.resMem[jobIdToDo]) {
+                                                        creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
+                                                    }
+                                                    else {
+                                                        
+                                                    }
                                                 }
                                             }
                                         }
@@ -132,7 +127,10 @@ module.exports = {
                                 }
                             }
                             else { // does not have job to do but entred the room, avoid standing on edge
-                                creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1 , ignoreCreeps: false });
+                                let cetpos = new RoomPosition(25, 25, creep.memory.target);
+                                if (creep.pos.getRangeTo(cetpos)>5) {
+                                    creep.travelTo(cetpos, { maxRooms: 1 , ignoreCreeps: false });
+                                }
                             }
                         }
                         else {

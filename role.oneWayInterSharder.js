@@ -16,6 +16,26 @@ module.exports = {
             console.log('check onewayintershader code');
         }
         else { // creep has memory, either before or after transfering
+            // for sacrificer
+            if (creep.memory.roleWillBe && creep.memory.roleWillBe == 'sacrificer' && creep.store.getFreeCapacity('energy')>0 && creep.room.storage && creep.room.storage.my) {
+                let ships = ['energy']; //'battery', 
+                if (creep.name.slice(0,20).includes('E13S53')||creep.name.slice(0,20).includes('E31S49')) {
+                    ships = ['battery', 'energy'];
+                }
+                for (let ship of ships) {
+                    let whereTo = getATypeOfRes(creep.room, ship);
+                    if (whereTo) {
+                        if (creep.pos.getRangeTo(whereTo)>1) {
+                            creep.travelTo(whereTo);
+                        }
+                        else {
+                            creep.withdraw(whereTo, ship);
+                        }
+                        return
+                    }
+                }
+                return
+            }
             if (creep.memory.role == 'oneWayInterSharder') { // still before transportal
                 if (creep.room.name == creep.memory.portalRoomName) { // if in target portal room
                     creep.travelTo(Game.getObjectById(creep.memory.portalId)); // go to portal with ID prestored

@@ -34,12 +34,28 @@ module.exports = {
             creep.memory.home = creep.room.name;
         }
         
+        let tr = Game.rooms[creep.memory.target];
+        if (tr && tr.controller && tr.controller.safeMode) {
+            creep.memory.role='ranger';
+            creep.memory.target=creep.memory.home;
+            return
+        }
+                
         if (getB.run(creep)!=true) {
             return
         }
         else {
-            if ((creep.room.name == creep.memory.target)||(creep.memory.target==undefined)) { // if in target (giver) room, go withdraw from storage:
-                    if (creep.hits > 0.75*creep.hitsMax) { // if full health
+            if (travelToPrioHighwayWithClosestRoomExit(creep, creep.memory.target)) { // if in target (giver) room, go withdraw from storage:
+            let t = Game.getObjectById('60ec93057ba32c78f29bb309');
+            if (creep.pos.getRangeTo(t)>1) {
+                creep.moveTo(t);
+            }
+            else {
+                creep.dismantle(t);
+            }
+            return
+                if (creep.pos.getRangeTo)
+                    if (true || creep.hits > 0.75*creep.hitsMax) { // if full health
                         if (creep.memory.tarId) {
                             for (let xid in creep.memory.tarId) {
                                 let x = Game.getObjectById(creep.memory.tarId[xid]);
@@ -77,20 +93,20 @@ module.exports = {
                         else {
                             let closestHealer = creep.pos.findClosestByRange(FIND_MY_CREEPS, {filter:s=>s.getActiveBodyparts(HEAL)>10&&s.name!=creep.name});
                               if (closestHealer&&creep.pos.getRangeTo(closestHealer)>2) {
-                                  creep.travelTo(closestHealer);
+                                  creep.travelTo(closestHealer, {maxRooms: 1});
                               }
                               else {
                                   if (Game.flags['Dismantle'] != undefined) {
                                       let presious = getTargetByFlag('Dismantle','structure');
                                       if (presious != undefined) { // if there is storage
                                           if (creep.dismantle(presious) == ERR_NOT_IN_RANGE) {
-                                              creep.travelTo(presious);
+                                              creep.travelTo(presious, {maxRooms: 1});
                                           }
                                       }
                                       else {
                                         var target = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES);
                                         if (creep.dismantle(target) == ERR_NOT_IN_RANGE) {
-                                            creep.travelTo(target)
+                                            creep.travelTo(target, {maxRooms: 1})
                                         }
                                       }
                                       if (creep.pos.isEqualTo(Game.flags['Dismantle'])) {
@@ -98,77 +114,20 @@ module.exports = {
                                       }
                                   }
                                   else {
-                                      let core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_EXTENSION});
+                                      let core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_TOWER});
                                       if (core==undefined) {
-                                          core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_TOWER});
+                                          core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_EXTENSION});
                                           if (core ==undefined) {
-                                              core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_SPAWN||c.structureType==STRUCTURE_LINK||c.structureType==STRUCTURE_LAB});
+                                              core = creep.pos.findClosestByRange(FIND_HOSTILE_STRUCTURES, {filter:c => c.structureType==STRUCTURE_SPAWN||c.structureType==STRUCTURE_LINK||(creep.room.controller && (c.structureType==STRUCTURE_RAMPART&&c.pos.getRangeTo(creep.room.controller)<2))||c.structureType==STRUCTURE_LAB});
                                           }
                                       }
                                       if (core) {
-                                          creep.travelTo(core);
+                                          creep.travelTo(core, {maxRooms: 1});
                                           creep.dismantle(core);
                                       }
                                   }
                               }
                         }
-                }
-            }
-            else { // if not in target room, move to target room
-                if (creep.memory.target == 'E20S20') {
-                    let dests = creep.memory.dests;
-                    if (dests != undefined) {
-                        for (let did in dests) {
-                            let dest = dests[did];
-                            if (dest.completed == undefined) {
-                                creep.travelTo(new RoomPosition(dest.x, dest.y, dest.roomName));
-                                if (creep.pos.x == dest.x && creep.pos.y==dest.y && creep.room.name == dest.roomName) {
-                                    creep.memory.dests[did].completed = true;
-                                }
-                                return
-                            }
-                        }
-                        
-                    }
-                    else {
-                        if (creep.memory.boostMats = ['XZH2O']) {
-                            creep.memory.dests = [{x:48 ,y: 22, roomName: 'E16S20'}]; //, {x: 26, y: 32, roomName: 'E20S10'}
-                        }
-                        else {
-                            creep.memory.dests = [{x: 25 ,y: 20, roomName: 'E10S22'}, {x:48 ,y: 22, roomName: 'E16S20'}]; //, {x: 26, y: 32, roomName: 'E20S10'}
-                        }
-                    }
-                }
-                else if (creep.memory.target == 'E23S19') {
-                    let dests = creep.memory.dests;
-                    if (dests != undefined) {
-                        for (let did in dests) {
-                            let dest = dests[did];
-                            if (dest.completed == undefined) {
-                                creep.travelTo(new RoomPosition(dest.x, dest.y, dest.roomName));
-                                if (creep.pos.x == dest.x && creep.pos.y==dest.y && creep.room.name == dest.roomName) {
-                                    creep.memory.dests[did].completed = true;
-                                }
-                                return
-                            }
-                        }
-                        
-                    }
-                    else {
-                        creep.memory.dests = [{x: 25 ,y: 16, roomName: 'E20S20'}]; //, {x: 26, y: 32, roomName: 'E20S10'}
-                    }
-                }
-                else if (creep.memory.target == 'E10S16') {
-                    storedTravelFromAtoB(creep, 'l');
-                    return
-                }
-                let route = Game.map.findRoute(creep.room, creep.memory.target);
-                let exit = creep.pos.findClosestByRange(route[0].exit);
-                let exitRange = creep.pos.getRangeTo(exit);
-                // if x is close to exit
-                if (exitRange > 0) {
-                    // get in
-                    creep.travelTo(exit);
                 }
             }
         }

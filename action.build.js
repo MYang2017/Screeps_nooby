@@ -11,21 +11,28 @@ module.exports = {
         else {
             constructionSite = constructionSite[0]
         }
+        
+        let nbcs = creep.pos.findInRange(FIND_MY_CONSTRUCTION_SITES, 3);
+        if (nbcs.length>0) {
+            creep.build(nbcs[0]);
+        }
 
         if (constructionSite != undefined) {
             creep.build(constructionSite);
-            if (creep.pos.getRangeTo(constructionSite) > 2) {
-                creep.travelTo(constructionSite, { maxRooms: 1, range: 1 });
+            if (creep.pos.getRangeTo(constructionSite) > 3) {
+                creep.travelTo(constructionSite, { maxRooms: 1, range: 3 });
 
             }
             else {
                 if (((creep.pos.x == 0) || (creep.pos.x == 49)) || ((creep.pos.y == 0) || (creep.pos.y == 49))) {
-                    creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 15 })
+                    creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms:1, range: 15 })
                 }
                 else {
-                    let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
-                    if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
-                        creep.move(getRandomInt(1, 8));
+                    if (creep.pos.findInRange(FIND_MY_CREEPS, 1, {filter: c=>c.getActiveBodyparts(MOVE)>0}).length>1) {
+                        let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
+                        if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
+                            creep.move(getRandomInt(1, 8));
+                        }
                     }
                 }
             }

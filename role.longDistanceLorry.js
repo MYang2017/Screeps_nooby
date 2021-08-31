@@ -14,7 +14,10 @@ module.exports = {
                     creep.memory.home = creep.room.name;
                 }
 
-                if (creep.memory.attackedAtTime && creep.memory.attackedAtTime + 50 > Game.time) {
+                if (creep.memory.attackedAtTime && (creep.memory.attackedAtTime + 50) > Game.time) {
+                    if (Game.rooms[creep.memory.target] && Game.rooms[creep.memory.target].find(FIND_HOSTILE_CREEPS, {filter:s=>!allyList().includes(s.owner.username) && (s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)+s.getActiveBodyparts(WORK)>0)}).length==0) {
+                        creep.memory.attackedAtTime = undefined;
+                    }
                     creep.moveTo(new RoomPosition(25, 25, creep.memory.home), { range: 20 });
                     dog.run(creep);
                 }
@@ -54,7 +57,7 @@ module.exports = {
                         }
                     }
 
-                    if ((creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5, { filter: c => (c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0) }).length > 0)) { // self destroy if not useful damages by NPC
+                    if ((creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5, { filter: c => (!allyList().includes(c.owner.username)) && (c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0) }).length > 0)) { // self destroy if not useful damages by NPC
                         actionRunAway.run(creep);
                     }
                     else {
@@ -73,7 +76,7 @@ module.exports = {
                                     return
                                 }
                                 else {
-                                    creep.travelToWithCachedPath(new RoomPosition(25, 25, creep.memory.home), { creepCost: creep.memory.creepCost, range: 10 });
+                                    creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
                                 }
                             }
                             else { // creep at home
@@ -91,12 +94,24 @@ module.exports = {
                             else {
                                 if (creep.room.name == creep.memory.target) { // if not in target room go to target room, if in:
                                     let jobIdToDo = creep.memory.toGetId;
+                                    let resObj = Game.getObjectById(jobIdToDo);
                                     let resType = creep.memory.resType;
                                     if (!resType) {
-                                        delete creep.memory.toGetId;
+                                        if (resObj) { 
+                                            if (resObj.store) {
+                                                creep.memory.resType = 't'
+                                                resType = creep.memory.resType;
+                                            }
+                                            else {
+                                                creep.memory.resType = 'd'
+                                                resType = creep.memory.resType;
+                                            }
+                                        }
+                                        else {
+                                            delete creep.memory.toGetId;
+                                        }
                                     }
                                     if (jobIdToDo) {
-                                        let resObj = Game.getObjectById(jobIdToDo);
                                         if (resObj) { // if the resource is still there (not decayed)
                                             if (resType == 't') {
                                                 for (let mineralType in resObj.store) {
@@ -105,7 +120,17 @@ module.exports = {
                                                             return
                                                         }
                                                         else {
-                                                            creep.travelToWithCachedPath(resObj.pos, { maxRooms: 1, creepCost: creep.memory.creepCost });
+                                                            if (resObj && resObj.pos) {
+                                                                try {
+                                                                    creep.travelTo(resObj.pos, { maxRooms: 1, creepCost: creep.memory.creepCost });
+                                                                }
+                                                                catch (e) {
+                                                                    creep.moveTo(resObj.pos, { maxRooms: 1});
+                                                                }
+                                                            }
+                                                            else {
+                                                                creep.memory.toGetId = undefined;
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -141,7 +166,12 @@ module.exports = {
                                                             }
                                                             else {
                                                                 creep.travelToWithCachedPath(resObj.pos, { maxRooms: 1, creepCost: creep.memory.creepCost });
-                                                                creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
+                                                                if (creep.room.memory.resMem[jobIdToDo] && creep.room.memory.resMem[jobIdToDo].resAmount) {
+                                                                    creep.room.memory.resMem[jobIdToDo].resAmount = _.sum(resObj.store);
+                                                                }
+                                                                else {
+                                                                    creep.room.memory.resMem[jobIdToDo] = undefined;
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -159,10 +189,10 @@ module.exports = {
                                     }
                                     else { // does not have job to do but entred the room, avoid standing on edge
                                         //creep.travelToWithCachedPath(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1, creepCost: creep.memory.creepCost, range: 10 });
-                                        if (creep.pos.getRangeTo(new RoomPosition(25, 25, creep.memory.target)) > 22) {
-                                            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1, creepCost: creep.memory.creepCost, range: 23 })
+                                        if (creep.pos.x<2 || creep.pos.x>47 || creep.pos.y<2 || creep.pos.y>47 ) {
+                                            creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { maxRooms: 1, creepCost: creep.memory.creepCost, range: 15 })
                                         }
-                                        else {
+                                        else if (creep.pos.findInRange(FIND_MY_CREEPS, 1).length>1) {
                                             dog.run(creep);
                                         }
                                     }
@@ -175,7 +205,35 @@ module.exports = {
                                         return
                                     }
                                     else {
-                                        creep.travelToWithCachedPath(new RoomPosition(25, 25, creep.memory.target), { creepCost: creep.memory.creepCost });
+                                        let route = Game.map.findRoute(creep.room, creep.memory.target, {
+                                            routeCallback(roomName, fromRoomName) {
+                                                let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+                                                let isHighway = (parsed[1] % 10 === 0) ||
+                                                    (parsed[2] % 10 === 0);
+                                                let isMyRoom = Game.rooms[roomName] &&
+                                                    Game.rooms[roomName].controller &&
+                                                    Game.rooms[roomName].controller.my;
+                                                if (isHighway) {
+                                                    return 2;
+                                                }
+                                                else if (isMyRoom) {
+                                                    return 1;
+                                                }
+                                                else if (Game.shard.name=='shard3' && (roomName=='E11S49'||roomName=='E12S49'||roomName=='E11S51')) {
+                                                    return 255;
+                                                }
+                                                else if (Memory.rooms[roomName] && Memory.rooms[roomName].avoid) {
+                                                    return 255;
+                                                }
+                                                else {
+                                                    return 2.8;
+                                                }
+                                            }
+                                        });
+                                        
+                                        if (route.length > 0) {
+                                            creep.travelTo(creep.pos.findClosestByRange(creep.room.findExitTo(route[0].room)), {maxRooms: 1});
+                                        }
                                     }
                                 }
                             }

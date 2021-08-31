@@ -92,10 +92,7 @@ module.exports = {
                     else {
                         let target = ed.memory.target;
                         if (creep.room.name != target) {
-                            if(route.length > 0) {
-                                const exit = creep.pos.findClosestByRange(route[0].exit);
-                                creep.travelTo(exit, {maxRooms: 1, creepCost: 10});
-                            }
+                            travelToTarget(creep, target);
                             creep.pull(ed);
                             ed.move(creep);
                         }

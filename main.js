@@ -1,7 +1,10 @@
-// https://www.youtube.com/watch?v=BiIDH2Ui8L8&t=294s
+/// https://www.youtube.com/watch?v=BiIDH2Ui8L8&t=294s
 // https://github.com/lodash/lodash/blob/3.10.1/doc/README.md
 // GCL calculation: https://docs.google.com/spreadsheets/d/1Q6MfwRZb4kood_OE5_vwcIJgIzZUsx4-haWphEw6GqI/edit#gid=0
 // so cool: https://www.youtube.com/watch?v=X-iSQQgOd1A
+// FIXZT-6QV0J-KE5L7
+// remove line 690 in funcBuildingPlanner
+// 63's res display: HelperRoomResource.showAllRes()
 
 require('prototype.spawn');
 require('prototype.creep');
@@ -24,10 +27,20 @@ var findMinCut = require('funcRoomPlan');
 var taskMove = require('task.move');
 require('task.energy');
 var creepLogPosi = require('action.logPosi');
-require('process.highway');
+//require('process.highway');
 require('funcStats');
+var pc = require('pc');
+var runFac  = require('proccess.factory');
+require('nukeDef');
+
+// 63 codes
+var HelperRoomResource = require('module.roomResourceManager'); // pretty print all res in a shard
+//var massUpdateAllPrices = require('module.63price'); // get all commodities price situation
 
 var roles = {
+    sacrificer: require('role.sacrificer'),
+    stranger: require('role.stranger'),
+    pioneer: require('role.pioneer'),
     attacker : require('role.attacker'),
     healer : require('role.healer'),
     harvester : require('role.harvester'),
@@ -54,7 +67,6 @@ var roles = {
     traveller: require('role.traveller'),
     transporter: require('role.transporter'),
     antiTransporter: require('role.antiTransporter'),
-    pioneer: require('role.pioneer'),
     melee: require('role.melee'),
     stealer: require('role.stealer'),
     ranger: require('role.ranger'),
@@ -102,11 +114,26 @@ var roles = {
     season2cnew: require('role.season2cnew'),
     drainer: require('role.drainer'),
     season2cPirate: require('role.season2cPirate'),
-    sacrificer: require('role.sacrificer'),
     annoyer: require('role.annoyer'),
     asdpof: require('role.asdpof'),
     symbolFactorier: require('role.symbolFactorier'),
     dragonAss: require('role.dragonAss'),
+    depoHarvester: require('role.depoHarvester'),
+    depoHauler: require('role.depoHauler'),
+    depoStorage: require('role.depoStorage'),
+    dedicatedUpgraderHauler: require('role.dedicatedUpgraderHauler'),
+    qiangWorker: require('role.qiangWorker'),
+    recCtner: require('role.recCtner'),
+    dickHeadpp: require('role.dickHeadpp'),
+    newDickHead: require('role.newDickHead'),
+    tester: require('role.tester'),
+    stomper: require('role.stomper'),
+    gays: require('role.gays'),
+    hider: require('role.hider'),
+    edger: require('role.edger'),
+    trader: require('role.trader'),
+    powerSourceJammer: require('role.powerSourceJammer'),
+    deliveroo: require('role.deliveroo'),
 };
 
 //require('funcSymbol');
@@ -127,9 +154,24 @@ module.exports.loop = function () {
     let too = Game.cpu.getUsed();
 
     let trackRoleCpuCost = true;
-    let calcCpuProcesses = {'parse_mem': 0, 'symbol_scan': 0, 'role_recycle': 0, 'role': 0, 'tow_def': 0, 'misc_sp': 0, 'tasks': 0, 'roomPlan': 0, 'sp': 0, 'remote': 0, 'remoteRes': 0, 'misc': 0, 'mineralManage': 0, 'lab': 0, 'tower': 0, 'resFlow': 0, 'logPos': 0};
+    let calcCpuProcesses = {'parse_mem': 0, 'symbol_scan': 0, 'role_recycle': 0, 'role': 0, 'tow_def': 0, 'pc_manage': 0, 'highway_harv': 0, 'misc_sp': 0, 'tasks': 0, 'roomPlan': 0, 'sp': 0, 'remote': 0, 'remoteRes': 0, 'misc': 0, 'mineralManage': 0, 'lab': 0, 'tower': 0, 'resFlow': 0, 'logPos': 0, 'link_misc': 0};
     
     let parse_count = Game.cpu.getUsed();
+    
+    // process pixels with unspent CPU in bucket
+    if (Game.shard.name=='shard1') {
+        if (Game.cpu.bucket == 10000) {
+            Game.cpu.generatePixel();
+        }
+        return
+    }
+    
+    // pixel in shard1 from scout in shard2
+    if (Game.time%1501==0 && Game.shard.name == 'shard2') {
+        Game.rooms.E31S49.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: 'E30S50' }, priority: 0.01 });
+    }
+    
+    // begin memhack
     //Make sure we have a valid memory in global, both in structure and in time (the last tick), if not we will nee to re-parse the memory
     if (global.last_tick && global.last_memory && Game.time === (global.last_tick + 1)) {
         delete global.Memory //delete our memory to insure it wont parse
@@ -141,19 +183,68 @@ module.exports.loop = function () {
         Memory //parse memory
         global.last_memory = RawMemory._parsed //set the memory to the global
     }
-    
     global.last_tick = Game.time //set a global to the last updated tick
     //end memhack
+    
     calcCpuProcesses.parse_mem = Game.cpu.getUsed() - parse_count;
+    
+    try {
+        let segmentToUse = 99;        //can be 0-99
+        let commutint = 20;
+        if(Game.shard.name === 'shard3' && Game.time % commutint === 0) {
+            RawMemory.setPublicSegments([segmentToUse]);
+            RawMemory.setDefaultPublicSegment(segmentToUse);
+            RawMemory.setActiveSegments([segmentToUse]);
+        }
+        if(Game.shard.name === 'shard3' && Game.time % commutint === 1) {
+            //RawMemory.segments[segmentToUse] = Math.floor(Game.rooms.E11S47.terminal.store.getFreeCapacity('energy')*0.9).toString();
+            let toSendMsg = JSON.stringify({E11S47: Math.floor(Game.rooms.E11S47.terminal.store.getFreeCapacity('energy')*0.9)});
+            if (Game.rooms.E29S51.terminal && Game.rooms.E29S51.terminal.store.energy<100000 && _.sum(Game.rooms.E29S51.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({E29S51: Math.floor(Game.rooms.E29S51.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            else if (Game.rooms.W2S58.terminal && Game.rooms.W2S58.terminal.store.energy<150000 && _.sum(Game.rooms.W2S58.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({W2S58: Math.floor(Game.rooms.W2S58.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            else if (Game.rooms.E1S41.terminal && Game.rooms.E1S41.terminal.store.energy<150000 && _.sum(Game.rooms.E1S41.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({E1S41: Math.floor(Game.rooms.E1S41.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            else if (Game.rooms.E1S49.terminal && Game.rooms.E1S49.terminal.store.energy<100000 && _.sum(Game.rooms.E1S49.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({E1S49: Math.floor(Game.rooms.E1S49.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            else if (Game.rooms.E11S1.terminal && Game.rooms.E11S1.terminal.store.energy<100000 && _.sum(Game.rooms.E11S1.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({E11S1: Math.floor(Game.rooms.E1S49.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            else if (Game.rooms.W2S58.terminal && Game.rooms.W2S58.terminal.store.energy<100000 && _.sum(Game.rooms.W2S58.terminal.store)<270000) {
+                toSendMsg = JSON.stringify({W2S58: Math.floor(Game.rooms.W2S58.terminal.store.getFreeCapacity('energy')*0.9)});
+            }
+            Memory.messageToSend = toSendMsg;
+            RawMemory.segments[segmentToUse] = toSendMsg;
+        }
+    }
+    catch (err) {
+        fo('communication code bug');
+    }
+    
+    try {
+        if (Game.shard.name=='shard2') {
+            let wr = Game.rooms.E8S48;
+            if (wr && wr.controller && wr.controller.my && (wr.controller.ticksToDowngrade<5 || wr.controller.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter: c=>c.getActiveBodyparts(CLAIM)>0}).length>0)) {
+                wr.controller.unclaim();
+            }
+        }    
+    }
+    catch (err) {
+        fo('bubble bug')
+    }
     
     /*
     try {
         if (true) {
             logSymbolInfoInPublicRawMem();
-            if(Game.time % 100 === 0) {
+            if(Game.time % 2 === 0) {
                 RawMemory.setActiveForeignSegment('ManVsRice');
             }
-            if(Game.time % 100 === 1) {
+            if(Game.time % 2 === 1) {
                 console.log(RawMemory.foreignSegment);
             }
         }
@@ -161,7 +252,19 @@ module.exports.loop = function () {
     }
     catch (err) {
         fo('WTF')
-    }*/
+    }
+    */
+    
+    try {
+        if (Game.shard.name=='shard2') {
+            if (Game.rooms.E11S53 && Game.rooms.E11S53.find(FIND_HOSTILE_CREEPS, {filter: h=>h.owner.username=='Tigga'}).length>1) {
+                //Game.rooms.E11S53.controller.activateSafeMode();
+            }
+        }
+    }
+    catch (err) {
+        fo('temp bubble bug');
+    }
 
     //assignController()
 
@@ -281,6 +384,7 @@ module.exports.loop = function () {
             for (let tower of towers) {
                 tower.defend();
             }
+    
     calcCpuProcesses.tow_def = Game.cpu.getUsed()-towdefcnt;
     
     let misc_sp = Game.cpu.getUsed();
@@ -301,197 +405,501 @@ module.exports.loop = function () {
         //levelEightHelpSevenSuperUp('E9S22', 'E19S21', 911, 111);
         //levelEightHelpSevenSuperUp('E9S22', 'E19S19', 911, 111);
         //levelEightHelpSevenSuperUp('E19S19', 'E23S16', 1011, 1);
-        levelEightHelpSevenSuperUp('E9S22', 'E11S16', 606, 1);
+        //levelEightHelpSevenSuperUp('E9S22', 'E11S16', 606, 1);
         
-        // harras
-        stealAtNight();
-        let asdpofFac = Game.getObjectById('60729a4075407b3bab8b6307');
-        if (asdpofFac) {
-            if (_.sum(asdpofFac.store)>40000) {
-                Memory.asdpofTimer = 117;
-            }
-            else if (_.sum(asdpofFac.store)>25000) {
-                Memory.asdpofTimer = 277;
-            }
-            else if (_.sum(asdpofFac.store)>15000) {
-                Memory.asdpofTimer = 1377;
-            }
-            else if (_.sum(asdpofFac.store)>5000) {
-                Memory.asdpofTimer = 2377;
-            }
-        }
-        let asdpofTimer = Memory.asdpofTimer;
-        if (!asdpofTimer) {
-            Memory.asdpofTimer = 377;
-            asdpofTimer = 377;
-        }
         
-        if (Game.time%asdpofTimer==0) {
-            //thisIsWhatYouWanted();
-            //annoyerSpawner('E19S19', 'E21S16')
-            //symbolAsdpofSpawner('E19S19', 'E21S11');
-        }
-        
-        if (Game.time%1300==0) {
-            //kiterSpawner('E24S27', 'E25S27', 6);
-            //kiterSpawner('E24S27', 'E26S27', 6);
-            //kiterSpawner('E24S27', 'E26S28', 6);
-            //kiterSpawner('E24S27', 'E26S29', 6);
-        }
-        
-        /*
-        if (Game.time%1500==0) {
-            traderSpawner('E11S16', 'E11S18');
-        }
-        if (Game.time%1500==500) {
-            traderSpawner('E11S16', 'E12S12');
-        }
-        if (Game.time%1500==1000) {
-            traderSpawner('E11S16', 'E15S13')
-        }
-        */
-        
-        if (Game.time%1250==0 && !Memory.rooms['E25S16'].avoid) {
-            Game.rooms.E23S16.memory.forSpawning.spawningQueue.push({memory:{role: 'keeperLairMeleeKeeper', target: 'E25S16', home: 'E23S16', ranged: false}, priority: 5});
-        }
-        
-        if (Game.time%717==277) { // pioneer
-            //Game.rooms['E5S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'reserver', target: 'E7S22', big: true, roomEnergyMax: 2000},priority: 6});
-            //Game.rooms['E5S21'].memory.forSpawning.spawningQueue.push({memory:{energy: 1900, role: 'pioneer', target: 'E7S22', home: 'E5S21', superUpgrader: false},priority: 20});
-        }
-        if (Game.time%163==7) { // pioneer
-            //sendSacrificer('E19S19', 'E23S16')
-            //sendSacrificer('E19S19', 'E11S17')
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{energy: 900, role: 'pioneer', target: 'E22S11', home: 'E19S21', superUpgrader: false},priority: 10});
-        }
-        
-        if (Game.time%10==0) {
-            if (Game.cpu.bucket>9300) {
-                if (Game.rooms.E9S22.memory.hasFreeSpawnCapa == true) {
-                    sendSeason2c('E9S22', 'E12S25', 'symbol_ayin', 1, 0, 25);
-                    sendSeason2c('E9S22', 'E12S26', 'symbol_zayin', 1, 0, 25);
-                    sendSeason2c('E9S22', 'E14S21', 'symbol_kaph', 1, 0, 25);
-                    sendSeason2c('E9S22', 'E12S22', 'symbol_res', 1, 0, 25);
-                    Game.rooms.E9S22.memory.hasFreeSpawnCapa = false;
-                }
-                sendSeason2c('E7S28', 'E9S28', 'symbol_taw', 1, 0, 25);
-                sendSeason2c('E7S28', 'E4S29', 'symbol_teth', 1, 0, 25);
-                sendSeason2c('E4S23', 'E1S21', 'symbol_qoph', 1, 0, 25);
-            }
-            if (Game.cpu.bucket>9100) {
-                if (Game.rooms.E19S21.memory.hasFreeSpawnCapa == true) {
-                    sendSeason2c('E19S21', 'E18S28', 'symbol_yodh', 1, 0, 25);
-                    sendSeason2c('E19S21', 'E17S24', 'symbol_aleph', 1, 0, 25);
-                    sendSeason2cnew('E19S21', 'E21S25', 'symbol_sim', 1, 0, 25);
-                    sendSeason2cnew('E19S21', 'E22S29', 'symbol_gimmel', 1, 0, 25);
-                    Game.rooms.E19S21.memory.hasFreeSpawnCapa = false;
-                }
-                if (Game.rooms.E1S27.memory.hasFreeSpawnCapa == true) {
-                    sendSeason2c('E1S27', 'E3S26', 'symbol_he', 1, 0, 25);
-                    sendSeason2c('E1S27', 'E1S24', 'symbol_daleth', 1, 0, 25);
-                    Game.rooms.E1S27.memory.hasFreeSpawnCapa = false;
-                }
-                if (Game.rooms.E19S19.memory.hasFreeSpawnCapa == true) {
-                    sendSeason2cnew('E19S19', 'E23S21', 'symbol_mem', 1, 0, 25);
-                    Game.rooms.E19S19.memory.hasFreeSpawnCapa = false;
-                }
-            }
-            if (Game.cpu.bucket>9000) {
-                if (Game.rooms.E24S27.memory.hasFreeSpawnCapa == true) {
-                    sendSeason2cnew('E24S27', 'E28S24', 'symbol_tsade', 1, 0, 25);
-                    sendSeason2cnew('E24S27', 'E25S29', 'symbol_samekh', 1, 0, 25);
-                    Game.rooms.E24S27.memory.hasFreeSpawnCapa = false;
-                }
-            }
-        }
-        
-        if (Game.time%1000==666) {
-            //sendSeason2cPirate('E19S21', 'E21S25', 'symbol_sim', 1, 0);
-        }
-        
-        if (Game.time%3333==0) { // tunneller // 1321s best for digging
-            //Game.rooms['E7S28'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E10S22', boostMats: false, tarId: ['602c72a062f1b63ed41e47a2']},priority: 15});
-            //Game.rooms['E7S28'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E10S22', boostMats: 'ZH', tarId: ['602c72a062f1b63ed41e4839', '602c72a062f1b63ed41e486a']},priority: 15});
-        }
-        
-        if (Game.time%933==0) { // digger
-            //Game.rooms['E9S22'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['ZH'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-        }
-        
-        /*
-        if (Game.rooms.E1S30&&Game.getObjectById('602c729a62f1b63ed41d957e')==undefined) {
-            
-        }
-        if (Memory.dz) {
-            // pass
-        }
-        else {
-            if (Game.time%1387==0) { // digger
-                Game.rooms['E1S27'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E1S30', boostMats: ['XZHO2', 'XZH2O'], tarId: ['602c729a62f1b63ed41d957f', '602c729a62f1b63ed41d9585', '602c729a62f1b63ed41d9586', '602c729a62f1b63ed41d9582', '602c729a62f1b63ed41d957e']},priority: 15});
-            }
-        }
-        */
-        
-        if (Game.time%1106==0) { // digger
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['ZH', 'ZO'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: [true], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-            //Game.rooms['E9S22'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E10S20', boostMats: ['XZHO2', 'XZH2O'], tarId: ['602c72a062f1b63ed41e462e', '602c72a062f1b63ed41e460a', '602c72a062f1b63ed41e45d8', '602c72a062f1b63ed41e45a6']},priority: 15});
-            //Game.rooms['E9S22'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E10S16', boostMats: ['XZHO2'], tarId: ['602c72a062f1b63ed41e40c5', '602c72a062f1b63ed41e40f7', '602c72a062f1b63ed41e4129', '602c72a062f1b63ed41e415c', '602c72a062f1b63ed41e418a', '602c72a062f1b63ed41e4196']},priority: 15});
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['ZO'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['ZH2O'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-            //Game.rooms['E19S21'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'E20S20', boostMats: ['XZH2O'], tarId: ['602c72a762f1b63ed41f1e20', '602c72a762f1b63ed41f1e51', '602c72a762f1b63ed41f1e82', '602c72a762f1b63ed41f1eb3', '602c72a762f1b63ed41f1ee4']},priority: 15});
-        }
-        if (Game.time % 1446 == 1) { // stealer for dismanted wall
-            //Game.rooms['E11S16'].memory.forSpawning.spawningQueue.push({memory:{role: 'stealer', home: 'E11S16', target: 'E10S16'}, priority: 13.5});
-            //symbolStealerSpawner('E9S22', 'E7S19')
-        }
 
         /////////////////////////// old shit
         if (false) {
-            //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'claimer', [CLAIM, MOVE])
-            //Game.getObjectById('6026f3412ad5e9ca1fb23241').createOneWayInterSharder('shard3', 'E10S50', '5c0e406c504e0a34e3d61d59', 'E11S47', 'pioneer', [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE])
-            //Game.creeps['shard3_E11S47_claimer_4vltu'].memory = {role: 'oneWayInterSharder', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59'}
             //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'claimer', body: [CLAIM, MOVE]},priority: 0.4});
             //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d59', targetRoomName: 'E11S47', roleWillBe: 'pioneer', body: [WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE, WORK, CARRY, MOVE]},priority: 0.4});
-            
-            //Game.rooms['E9S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 300, role: 'pioneer', target: 'E13S53' , home: 'E9S49', superUpgrader: false, route:  { 'E9S49': 'E10S51', 'E10S51': 'E11S50', 'E11S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'} }, priority: 102 });
-        //(targetShardName, portalRoomName, portalId, targetRoomName, roleWillBe, body)
         }
         
-        if (Game.time % 1450 < 150) {
-            if (Game.time % 1450 <5) {
-                //Game.getObjectById('60369f333df0b07a8f1ee34e').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E13S53', 'claimer', [CLAIM, MOVE], { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'})
+        if (Game.shard.name=='shard2' && Game.time% 446 == 0 && (Game.rooms.E12S56 && Game.rooms.E12S56.find(FIND_HOSTILE_CREEPS).length==0)) { // block ikiris energy
+            //kiterSpawner('E13S58', 'E12S56');
+            //Game.rooms['E13S58'].memory.forSpawning.spawningQueue.push({ memory: { energy: 3000, role: 'pioneer', target: 'E12S56' , home: 'E13S58', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        
+        if (Game.shard.name=='shard2' && Game.time% 446 == 0 && Game.rooms.E25S43 && Game.rooms.E25S43.controller && Game.rooms.E25S43.controller.my) {
+            Game.rooms['E28S45'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1300, role: 'pioneer', target: 'E25S43' , home: 'E28S45', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        
+        let sneakhelproomname = 'W1S34';
+        if (Game.shard.name=='shard3' && Game.time% 444 == 0 && (Game.rooms[sneakhelproomname] && Game.rooms[sneakhelproomname].find(FIND_HOSTILE_CREEPS).length==0)) {
+            Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({ memory: { energy: 3000, role: 'pioneer', target: sneakhelproomname , home: 'E1S41', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        
+        if (Game.shard.name == 'shard2' && Game.time% 777 == 0) {
+            Game.rooms['E31S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 500, role: 'pioneer', target: 'E21S49' , home: 'E31S49', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        if (Game.shard.name == 'shard2' && Game.time% 1477 == 0) {
+            Game.rooms['E19S51'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1000, role: 'pioneer', target: 'E21S49' , home: 'E19S51', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        if (Game.time% 1333 == 2 && Game.shard.name=='shard3') { // && Game.rooms.E1S41.find(FIND_HOSTILE_CREEPS).length==0
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S42', roleWillBe: 'kiter', body: 'big', route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S42', roleWillBe: 'kiter', body: false, route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S43', roleWillBe: 'kiter', body: false, route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S42', roleWillBe: 'claimer', body: ['?'], route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+            //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 2200, role: 'pioneer', target: 'E1S49' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
+            //Game.rooms['E1S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 3700, role: 'pioneer', target: 'E1S41' , home: 'E1S49', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        if (Game.time% 333 == 2 && Game.shard.name=='shard3') { // && Game.rooms.E1S41.find(FIND_HOSTILE_CREEPS).length==0
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S42', roleWillBe: 'pioneer', body: ['?'], route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+            //Game.rooms['E1S41'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: 'W1S42', roleWillBe: 'claimer', body: ['?'], route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+        }
+        
+        if (false) {
+            if (Game.shard.name=='shard3') {
+                let rsp = Game.getObjectById('60a6c33f7177ce8c2c91a791');
+                if (rsp.store.energy>55) {
+                    let cps = rsp.pos.findInRange(FIND_MY_CREEPS, 1, {filter:c=>c.ticksToLive<1450 && !(checkIfCreepIsBoosted(c) && c.ticksToLive>50)});
+                    let toext;
+                    let toextttl = 1500;
+                    if (cps.length>0) {
+                        for (let cp of cps) {
+                            if (cp.ticksToLive<toextttl) {
+                                toext = cp;
+                                toextttl = cp.ticksToLive;
+                            }
+                        }
+                        if (toext) {
+                            rsp.renewCreep(toext);
+                        }
+                    }
+                }
             }
-            //Game.getObjectById('6043a0ae3f89d27819276c43').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E13S53', 'pioneer', [WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY,WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY], { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'})
-            //Game.getObjectById('6043a0ae3f89d27819276c43').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E8S53', 'pioneer', [WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY,WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY], { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'})
-            Game.getObjectById('6043a0ae3f89d27819276c43').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E12S56', 'pioneer', [WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY,WORK, WORK, WORK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY], { 'E10S50': 'E10S53', 'E10S53': 'E12S56'})
-            //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({memory:{energy: 3200, role: 'pioneer', target: 'E9S51', home: 'E11S47', superUpgrader: false},priority: 24});
+            
+            if (false) {
+                if (_.sum(Game.rooms.E1S49.storage.store)>100000) {
+                    if (Game.time % 110 == 0) { // 123 at most
+                        sendSacrificer('E1S49', 'E1S41');
+                    }
+                }
+                if (Game.time % 87 == 0) { // 123 at most
+                    if (Game.cpu.bucket<5000) {
+                        sendSacrificer('E11S47', 'E1S41');
+                    }
+                    else {
+                        sendSacrificer('E11S47', 'E1S41', 'qiang');
+                    }
+                }
+                //levelEightHelpSevenSuperUp('E11S47', 'E1S49', 517, 0);
+            }
+            
+            if (Game.time%4000<300 && Game.shard.name == 'shard3' && Game.cpu.bucket>6000) {
+                if (Game.time%49 == 0) { // 123 at most
+                    //intershardsacrificer('shard3', 'E11S47', 'E13S53');
+                }
+            }
+                    
+            let pr = Game.rooms['E11S47'];
+            if (Game.rooms.E11S47.memory.mineralThresholds.currentMineralStats.energy>144444) {
+                Game.rooms['E11S47'].memory.frenzyMode = true;
+                let psps = pr.find(FIND_MY_STRUCTURES, {filter: s=>s.structureType==STRUCTURE_SPAWN && (s.effects && s.effects.length>0 && s.effects[0].ticksRemaining>0)});
+                let fucktigga = false && !(Game.time%4000<27.5*5) && Game.rooms.E1S49.controller.level<6;
+                
+                // builder
+                //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d5a', targetRoomName: 'E8S48', roleWillBe: 'qiangWorker', body: ['?'], route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+
+                // claimer
+                //Game.getObjectById('60369f333df0b07a8f1ee34e').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E8S48', 'claimer', [MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, HEAL, MOVE, HEAL, MOVE, HEAL, MOVE, CLAIM, MOVE], { 'E10S50': 'E10S48', 'E10S48': 'E8S48'})
+                
+                // claim to defend
+                //let bbb = createBody({WORK:5, CARRY:4, MOVE:9});
+                //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d5a', targetRoomName: 'E9S48', roleWillBe: 'pioneer', body: bbb, route: {'E10S50': 'E10S48', 'E10S48': 'E9S48'}, role: 'oneWayInterSharder'},priority: 1.5});
+                //Game.getObjectById('60369f333df0b07a8f1ee34e').createOneWayInterSharder('shard2', 'E10S50', '5c0e406c504e0a34e3d61d5a', 'E9S48', 'claimer', [MOVE, MOVE, MOVE, MOVE, HEAL, MOVE, HEAL, MOVE, HEAL, MOVE, HEAL, MOVE, CLAIM, MOVE], {'E10S50': 'E10S48', 'E10S48': 'E9S48'})
+                
+                
+                if (Game.cpu.bucket>7000 && fucktigga) {
+                    if (_.sum(Game.rooms.E1S49.storage.store)<950000) {
+                        if (Game.time% Math.floor(123-(123-27)/3*psps.length) == 0) { // 123 at most
+                            //sendSacrificer('E11S47', 'E1S49');
+                        }
+                    }
+                    //levelEightHelpSevenSuperUp('E11S47', 'E1S49', 517, 0);
+                }
+                else {
+                    if (Game.time%4000<90) {
+                        if (Game.time% Math.floor(123-(123-27)/3*psps.length) == 0) { // 123 at most
+                            for (let i = 0; i < 4; i++) {
+                                //intershardsacrificer('shard3', 'E11S47', 'E7S48');
+                            }
+                            for (let i = 0; i < 2; i++) {
+                                //intershardsacrificer('shard3', 'E11S47', 'E13S53');
+                            }
+                        }
+                    }
+                    else { // build tunnel
+                        if (Game.time% Math.floor(744-(744-477)/3*psps.length) == 0) {
+                            //let bbb = createBody({WORK:24, CARRY:1, MOVE:24});
+                            //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d5a', targetRoomName: 'E8S48', roleWillBe: 'pioneer', body: bbb, route: { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'}, role: 'oneWayInterSharder'},priority: 1.5});
+                            //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d5a', targetRoomName: 'E8S48', roleWillBe: 'qiangWorker', body: ['?'], route: {'?': '?'}, role: 'oneWayInterSharder'}, priority: 15});
+                        }
+                    }
+                }
+            }
+            else {
+                Game.rooms['E11S47'].memory.frenzyMode = false;
+            }
+        }
+        else {
+            if (Game.time%333==0) {
+                //symbolStealerSpawner('E7S48', 'E7S49');
+            }
         }
         
-        if (Game.time% 1100 == 0) {
-            //Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 2500, role: 'pioneer', target: 'E8S47' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
-            Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1250, role: 'pioneer', target: 'E9S39' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
-            //Game.rooms['E13S53'].memory.forSpawning.spawningQueue.push({ memory: { energy: 800, role: 'pioneer', target: 'E8S53' , home: 'E13S53', superUpgrader: false, route:  undefined }, priority: 102 });
-            //Game.rooms['E13S53'].memory.forSpawning.spawningQueue.push({ memory: { energy: 800, role: 'pioneer', target: 'E12S56' , home: 'E13S53', superUpgrader: false, route:  undefined }, priority: 102 });
+        if (Game.shard.name == 'shard2' && Game.time%1990==0) {
+            //sendClaimer('E31S49', 'E25S49', false)
+            //kiterSpawner('E31S49', 'E25S49');
+            //kiterSpawner('E13S58', 'E12S56', 5);
+            //sendClaimer('E13S58', 'E12S56', false, true);
+            //kiterSpawner('E13S58', 'E12S56');
+            //Game.rooms.E13S53.memory.forSpawning.spawningQueue.push({ memory: { role: 'reserver', target: 'E9S52', big: true, roomEnergyMax: Game.rooms.E13S53.energyCapacityAvailable }, priority: 1 });
         }
-        if (Game.time% 800 == 0) {
-            Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 2200, role: 'pioneer', target: 'E1S49' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
+        
+        if (Game.shard.name == 'shard2' && Game.time%294==1) {
+            //Game.rooms['E31S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E30S50', portalId: '5c0e406c504e0a34e3d61dd7', targetRoomName: 'E29S51', roleWillBe: 'pioneer', body: ['?']},priority: 0.4});
+            //Game.rooms['E31S49'].memory.forSpawning.spawningQueue.push({memory:{role: 'oneWayInterSharder', targetShardName: 'shard3', portalRoomName: 'E30S50', portalId: '5c0e406c504e0a34e3d61dd7', targetRoomName: 'E29S51', roleWillBe: 'claimer', body: 'claim'}, priority: 0.4}); // claime for small, otherwise big
         }
-        if (Game.time% 350 == 0) {
-            Game.rooms['E11S47'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1200, role: 'pioneer', target: 'E9S31' , home: 'E11S47', superUpgrader: false, route:  undefined }, priority: 102 });
+        
+        if (Game.time%466==0) {
+            //Game.rooms['E31S49'].memory.forSpawning.spawningQueue.push({ memory: { energy: 3000, role: 'pioneer', target: 'e29s47' , home: 'E31S49', superUpgrader: false, route:  undefined }, priority: 102 });
+        }
+        
+        if (Game.shard.name == 'shard3' && Game.time%1000==828) {
+            //sendClaimer('E11S47', 'E13S51', false);
+            //kiterSpawner('E11S47', 'E12S51');
+            //sendClaimer('E11S47', 'E12S49', false);
+            //kiterSpawner('E11S47', 'E12S49');
+            // add dismantler
+            //sendClaimer('E11S47', 'E12S51', false); // too far
+            //sendClaimer('E1S49', 'W1S58', false, true)
+        }
+        
+        if (Game.shard.name == 'shard2' && Game.time%1000==777) {
+            sendClaimer('E28S45', 'E27S45', false, true);
+            //sendClaimer('W1S42', 'W1S43', false, true);
+        }
+        
+        if (Game.shard.name == 'shard2' && Game.time%1250==60) {
+            //kiterSpawner('E13S58', 'E11S55', 6);
+        }
+        
+        if (Game.shard.name == 'shard3' && Game.time%100==1 && Game.rooms.E29S51.memory.mineralThresholds.currentMineralStats.energy>50000) {
+            //intershardsacrificer('shard3', 'E1S41', 'W1S42');
+            intershardsacrificer('shard3', 'E29S51', 'E31S49');
+        }
+        
+        if (Game.shard.name == 'shardSeason') {
+            //let c0 = Game.cpu.getUsed();
+            //findPathForQuadsLeader(new RoomPosition(19, 26, 'W19S18'), new RoomPosition(12, 12, 'W19S19'));
+            //fo(Game.cpu.getUsed()-c0)
+            /*
+            runEdgeCampTask();
+            
+            hiderSpawner('W19S18', 'W20S13', 'W19S13');
+            hiderSpawner('W19S18', 'W20S12', 'W19S12');
+            hiderSpawner('W19S18', 'W20S11', 'W19S11');
+            hiderSpawner('W19S18', 'W20S8', 'W21S8');
+            hiderSpawner('W19S18', 'W20S15', 'W20S14');
+            hiderSpawner('W19S18', 'W20S14', 'W20S15');
+            hiderSpawner('W19S18', 'W19S16', 'W20S16');
+            hiderSpawner('W19S18', 'W20S16', 'W19S16');
+            //hiderSpawner('W19S18', 'W19S13', 'W19S12');
+            //hiderSpawner('W19S18', 'W19S12', 'W19S13');
+            */
+            
+            if (false) {
+                if (Game.time%333 == 675) {
+                    //kiterSpawner('W9S19', 'W2S29', 'x');
+                }
+                if (Game.time%900==0) {
+                    //Game.rooms['W1S19'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'W2S29'},priority: 6});
+                }
+                if (Game.time%1000==411) {
+                    //gaysSpawner('W1S19', 'W2S29');
+                }
+            }
+            
+            if (Game.time%333 == 675) {
+                //Game.rooms.W19S18.createConstructionSite(41, 42, STRUCTURE_OBSERVER);
+                //stomperSpawner('W19S18', 'W20S15');
+                //kiterSpawner('W19S18', 'W19S15', 5);
+                //kiterSpawner('W9S19', 'W2S29', 'x');
+                //kiterSpawner('W19S18', 'W20S25', 5);
+                //kiterSpawner('W19S18', 'W20S26', 5);
+            }
+            
+            if (Game.time%633 == 675) {
+                //stomperSpawner('W19S18', 'W20S15');
+                //kiterSpawner('W19S18', 'W18S16', 5);
+                //kiterSpawner('W19S18', 'W29S12', 7);
+            }
+            if (false) {
+                if (Game.time%675==0) {
+                    if (Game.rooms['W19S16'] == undefined || Game.rooms['W19S16'].find(FIND_HOSTILE_CREEPS, {filter:c=>c.owner.username=='QzarSTB'}).length>0) {
+                        stomperSpawner('W19S18', 'W19S16');
+                    }
+                }
+                if (Game.time%900==411) {
+                    //if (Game.rooms['W19S16'] == undefined || ( Game.rooms['W19S16'].find(FIND_MY_CREEPS, {filter:c=>c.memory.role=='gays'}).length<2 && Game.rooms['W19S16'].find(FIND_HOSTILE_CREEPS, {filter:c=>c.owner.username=='QzarSTB' && (getActiveBodyparts(ATTACK)+c.getActiveBodyparts(RANGED_ATTACK)+c.getActiveBodyparts(HEAL)>10)}).length>0)) {
+                        gaysSpawner('W19S18', 'W19S16');
+                    //}
+                }
+                if (Game.time%1000==611) {
+                    if (Game.rooms['W19S16'] && Game.rooms['W19S16'].controller && Game.rooms['W19S16'].controller.owner !==undefined && Game.rooms['W19S16'].find(FIND_HOSTILE_STRUCTURES, {filter:t=>t.structureType==STRUCTURE_RAMPART}).length<3) {
+                        sendClaimer('W19S18', 'W19S16', false, false, 3);
+                    }
+                    //sendClaimer('W1S42', 'W1S43', false, true);
+                    //kiterSpawner('W9S19', 'W19S16', 7);
+                }
+                if (Game.time%1333==0) {
+                    //kiterSpawner('W19S18', 'W19S16', 5);
+                    //kiterSpawner('W19S18', 'W20S16', 5);
+                }
+                //primitiveCamping('W9S19', 'W19S16');
+                //primitiveCamping('W9S19', 'W20S14');
+            }
+            
+            if (Game.time%585==300) {
+                //Game.rooms['W1S19'].memory.forSpawning.spawningQueue.push({ memory: { role: 'attacker', target: 'E1S7', home: 'W1S19', uniqueString: 'tigga' }, priority: 0.2 });
+                //Game.rooms['W1S19'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1500, role: 'pioneer', target: 'W19S18' , home: 'W1S19', superUpgrader: false, route:  undefined }, priority: 10 });
+                //Game.rooms['W9S19'].memory.forSpawning.spawningQueue.push({ memory: { energy: 1300, role: 'pioneer', target: 'W28S19' , home: 'W9S19', superUpgrader: false, route:  undefined }, priority: 10 });
+                //helpSubroom('W19S18', 'W28S19')
+                //Game.rooms['E1S29'].memory.forSpawning.spawningQueue.push({memory:{energy: 3200, role: 'pioneer', target: 'W9S28', home: 'E1S29', superUpgrader: false},priority: 0.4});
+                //Game.rooms['W9S19'].memory.forSpawning.spawningQueue.push({memory:{energy: 3200, role: 'pioneer', target: 'W9S28', home: 'W9S19', superUpgrader: true},priority: 0.4});
+                if (Game.rooms['W22S29'].find(FIND_MY_STRUCTURES, {filter:s=>s.structureType==STRUCTURE_SPAWN}).length==0) {
+                    Game.rooms['W19S18'].memory.forSpawning.spawningQueue.push({memory:{energy: 3200, role: 'pioneer', target: 'W22S29', home: 'W19S18', superUpgrader: false},priority: 0.4});
+                }
+                else if (Game.rooms['W22S29'] && Game.rooms['W22S29'].controller && Game.rooms['W22S29'].controller.my && (!Game.rooms['W22S29'].terminal || !Game.rooms['W22S29'].storage || (!Game.rooms['W22S29'].terminal && Game.rooms['W22S29'].storage.store.energy<100000))) {
+                    sendSacrificer('W19S18', 'W22S29', 'energy', 25);
+                }
+                //sendSacrificer('E1S29', 'W9S28', 'energy', 25);
+                //sendSacrificer('W9S19', 'W9S28', 'energy', 25);
+                //sendSacrificer('W9S19', 'W19S27', undefined, 25);
+                //sendSacrificer('W9S19', 'W9S9', undefined, 10);
+            }
+            
+            /*
+            if (Game.time%2000==1401) {
+                quadsSpawner('E1S29', 'W1S28', 'r-');
+                //Game.rooms['E1S29'].memory.forSpawning.spawningQueue.push({memory:{role: 'dismantler', target: 'W1S28', boostMats: ['ZH2O']},priority: 5});
+            }
+            if (Game.time%1000==999) {
+                if (Game.rooms['W1S28'] && Game.rooms['W1S28'].controller && Game.rooms['W1S28'].controller.owner !==undefined && Game.rooms['W1S28'].controller.owner.username !==undefined && !allyList().includes(Game.rooms['W1S28'].controller.owner.username) && Game.rooms['W1S28'].controller.pos.findInRange(FIND_HOSTILE_STRUCTURES, {filter:t=>t.structureType==STRUCTURE_RAMPART}).length<returnALLAvailableLandCoords(Game.rooms['W1S28'], Game.rooms['W1S28'].controller.pos).length) {
+                    sendClaimer('E1S29', 'W1S28', false, false, 1);
+                }
+            }
+            if (Game.time%1000==413) {
+                gaysSpawner('W1S19', 'W1S28');
+            }
+            */
+            
+            /*
+            if (Game.time%1000==222) {
+                if (Game.rooms['W1S28'] && Game.rooms['W1S28'].controller && Game.rooms['W1S28'].controller.owner !==undefined && Game.rooms['W1S28'].find(FIND_HOSTILE_STRUCTURES, {filter:t=>t.structureType==STRUCTURE_RAMPART}).length<3) {
+                    sendClaimer('E1S29', 'W1S28', false, false, 2);
+                }
+                //sendClaimer('W1S42', 'W1S43', false, true);
+                //kiterSpawner('W9S19', 'W19S16', 7);
+            }
+            if (Game.time%1111==0) {
+                if (Game.rooms['W1S28'] == undefined || Game.rooms['W1S28'].find(FIND_HOSTILE_CREEPS, {filter:c=>c.owner.username=='Trepidimous'}).length>0) {
+                    stomperSpawner('E1S29', 'W1S28');
+                    gaysSpawner('E1S29', 'W1S28');
+                }
+            }
+            */
+            
+            if (Game.time%1000==230) {
+                //kiterSpawner('W9S19', 'W10S28');
+                if (Game.rooms.W9S28.find(FIND_HOSTILE_CREEPS, {filter: s=>!allyList().includes(s.owner.username) && s.owner.username!='Invader'}).length>1) {
+                    gaysSpawner('W9S19', 'W9S28');
+                    gaysSpawner('E1S29', 'W9S28');
+                    supportRedneckSpawner('W9S19', 'W9S28');
+                    supportRedneckSpawner('E1S29', 'W9S28');
+                }
+            }
+            
+            if (Game.time%1000==411) {
+                //quadsSpawner('W1S19', 'W2S29', 'r');
+                //gaysSpawner('W1S19', 'W3S28');
+                //gaysSpawner('W1S19', 'W2S29');
+                //gaysSpawner('W9S19', 'W11S23');
+            }
+            if (Game.time%2500==1411) {
+                //kiterSpawner('E1S29', 'W8S29', 'x');
+                //quadsSpawner('E1S29', 'W2S29', 'rx');
+                //quadsSpawner('W9S19', 'W11S23', 'rx');
+            }
+            if (Game.time%5300==861) {
+                //kiterSpawner('E1S29', 'W2S28', 'x');
+            }
+            if (Game.time%900==881) {
+                //kiterSpawner('W1S19', 'W2S30', 'x');
+            }
+            if (Game.time%4100==61) {
+                //kiterSpawner('W1S19', 'W2S27', 'x');
+                //kiterSpawner('W9S19', 'W10S28', 'x');
+            }
+            if (Game.time%4100==661) {
+                //kiterSpawner('W1S19', 'W3S28', 'x');
+                //quadsSpawner('W1S19', 'W2S29', 'r');
+            }
+            if (Game.time%4500==1461) {
+                //kiterSpawner('W9S19', 'W2S28', 'x');
+                //quadsSpawner('W9S19', 'W11S23', 'r');
+            }
+            if (Game.time%4500==261) {
+                //kiterSpawner('W9S19', 'W11S22', 'x');
+                //quadsSpawner('W1S19', 'W11S23', 'r');
+            }
+            
+            if (Game.time%1333==0 && Game.rooms.W29S12.memory.mineralThresholds.currentMineralStats.power<6000 && Game.rooms.W19S18.memory.mineralThresholds.currentMineralStats.power>4000) {
+                //sendSacrificer('W19S18', 'W29S12', undefined, 25);
+            }
+            
+            /*
+            if (Game.gcl.level == 5 && Memory.tempto == undefined) {
+                helpSubroom('W9S19', 'W9S9');
+                Memory.tempto = true;
+            }
+            */
+            /*
+            if (Game.time%78==0) {
+                if (Game.rooms.W19S18.createConstructionSite(7,33,STRUCTURE_EXTRACTOR) == OK) {
+                    if (Game.rooms.W19S18.createConstructionSite(8,34,STRUCTURE_CONTAINER) == OK) {
+                        Game.rooms.W19S18.createConstructionSite(36,35,STRUCTURE_TERMINAL);
+                    }
+                }
+            }
+            */
+            
+            if (false) {
+                let defcross = false;
+                for (let pid in Memory.storedSymbols.shardSeason) {
+                    if (Memory.storedSymbols.shardSeason[pid].mrn == 'E1S29') {
+                        defcross = true;
+                        break
+                    }
+                }
+                if (defcross) {
+                    if (Game.time%1333==0) {
+                        kiterSpawner('E1S29', 'W2S30', 'x');
+                    }
+                    if (Game.time%833==0) {
+                        kiterSpawner('W1S19', 'W2S30', 'x');
+                    }
+                    if (Game.time%700==0) {
+                        //gaysSpawner('W1S19', 'W2S27');
+                        kiterSpawner('W1S19', 'W2S27', 'x');
+                    }
+                    if (Game.time%1300==433) {
+                        //gaysSpawner('E1S29', 'W2S28');
+                        kiterSpawner('E1S29', 'W2S28', 'x');
+                    }
+                }
+                
+                let defbot = false;
+                for (let pid in Memory.storedSymbols.shardSeason) {
+                    if (Memory.storedSymbols.shardSeason[pid].mrn == 'W9S28') {
+                        defbot = true;
+                        break
+                    }
+                }
+                if (defbot) {
+                    if (Game.time%700==0) {
+                        //gaysSpawner('W9S28', 'W10S29');
+                        kiterSpawner('W9S28', 'W10S29', 'x');
+                    }
+                    if (Game.time%700==350) {
+                        //gaysSpawner('W9S28', 'W8S30');
+                        kiterSpawner('W9S28', 'W8S30', 'x');
+                    }
+                }
+            }
+                
+
+            if (false) {
+                helpDefendRoom('W9S19', 'W19S18');
+                helpDefendRoom('W1S19', 'W19S18');
+                helpDefendRoom('W9S19', 'W9S9');
+                helpDefendRoom('W1S19', 'W9S9')
+            }
+        }
+        
+        //fleeTest();
+    }
+    catch (err) {
+        fo(err.stack)
+    }
+    calcCpuProcesses.misc_sp = Game.cpu.getUsed()-misc_sp;
+
+    let pc_manage = Game.cpu.getUsed();
+    //pc.powerCreepManaging(currentShard);
+    try {
+        pc.powerCreepManaging(currentShard);
+    }
+    catch (err) {
+        fo('pc code bug')
+        fo(err.stack)
+    }
+    calcCpuProcesses.pc_manage = Game.cpu.getUsed()-pc_manage;
+    
+    let highway_harv = Game.cpu.getUsed();
+    //powerAllInOne(currentShard);
+    //depositAllInOne(currentShard);
+    try {
+        if (Game.shard.name == 'shard3' || Game.shard.name == 'shardSeason') {
+            // power
+            powerAllInOne(currentShard);
+            //depositAllInOne(currentShard);
         }
     }
     catch (err) {
-        fo(err)
+        fo('power code bugged')
+        fo(err.stack)
     }
-    calcCpuProcesses.tow_def = Game.cpu.getUsed()-misc_sp;
-
+    calcCpuProcesses.highway_harv = Game.cpu.getUsed()-highway_harv;
+    
     //previousCPU = calculateCPUUsageOfProcesses(previousCPU, 'pre-room CPU usage', true);
     
         for (let roomNameIdx in Memory.myRoomList[currentShard]) {
             let roomName = Memory.myRoomList[currentShard][roomNameIdx];
+            //if (currentShard=='shard2' || (currentShard=='shard3' && (Game.cpu.bucket>5000 || roomName=='E11S47' || roomName=='E1S49' || roomName=='E1S41'))) {
             if (true) {
                 let room = Game.rooms[roomName];
+                if (room.memory && room.memory.weird) {
+                    
+                }
+                else if (Game.shard.name=='shard3' && !(roomName=='E11S47'||roomName=='E1S41'||roomName=='E1S49'||roomName=='E11S1'||roomName=='E29S51'||roomName=='W2S58')) { // 
+                    
+                }
+                else if (Game.shard.name=='shardSeason' && roomName == 'W13S21') {
+                    
+                }
+                /*
+                else if (Game.time%10==0 && roomName == 'E1S41' && Game.shard.name=='shard3') {
+                    if (false) {
+                        if (Game.rooms.E1S41.terminal.store.energy<50000) {
+                            if (Game.rooms.E11S47.terminal.cooldown == 0 && Game.rooms.E11S47.terminal.store.energy>30000) {
+                                Game.rooms.E11S47.terminal.send('energy', 10000, 'E1S41');
+                            }
+                            if (Game.rooms.E1S49.terminal.cooldown == 0 && Game.rooms.E1S49.terminal.store.energy>30000) {
+                                Game.rooms.E1S49.terminal.send('energy', 10000, 'E1S41');
+                            }
+                        }
+                        if (Game.rooms.E1S41.terminal.store.energy<125000) {
+                            checkTradingEnergyCostAndBuy('E1S41', 'energy', 10000);
+                            //checkTradingPriceAndPostBuyOrder('E1S41','energy', 5000, 0.001);
+                        }
+                        if (Game.time%77==0) {
+                            popBubble(Game.rooms.E1S41);
+                        }
+                    }
+                }
+                */
+                else {
                     try {
                         let cpucnt = Game.cpu.getUsed();
                         // movement task manager
@@ -499,13 +907,14 @@ module.exports.loop = function () {
                         if (room.memory.coreBaseReady) {
                             taskScanInterv = 20;
                         }
-                        if (Game.time%taskScanInterv==0) {
+                        if ((room.controller.level<=3 || (room.find(FIND_MY_CREEPS, {filter:c=>c.memory.role=='miner'&&c.getActiveBodyparts(MOVE)==0}).length>0)) && Game.time%taskScanInterv==0) {
                             structureGetE(roomName);
                             resourceOfferE(roomName);
                             taskMove.moveTaskManager(roomName);
                             energyTaskManager(roomName);
                             energyGetTaskManager(roomName);
                         }
+                        room.updateEnergyStructures();
                         calcCpuProcesses.tasks += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
@@ -515,7 +924,7 @@ module.exports.loop = function () {
                     try {
                         // update room build plan and place site
                         cpucnt = Game.cpu.getUsed();
-                        if (Game.time%777 == 3 || room.memory.newAnchor == undefined || (room.controller.level<=3 && Game.time%55==0) || (room.memory.forSpawning && room.memory.forSpawning.roomCreepNo && room.memory.forSpawning.roomCreepNo.minCreeps['builder'] > 0 && Game.time%7 == 3)) {
+                        if (Game.time%777 == 3 || room.memory.newAnchor == undefined || (room.controller.level<=3 && Game.time%55==0) || (room.memory.forSpawning && room.memory.forSpawning.roomCreepNo && room.memory.forSpawning.roomCreepNo.minCreeps['builder'] > 0 && Game.time%3 == 1)) {
                             updateRoomPlan(roomName);
                         }
                         calcCpuProcesses.roomPlan += Game.cpu.getUsed()-cpucnt;
@@ -534,9 +943,11 @@ module.exports.loop = function () {
                         calcCpuProcesses.sp += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
-                        fo(roomName + ' spawning code bugged')
+                        fo(roomName + ' spawning code bugged');
+                        fo(err.stack);
                     }
                     
+                    //manageRemoteRoomsResourceGetting(roomName);
                     try {
                         // remote mining
                         cpucnt = Game.cpu.getUsed();
@@ -559,31 +970,33 @@ module.exports.loop = function () {
                         fo(roomName + ' remote code bugged')
                     }
                     
+                    // link misc CPU calc
                     try {
                         cpucnt = Game.cpu.getUsed();
-                        if (Game.time % 499 == 0) {
+                        initiateLinksInRoom(room); // has 50 interval
+                        if (Game.time % 100 == 0) {
                             //checkIfCreepInfoUpdateRequired(roomName);
                             newLinkSuperUpgraderPosisCach(roomName);
                             superUpgraderBalancing(roomName);
                         }
                         
-                        if (Game.time % 678 == 0) {
-                            mainBuildSub(room, undefined);
-                        }
+                        mainBuildSub(room, undefined);
                         
                         linkTransfer(room);
 
-                        //season 2 special
-                        sendMappers(room);
+                        //season special
+                        sendMappers(room); // <<<<<<<<<<<<<<<<<
+                        calcCpuProcesses.link_misc += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
                         fo(roomName + ' link/mapper code bugged')
                     }
                     
                     try {
+                        cpucnt = Game.cpu.getUsed();
                         // high way
                         try {
-                            highwayManager(room);
+                            //highwayManager(room);
                         }
                         catch (err) {
                             fo(room.name + ' highway bugged');
@@ -592,25 +1005,31 @@ module.exports.loop = function () {
                     catch (err) {
                         fo(roomName + ' highway code bugged')
                     }
-                    
+
                     try {
                         // power
-                        try {
-                            //powerHarvestingAndScanningMaintainner(room);
-                        }
-                        catch (err) {
-                            console.log('error: power harvesting code!');
-                        }
+                        observerScanForPower(roomName);
+                        powerspawnProcessPower(room);
                     }
                     catch (err) {
-                        fo(roomName + ' power code bugged')
+                        fo(roomName + ' power observing code bugged')
+                    }
+                    
+                    // factory
+                    //runFactory(room.name);
+                    try {
+                        runFactory(room.name);
+                    }
+                    catch (err) {
+                        console.log('error: factory code');
                     }
                     
                     try {
                         // room defend activate bubble
-                        if (Game.time%77==0) {
+                        if (room.name == 'E7S48' || Game.time%17==0) {
                             popBubble(room);
                         }
+                        checkNuker(room);
                         calcCpuProcesses.misc += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
@@ -623,6 +1042,10 @@ module.exports.loop = function () {
                         initiateMineralKeepThresholdInRoom(room, false);
                         if (Game.time % 19 == 0) { // update all res situation
                             allMineralsSituation(room);
+                            checkMineralAndSell(roomName);
+                            if (Math.random()<0.1) {
+                                cutStupidPrice(room);
+                            }
                         }
                         calcCpuProcesses.mineralManage += Game.cpu.getUsed()-cpucnt;
                     }
@@ -639,10 +1062,12 @@ module.exports.loop = function () {
                         if (Game.time%3333==0) { // change an available compound to produce
                             pickACompoundToProduce(roomName);
                         }
+                        // labfilling memory manage
+                        addLabFillTask(roomName);
                         //changeMineralProductionInRoom(roomName); // completely random choose to produce
                         if (Game.time % 777 == 0) {
                             if (startLabber(Game.rooms[roomName])) {
-                                Game.rooms[roomName].memory.forSpawning.roomCreepNo.minCreeps.labber = 1;
+                                Game.rooms[roomName].memory.forSpawning.roomCreepNo.minCreeps.labber = 0;
                                 Game.rooms[roomName].memory.forSpawning.roomCreepNo.creepEnergy.labber = 600;
                             }
 
@@ -661,17 +1086,24 @@ module.exports.loop = function () {
                     
                     try {    
                         cpucnt = Game.cpu.getUsed();
+                        //towerDefence(room);
+                        
                         if (determineIfFucked(room)[0] < 1) {
                             towerRepairInPeace(room);
                         }
-                       calcCpuProcesses.tower += Game.cpu.getUsed()-cpucnt;
+                        
+                        rampartManagement(room.name);
+                        calcCpuProcesses.tower += Game.cpu.getUsed()-cpucnt;
                     }
                     catch (err) {
                         fo(roomName + ' def code bugged')
                     }
+                }
             }
-
-            else { // (!(roomName == 'E4S49') && !(roomName == 'E11S47') && !(roomName == 'E13S53')) {
+            else {
+                // pass
+            }
+            if (false) { // (!(roomName == 'E4S49') && !(roomName == 'E11S47') && !(roomName == 'E13S53')) {
                 let r = Game.rooms[roomName];
                 if (r.controller && r.controller.my) {
                     let room = r;
@@ -726,7 +1158,6 @@ module.exports.loop = function () {
                             catch (err) {
                                 console.log('error: power harvesting code!');
                             }
-                            //powerspawnProcessPower(room);
 
                             if (Game.time % 499 == 0) {
                                 checkIfCreepInfoUpdateRequired(roomName);
@@ -837,7 +1268,7 @@ module.exports.loop = function () {
                                 towerRepairInPeace(room);
                             }
 
-                            if (Game.time % 499 == 0) {
+                            if (Game.time % 49 == 0) {
                                 checkIfCreepInfoUpdateRequired(roomName);
                                 superUpgraderBalancing(roomName);
                             }
@@ -1037,10 +1468,15 @@ module.exports.loop = function () {
         try {
             cpucnt = Game.cpu.getUsed();
             if (Game.time%(Math.ceil(-0.003*Game.cpu.bucket+40))==7) { // 
-                checkMineralStatsAndSend(1)
+                checkMineralStatsAndSend(1);
+                let tempout = Game.cpu.getUsed()-cpucnt;
+                fo('res flow took '+tempout+'CPUs');
             }
             calcCpuProcesses.resFlow += Game.cpu.getUsed()-cpucnt;
-            //checkMineralStatsAndSend()
+            
+            if (Game.shard.name!='shardSeason' && (Game.time%47==0 || (Game.cpu.bucket>9950))) {
+                estimateCommodityPrices();
+            }
         }
         catch (err) {
             fo('resource management code bugged');
@@ -1081,9 +1517,10 @@ module.exports.loop = function () {
     calcCpuProcesses.logPos += Game.cpu.getUsed()-xxxx;
     
     try {
-    showGameStats(roleCPU, roleCPU_n, roleNum);
-    showUltiMateGameStats(calcCpuProcesses);
-    showSymPicPosi();
+        showGameStats(roleCPU, roleCPU_n, roleNum);
+        showUltiMateGameStats(calcCpuProcesses);
+        showPowerStatsS3();
+        //showSymPicPosi(); // s2
     }
     catch (err) {
         fo('stats show bug')

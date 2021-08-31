@@ -116,15 +116,15 @@ global.initiateHighway = function (r, from, to, type) {
     let ret;
     if (r.controller.level>3) {
         if (type=='upgrade') {
-            ret = funcB.findPathBasedOnGridEvenOddAndBankerBlockage(r, start, 1 , true, true);
+            ret = funcB.findPathBasedOnGridEvenOddAndBankerBlockage(r, start, 1 , true, false);
             ret.path = ret.path.reverse();
         }
         else {
-            ret = funcB.findPathBasedOnGridEvenOddAndBankerBlockage(r, dests, 1 , true, true);
+            ret = funcB.findPathBasedOnGridEvenOddAndBankerBlockage(r, dests, 1 , true, false);
         }
     }
     else {
-        ret = funcB.findPathBasedOnGridEvenOdd(start, dests, 1 , true, true);
+        ret = funcB.findPathBasedOnGridEvenOdd(start, dests, 1 , true, false);
     }
     
     if (ret && ret.incomplete == false) {

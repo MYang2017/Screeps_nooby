@@ -1,4 +1,6 @@
 global.allyList = function() {
+    return ['PythonBeatJava', 'TheLastPiece', 'Tigga', 'Mirroar', 'Mitsuyoshi'] // , 'Trepidimous'
+    return ['1buyu', 'FeTiD']
     return ['asdpof', 'PythonBeatJava', 'JoshCF','Zolcsika','Evander','Zeus','slowmotionghost','Kasami', 'TheLastPiece', 'ManVsRice', 'Donatzor', 'Kanduras', 'PolarJ', 'buger', 'SirFrump', 'dragoonreas', 'SystemParadox', 'Xenofix'];
 }
 

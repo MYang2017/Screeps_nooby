@@ -23,7 +23,7 @@ var idealMineralSellingPrices = {
   'H': 0.14, // show up as 0.6 on market and people tend to buy 0.6 than 0.7
   'O': 2,
   'U': 0.18,
-  'energy': 0.01,
+  'energy': 0.61,
   'L': 0.1
 };
 
@@ -35,90 +35,275 @@ var maxResourceKeep = {
   'valuableCompounds': 200000,
 };
 
-var energyPrice = 0.011;
+var energyPrice = {'shard3': 0.45, 'shard2': 1.5};
 
 global.checkMineralAndSell = function (roomName) {
+    if (Game.shard.name=='shardSeason') {
+        return false;
+    }
     let room = Game.rooms[roomName];
     if (room.memory.mineralMining == undefined) {
         room.memory['mineralMining'] = room.find(FIND_MINERALS)[0].mineralType
     }
     else {
-        let mineralType = room.memory.mineralMining;
-        if (Game.rooms[roomName].terminal && Game.rooms[roomName].terminal.cooldown == 0) {
-            for (const resourceType in Game.rooms[roomName].terminal.store) {
-                var minMineralKeep;
-                if (resourceType == 'energy') { // determine which type of resource and the maximum amount to keep in terminal
-                    minMineralKeep = maxResourceKeep.energy;
-                }
-                else if (basicMinerals.includes(resourceType)) {
-                    minMineralKeep = maxResourceKeep['basicMinerals'];
-                }
-                else {
-                    minMineralKeep = maxResourceKeep['valuableCompounds'];
-                }
-
-                let mineralAmount = Game.rooms[roomName].terminal.store[resourceType];
-
-                if (mineralAmount > minMineralKeep || _.sum(Game.rooms[roomName].terminal.store) > 270000) {
-                    console.log(mineralAmount,minMineralKeep,resourceType);
-                    const amountToSell = 5000;
-                    let orders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: resourceType });
-                    orders = _.filter(orders, o => o.amount > 5000);
-                    let income = 0;
-                    let orderId = undefined;
-
-                    for (let i = 0; i < orders.length; i++) {
-                        const transferEnergyCost = Game.market.calcTransactionCost(amountToSell, roomName, orders[i].roomName);
-                        var mineralPrice = orders[i]['price'];
-                        var transferCost = transferEnergyCost * energyPrice;
-                        var totalInCome = amountToSell * mineralPrice;
-                        if (totalInCome > income) {
-                            income = totalInCome;
-                            orderId = orders[i].id;
+        if (room.memory.mineralThresholds&&room.terminal&&(room.memory.mineralThresholds.currentMineralStats.energy>1150000||room.terminal.store.getFreeCapacity('energy')<10000)) {
+            let mineralType = room.memory.mineralMining;
+            if (Game.rooms[roomName].terminal && Game.rooms[roomName].terminal.cooldown == 0) {
+                for (const resourceType in Game.rooms[roomName].terminal.store) {
+                    if (resourceType == 'energy' && room.controller.level==8) { 
+                        var minMineralKeep;
+                        if (resourceType == 'energy') { // determine which type of resource and the maximum amount to keep in terminal
+                            minMineralKeep = maxResourceKeep.energy;
                         }
-                        //var equivilantMineralPrice = (totalInCome-transferCost)/amountToSell;
-                    }
-
-                    if (orderId) {
-                        if (Game.market.deal(orderId, amountToSell, roomName) == OK) {
-                            console.log('no fucking way...')
-                            console.log('super value sold ' + resourceType + '! ' + roomName + ' got ' + income + '(' + mineralPrice + '). order number: ' + orderId);
+                        else if (basicMinerals.includes(resourceType)) {
+                            minMineralKeep = maxResourceKeep['basicMinerals'];
+                        }
+                        else {
+                            minMineralKeep = maxResourceKeep['valuableCompounds'];
+                        }
+        
+                        let mineralAmount = Game.rooms[roomName].terminal.store[resourceType];
+        
+                        if (mineralAmount > minMineralKeep || _.sum(Game.rooms[roomName].terminal.store) > 270000) {
+                            console.log(mineralAmount,minMineralKeep,resourceType);
+                            const amountToSell = 5000;
+                            let orders = Game.market.getAllOrders({ type: ORDER_BUY, resourceType: resourceType });
+                            orders = _.filter(orders, o => o.amount > 5000);
+                            let income = 0;
+                            let orderId = undefined;
+        
+                            for (let i = 0; i < orders.length; i++) {
+                                const transferEnergyCost = Game.market.calcTransactionCost(amountToSell, roomName, orders[i].roomName);
+                                var mineralPrice = orders[i]['price'];
+                                var transferCost = transferEnergyCost * energyPrice[Game.shard.name];
+                                var totalInCome = amountToSell * mineralPrice;
+                                if (totalInCome > income) {
+                                    income = totalInCome;
+                                    orderId = orders[i].id;
+                                }
+                                //var equivilantMineralPrice = (totalInCome-transferCost)/amountToSell;
+                            }
+        
+                            if (orderId) {
+                                if (Game.market.deal(orderId, amountToSell, roomName) == OK) {
+                                    console.log('no fucking way...')
+                                    console.log('super value sold ' + resourceType + '! ' + roomName + ' got ' + income + '(' + mineralPrice + '). order number: ' + orderId);
+                                    return
+                                }
+                            }
+                        }
+                        else {
+                            //console.log('not enough '+mineralType);
                         }
                     }
-                }
-                else {
-                    //console.log('not enough '+mineralType);
+                    else {
+                        fo ('non 8 room does not sell energy');
+                    }
                 }
             }
         }
     }
 }
 
-global.checkTradingEnergyCostAndBuy = function(roomName,mineralType) {
-    if (Game.rooms[roomName].terminal.cooldown == 0) {
-      var terminalAmount = Game.rooms[roomName].terminal.store[mineralType];
-      if (terminalAmount<maxMineralKeep[mineralType]) { // if stored amount is less than required amount
-        const amountToBuy = 2000;
-        const orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: mineralType});
-
-        for(let i=0; i<orders.length; i++) {
-          const transferEnergyCost = Game.market.calcTransactionCost(amountToBuy, roomName, orders[i].roomName);
-          var mineralPrice = orders[i]['price'];
-          var transferCost = transferEnergyCost*energyPrice;
-          var moneySpendOnMineral = amountToBuy*mineralPrice;
-          var equivilantMineralPrice = (transferCost + moneySpendOnMineral)/amountToBuy;
-
-          if ( equivilantMineralPrice < idealMineralBuyingPrices[mineralType] ) {
-              if (Game.market.deal(orders[i].id, amountToBuy, roomName)==OK) {
-                  console.log('super value to buy '+mineralType+'! '+orders[i]['roomName']+' for '+equivilantMineralPrice+'('+mineralPrice+'). order number: '+orders[i].id);
-                  break;
-              }
-          }
+global.checkTradingPriceAndPostSellOrder = function(roomName,mineralType, amountToPost=2000) {
+    // check if already has this posted
+    let mos = Game.market.orders;
+    for (let moid in mos) {
+        let mo = mos[moid];
+        if (mo.roomName == roomName && mo.resourceType == mineralType && mo.active && mo.type == ORDER_SELL && mo.amount>0) {
+            fo('change sell price')
+            fo(Game.market.changeOrderPrice(moid, mo.price-0.001));
+            return
         }
-      }
-      else {
-        //console.log('not enough '+mineralType);
-      }
+    }
+    
+    if (Game.rooms[roomName].terminal.cooldown == 0) {
+        var terminalAmount = Game.rooms[roomName].terminal.store[mineralType];
+        if (true||terminalAmount<maxMineralKeep[mineralType]) { // if stored amount is less than required amount
+            let ods = Game.market.getAllOrders(o=> o.type == ORDER_SELL && o.resourceType == mineralType && o.amount>999);
+            ods.sort((a, b) => {
+                return a.price - b.price;
+            });
+            let jia;
+            if (ods.length==0) {
+                fo('no price anchor ' + mineralType);
+                return
+            }
+            else if (ods.length>2) {
+                jia = ods[1].price + 0.001;
+            }
+            else {
+                jia = ods[ods.length-1].price * 1.1;
+            }
+            let postRes = Game.market.createOrder({
+                type: ORDER_SELL,
+                resourceType: mineralType,
+                price: jia,
+                totalAmount: amountToPost,
+                roomName: roomName  
+            });
+            
+            if (postRes==OK) {
+                fo('post ' + mineralType + ' at price: ' + jia);
+            }
+            else {
+                return postRes
+            }
+        }
+    }
+}
+
+global.checkTradingPriceAndPostBuyOrder = function(roomName,mineralType, amountToPost=2000, maxPrice=0.001) {
+    // check if already has this posted
+    let mos = Game.market.orders;
+    for (let moid in mos) {
+        let mo = mos[moid];
+        if (mo.roomName == roomName && mo.resourceType == mineralType && mo.active && mo.type == ORDER_BUY && mo.amount>0) {
+            fo('already posted buy order')
+            return
+        }
+    }
+    
+    if (Game.rooms[roomName].terminal.cooldown == 0) {
+        var terminalAmount = Game.rooms[roomName].terminal.store[mineralType];
+        if (true||terminalAmount<maxMineralKeep[mineralType]) { // if stored amount is less than required amount
+            let ods = Game.market.getAllOrders(o=> o.type == ORDER_BUY && o.resourceType == mineralType && o.amount>999);
+            ods.sort((a, b) => {
+                return -a.price + b.price;
+            });
+            let jia;
+            if (ods.length>0) {
+                jia = ods[0].price+0.001;
+            }
+            else {
+                jia = maxPrice;
+            }
+
+            if (jia>maxPrice && Math.abs(jia-maxPrice)<maxPrice*0.1) { // if price within range of acceptance
+                jia = Math.max(maxPrice, jia);
+            }
+            
+            let postRes;
+            if (true) {
+                let postRes = Game.market.createOrder({
+                    type: ORDER_BUY,
+                    resourceType: mineralType,
+                    price: jia,
+                    totalAmount: amountToPost,
+                    roomName: roomName  
+                });
+            }
+            
+            if (postRes==OK) {
+                fo('post buy ' + mineralType + ' at price: ' + jia);
+            }
+            else {
+                return postRes
+            }
+        }
+    }
+}
+
+global.cutStupidPrice = function (r) {
+    if (r.terminal) {
+        for (let tp of allCommoList()) {
+            // get lowest selling price
+            let ods = Game.market.getAllOrders(o=> o.type == ORDER_SELL && o.resourceType == tp && o.amount>0);
+                ods.sort((a, b) => {
+                    return a.price - b.price;
+                });
+            let lowsell;
+            if (ods.length>0) {
+                lowsell = ods[0];
+            }
+            // get highest buying price
+            let highbuy;
+            if (lowsell==undefined) {
+                continue;
+            }
+            else {
+                ods = Game.market.getAllOrders(o=> o.type == ORDER_BUY && o.resourceType == tp && o.amount>0);
+                    ods.sort((a, b) => {
+                        return - a.price + b.price;
+                    });
+                if (ods.length>0) {
+                    highbuy = ods[0];
+                }
+            }
+            // if sell < buy, undercut!
+            if (highbuy==undefined) {
+                continue;
+            }
+            else { // found low sell and high buy
+                if (Math.max(5, lowsell.price*0.0618)<highbuy.price-lowsell.price) {
+                    if (Game.market.deal(lowsell.id, lowsell.amount, r.name)==0) {
+                        fo('bought undercut: ' + tp + ' ' + lowsell.amount);
+                        if (Memory.undercut == undefined) {
+                            Memory.undercut = {};
+                        }
+                        else {
+                            if (Object.keys(Memory.undercut).length>30) {
+                                Memory.undercut = {};
+                            }
+                        }
+                        Memory.undercut[r.name+Game.time] = {lowsell: lowsell, highbuy: highbuy};
+                        return
+                    }
+                }
+            }
+        }
+    }
+}
+
+global.checkTradingEnergyCostAndBuy = function(roomName,mineralType, amountToBuyMax=2000, hardlimit=undefined) {
+    if (Game.rooms[roomName].terminal.cooldown == 0) {
+        var terminalAmount = Game.rooms[roomName].terminal.store[mineralType];
+        if (true||terminalAmount<maxMineralKeep[mineralType]) { // if stored amount is less than required amount
+            const orders = Game.market.getAllOrders({type: ORDER_SELL, resourceType: mineralType});
+            let amountToBuy;
+            let juicyId = undefined;
+            let juicyCr = 1000000000;
+            let boughtAmount;
+            let rawPrice;
+            let ecost;
+            for(let i=0; i<orders.length; i++) {
+                amountToBuy = Math.min(amountToBuyMax, orders[i].amount);
+                let transferEnergyCost = Game.market.calcTransactionCost(amountToBuy, roomName, orders[i].roomName);
+                var mineralPrice = orders[i]['price'];
+                if (hardlimit==undefined || mineralPrice < hardlimit) {
+                    var transferCost = transferEnergyCost*energyPrice[Game.shard.name];
+                    var moneySpendOnMineral = amountToBuy*mineralPrice;
+                    var equivilantMineralPrice = (transferCost + moneySpendOnMineral)/amountToBuy;
+    
+                    if ( equivilantMineralPrice < juicyCr && transferEnergyCost<amountToBuy ) {
+                        juicyId = orders[i].id
+                        juicyCr = equivilantMineralPrice;
+                        boughtAmount = amountToBuy;
+                        rawPrice = orders[i].price;
+                        ecost = transferEnergyCost;
+                    }
+                }
+            }
+            if (juicyId) {
+                if (mineralType == 'energy' && (Game.market.credits<5000000 && equivilantMineralPrice>1.8)) { // && !(Game.rooms[roomName].controller.level<8 && Game.rooms[roomName].memory.VIP)
+                    fo('too expensive');
+                    return
+                }
+                let buyres = Game.market.deal(juicyId, boughtAmount, roomName);
+                if (buyres==OK) {
+                    console.log('super value to buy ' + boughtAmount + ' ' +mineralType+' for '+equivilantMineralPrice+'('+rawPrice+'). order number: '+juicyId + ' with cost: ' + ecost);
+                }
+                else {
+                    fo('buy err: ' + buyres);
+                }
+            }
+            else {
+                fo('no good buy orders found');
+            }
+        }
+        else {
+            console.log('terminal too full');
+        }
     }
 }
 
@@ -667,7 +852,7 @@ global.changeThresholdOfAParticularResource = function (roomName, res, Tthresh, 
 
 global.allAllMineralsSituations = function() {
     let myRooms = [];
-    let compondToKeep = 3333;
+    let compondToKeep = 6666;
     
     for (let rn in Game.rooms) {
         let r = Game.rooms[rn];
@@ -707,7 +892,7 @@ global.allAllMineralsSituations = function() {
 
 global.allMineralsSituation = function (room) {
     let storageSituation = {};
-    for (let mineralType in room.memory.mineralThresholds.storageThreshold) {
+    for (let mineralType of RESOURCES_ALL) {
         storageSituation[mineralType] = allMyResourceInStorageAndTerminal(room, mineralType);
     }
     room.memory.mineralThresholds['currentMineralStats'] = storageSituation;
@@ -1028,6 +1213,7 @@ global.whereToTake = function (room, mineralType) { // WARNING: market threshold
         return false
     }
     else {
+        /*
         if (terminal.store[mineralType]<=terminalThreshold[mineralType]) { // terminal stored less than its threshold
             if (allMineralStituationObject[mineralType]<=storageThreshold[mineralType]) { // if all stored less than storage threshold
                 return false
@@ -1036,21 +1222,20 @@ global.whereToTake = function (room, mineralType) { // WARNING: market threshold
                 return storage
             }
         }
-        else { // terminal storing over its threshold or terminal store nothing
-            if (terminal.store[mineralType]) {
-                if (allMineralStituationObject[mineralType]<=storageThreshold[mineralType]) {
-                    return terminal
-                }
-                /*else if (allMineralStituationObject[mineralType]==storageThreshold[mineralType]) {
-                    return terminal
-                }*/
-                else { // all over threshold, put in terminal for transfer/sell
-                    return storage
-                }
+        */
+        if (terminal.store[mineralType]) {
+            if (allMineralStituationObject[mineralType]<=storageThreshold[mineralType]) {
+                return terminal
             }
-            else { // terminal store 0 this type
-                return false
+            /*else if (allMineralStituationObject[mineralType]==storageThreshold[mineralType]) {
+                return terminal
+            }*/
+            else { // all over threshold, put in terminal for transfer/sell
+                return storage
             }
+        }
+        else { // terminal store 0 this type
+            return false
         }
     }
 }
@@ -1142,12 +1327,21 @@ global.theResourceGodEye = function () {
         allMineralSum[tp] = 0;
     }
     
+    let ican = [];
     for (let r of myRooms) {
         for (let tp in r.memory.mineralThresholds.currentMineralStats) {
             allMineralSum[tp] += r.memory.mineralThresholds.currentMineralStats[tp];
+            if (r.memory.mineralThresholds.currentMineralStats[tp]>10000 && ['Z', 'K', 'L', 'U', 'O', 'H', 'X', 'G'].includes(tp)) {
+                ican.push(tp);
+            }
         }
         no += 1;
-        seasonTwoSendSymbol(r.name);
+        /*
+        if (r.controller.level>=6 && r.memory.mineralMining && ) {
+            ican.push(r.memory.mineralMining);
+        }
+        */
+        //seasonTwoSendSymbol(r.name);
     }
     
     for (let tp in allMineralSum) {
@@ -1155,229 +1349,612 @@ global.theResourceGodEye = function () {
     }
 
     for (let r of myRooms) {
+        let labOneResAtATime = true;
+        let ifProcessPower = false;
+        if (r.find(FIND_MY_POWER_CREEPS, {filter:pc=>pc.powers[PWR_OPERATE_POWER]&&pc.powers[PWR_OPERATE_POWER].level==5}).length>0) {
+            ifProcessPower = true;
+        }
         for (let tp in allMineralSum) {
             let term = r.terminal;
             let stor = r.storage;
             
-            if (giveUpRn().includes(r.name)) {
-                let sendEnergy = false;
-                if (tp!='energy') {
-                    if (basicMinerals.includes(tp)) { // basic, move to stor
-                        if (term.store[tp]>0) {
-                            sendEnergy = false;
-                            addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store[tp]));
-                        }
-                    }
-                    else if (tp.length>1) { // compound, move to term and send
-                        if (term.store[tp]>0) { // send from term
-                            term.send(tp, Math.min(5000, term.store[tp]), 'E9S22');
-                            sendEnergy = false;
-                        }
-                        if (stor.store[tp]>0) { // move from term to store
-                            addResFlowTask(r.name, stor.id, term.id, tp, Math.max(0, stor.store[tp]));
-                            sendEnergy = false;
-                        }
-                    }
+            if (term && stor==undefined) {
+                if (need[r.name] == undefined) {
+                    need[r.name] = [];
                 }
-                if (sendEnergy) {
-                    for (let toSend in term.store) { // start to send
-                        if (toSend!='energy' && toSend.slice(0,3)!='sym' && term.send(toSend, Math.max(5000, term.store[tp]), 'E9S22')==OK) {
-                            break;
-                        }
-                    }
-                    addResFlowTask(r.name, stor.id, term.id, 'energy', stor.store[tp]);
-                }
+                need[r.name].push('energy');
             }
-            else if (_.sum(stor.store)>985000) {
-                if (tp=='energy' && stor.store.energy<5000) {
-                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(stor.store.getFreeCapacity('energy'), 5000));
-                }
-                else if ( tp.slice(0, 3)=='sym' ) {
-                    // pass
-                }
-                else {
-                    addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], 5000));
-                }
-                
-                if (term.store.energy < 20000 && _.sum(term.store)<250000) {
-                    if (need[r.name] == undefined) {
-                        need[r.name] = [];
-                    }
-                    need[r.name].push(tp);
-                }
-            }
-            else {
-                if (tp=='energy') { // prioprity order needed, manual for now <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<&&r.name!='E19S19'
-                    // check energy overflow and move between storage and terminal
-                    // if room < 8
-                    if (r.controller.level<7) { // 6 
-                        if (stor.store.energy < 500000 && _.sum(stor.store) < 900000) {
-                            if (term.store.energy > 20000) {
-                                // move from term to stor
-                                if (term.store.getFreeCapacity() > 50000) {
-                                    if (need[r.name] == undefined) {
-                                        need[r.name] = [];
-                                    }
-                                    need[r.name].push(tp);
-                                }
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store.energy-20000));
+            
+            if (stor && term) {
+                // seaon 3 rewrite
+                if (tp == 'energy') {
+                    if (term.store.getFreeCapacity('energy')<20000) { // emergency exploding phase
+                        if (term.store.energy>20000) {
+                            // energy overflow
+                            if (stor.store.getFreeCapacity('energy')>20000) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, 20000);
                             }
                             else {
-                                fo(r.name + ' terminal exploding');
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                                fo(r.name + ' storage exploding');
                             }
                         }
                         else {
-                            fo(r.name + ' energy problem')
+                            fo(r.name + ' terminal exploding');
                         }
                     }
-                    else if (r.controller.level<8) { // lvl 7 
-                        if (stor.store.energy < 300000 && _.sum(stor.store) < 990000) {
-                            if (term.store.energy > 20000) {
-                                // move from term to stor
-                                if (term.store.getFreeCapacity() > 50000) {
-                                    if (need[r.name] == undefined) {
-                                        need[r.name] = [];
-                                    }
-                                    need[r.name].push(tp);
-                                }
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(990000-_.sum(stor.store), term.store.energy-20000));
+                    else { // normal managesment
+                        // room energy<200k ask
+                        if ((stor.store.energy<100000 && term.store.energy<20000)||(r.controller&&r.controller.level<8&&r.memory.mineralThresholds.currentMineralStats['energy']<=315000)||(r.memory.mineralThresholds.currentMineralStats['energy']<=175000)||(ifProcessPower && r.memory.mineralThresholds.currentMineralStats['energy']<240000)) {
+                            if (need[r.name] == undefined) {
+                                need[r.name] = [];
                             }
-                            else {
-                                if (need[r.name] == undefined) {
-                                    need[r.name] = [];
-                                }
-                                need[r.name].push(tp);
-                            }
+                            need[r.name].push(tp);
                         }
-                        else {
-                            if (_.sum(term.store)>280000) {
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store.energy-20000));
-                            }
-                            fo(r.name + ' energy problem')
-                        }
-                    }
-                    else { // if room == 8
-                        if (stor.store.energy < 100000) {
-                            if (term.store.energy<20000) {
-                                if (20000-term.store.energy + 100000-stor.store.energy > 15000) {
-                                    if (need[r.name] == undefined) {
-                                        need[r.name] = [];
-                                    }
-                                    need[r.name].push(tp);
-                                }
-                                if (stor.store.energy<10000) {
-                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(10000, term.store.energy/2));
-                                }
-                            }
-                            else {
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
-                            }
-                            if (_.sum(term.store)<900000) {
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
-                            }
-                            else { // store full of bullshit and terminal does not have energy
-                                fo(r.name + ' resource crisis seriously, need manual operation');
-                            }
-                        }
-                        else if (_.sum(term.store)>280000 && term.store.energy>20000) {
+                        else if (r.memory.mineralThresholds.currentMineralStats['energy']>215000) { // else offer
                             if (over[r.name] == undefined) {
                                 over[r.name] = [];
                             }
                             over[r.name].push(tp);
                         }
-                        else if (stor.store.energy > 100000 && _.sum(term.store) < 280000 && term.store.energy<20000) {
-                            // move e to term and send
-                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store.energy-100000, term.store.getFreeCapacity()));
+                        
+                        // if ter>20k
+                        if (term.store.energy>20000) {
+                            // if stor has space, move to stor
+                            if (stor.store.getFreeCapacity('energy')>100000) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, term.store.energy-20000);
+                            }
+                            else if (stor.store.getFreeCapacity('energy')<50000) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(term.store.getFreeCapacity('energy')-50000, stor.store.energy));
+                            }
                         }
-                        else if (term.store.energy > 20000) {
-                            // send
-                            if (stor.store.energy > 100000) {
+                        else {
+                            // if stor has energy, move to term
+                            if (stor.store.energy>100000) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store.energy-100000, 20000-term.store.energy));
+                            }
+                        }
+                    }
+                    continue;
+                }
+                
+                if (tp == 'power') {
+                    if (r.memory.powerSpawnId) { // can process power
+                        if (r.memory.mineralThresholds.currentMineralStats[tp]<5000 || (ifProcessPower && r.memory.mineralThresholds.currentMineralStats[tp]<15000)) {
+                            if (need[r.name] == undefined) {
+                                need[r.name] = [];
+                            }
+                            need[r.name].push(tp);
+                            if (term.store[tp]>0) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(stor.store.getFreeCapacity(tp), term.store[tp]));
+                            }
+                        }
+                        else if (!ifProcessPower && r.memory.mineralThresholds.currentMineralStats[tp]>10000) {
+                            if (over[r.name] == undefined) {
+                                over[r.name] = [];
+                            }
+                            over[r.name].push(tp);
+                            if (term.store[tp]<5000) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], Math.min(term.store.getFreeCapacity(tp), 5000)));
+                            }
+                        }
+                    }
+                    continue;
+                }
+                
+                if (tp == 'ops') {
+                    if (r.memory.mineralThresholds.currentMineralStats[tp]<5000 && r.find(FIND_MY_POWER_CREEPS).length>0) {
+                        if (need[r.name] == undefined) {
+                            need[r.name] = [];
+                        }
+                        need[r.name].push(tp);
+                        if (term.store[tp]>0) {
+                            addResFlowTask(r.name, term.id, stor.id, tp, Math.min(stor.store.getFreeCapacity(tp), term.store[tp]));
+                        }
+                    }
+                    else if (r.memory.mineralThresholds.currentMineralStats[tp]>10000) {
+                        if (over[r.name] == undefined) {
+                            over[r.name] = [];
+                        }
+                        over[r.name].push(tp);
+                        if (term.store[tp]<5000) {
+                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], Math.min(term.store.getFreeCapacity(tp), 5000)));
+                        }
+                        else if (term.store[tp]>10000 && stor.store.getFreeCapacity(tp)>100000) {
+                            addResFlowTask(r.name, term.id, stor.id, tp, Math.min(Math.max(0, stor.store.getFreeCapacity(tp)-100000), term.store[tp]-10000));
+                        }
+                    }
+                    continue;
+                }
+                
+                // move G for nuke if not doing GX reactions
+                if (tp=='G' && (r.memory.forLab == undefined || r.memory.forLab.toCreate == undefined || (r.memory.forLab.toCreate!='GH' && r.memory.forLab.toCreate!='GO'))) {
+                    // if room has nuke and room nuke not fill and room G not enough
+                    if (r.memory.nukid && Game.getObjectById(r.memory.nukid) && Game.getObjectById(r.memory.nukid).store.getFreeCapacity(tp)>0 && r.memory.mineralThresholds.currentMineralStats[tp]<4000) {
+                        roomNeedRes(r, need, tp);
+                    }
+                    else if (r.memory.mineralThresholds.currentMineralStats[tp]>15000) {
+                        roomOverRes(r, need, over, tp);
+                    }
+                }
+                
+                // move upgrade boosts if not doing upgrade reactions
+                if (tp=='GH' && (r.memory.forLab == undefined || r.memory.forLab.toCreate == undefined || r.memory.forLab.toCreate!='GH2O')) {
+                    if (r.controller.level==8 && r.memory.mineralThresholds.currentMineralStats[tp]>15000) {
+                        roomOverRes(r, need, over, tp);
+                    }
+                    else if (r.controller.level<8 && r.memory.mineralThresholds.currentMineralStats[tp]<6666) {
+                        roomNeedRes(r, need, tp);
+                    }
+                }
+                if (tp=='GH2O' && (r.memory.forLab == undefined || r.memory.forLab.toCreate == undefined || r.memory.forLab.toCreate!='XGH2O')) {
+                    if (r.controller.level==8 && r.memory.mineralThresholds.currentMineralStats[tp]>15000) {
+                        roomOverRes(r, need, over, tp);
+                    }
+                    else if (r.controller.level<8 && r.memory.mineralThresholds.currentMineralStats[tp]<6666) {
+                        roomNeedRes(r, need, tp);
+                    }
+                }
+                if (tp=='XGH2O') {
+                    if (r.controller.level==8 && r.memory.mineralThresholds.currentMineralStats[tp]>0) {
+                        roomOverRes(r, need, over, tp);
+                    }
+                    else if (r.controller.level<8 && r.memory.mineralThresholds.currentMineralStats[tp]<6666) {
+                        roomNeedRes(r, need, tp);
+                    }
+                }
+                
+                // move res for lab reactions
+                if (Object.keys(REACTIONS).includes(tp)) { // for all chemicals
+                    if (r.memory.mineralThresholds.currentMineralStats[tp]>13332) { // if too many, just offer
+                        roomOverRes(r, need, over, tp);
+                    }
+                    else {
+                        // check if it is the fuel of current tocreate
+                        if (r.memory.forLab && r.memory.forLab.toCreate) {
+                            let mat1 = inverseReaction(r.memory.forLab.toCreate)[0];
+                            let mat2 = inverseReaction(r.memory.forLab.toCreate)[1];
+                            if (tp == mat1 || tp == mat2) {
+                                continue; // do not give away ongoing tocreate's fuels
+                            }
+                        }
+                        if (r.memory.mineralThresholds.currentMineralStats[tp]>6666) {
+                            if (labOneResAtATime) {
+                                // seek for possible minerals to create, one at a time
+                                if (r.memory.forLab && REACTIONS[tp]) { // can upgrade
+                                    let possiCombo = REACTIONS[tp];
+                                    for (let partner in possiCombo) {
+                                        let toCreate = possiCombo[partner];
+                                        if (r.memory.mineralThresholds.currentMineralStats[partner]<6666 && r.memory.mineralThresholds.currentMineralStats[toCreate]<8888) {
+                                            fo(r.name+' need '+partner+' for reaction '+toCreate);
+                                            roomNeedRes(r, need, partner);
+                                            //labOneResAtATime = false;
+                                            //break;
+                                        }
+                                    } 
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // ask for boost mats
+                if (r.memory.forLab && r.memory.forLab.boostLabs && Object.keys(r.memory.forLab.boostLabs).length>0){
+                    if (Object.keys(r.memory.forLab.boostLabs).includes(tp)) {
+                        if (r.memory.mineralThresholds.currentMineralStats[tp]<8000) {
+                            roomNeedRes(r, need, tp);
+                        }
+                    }
+                    continue;
+                }
+                
+                continue;
+                
+                if (r.memory.mineralThresholds.currentMineralStats[tp]>8000) {
+                    if (over[r.name] == undefined) {
+                        over[r.name] = [];
+                    }
+                    if (!over[r.name].includes(tp)) {
+                        over[r.name].push(tp);
+                    }
+                    if (term.store[tp]<6000 && term.store.getFreeCapacity(tp)>6000) {
+                        addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], 6000));
+                    }
+                }
+                else if (!(allCommoList().includes(tp)||basicCompressables().includes(tp)) && r.memory.mineralThresholds.currentMineralStats[tp]<4000) {
+                    if (need[r.name] == undefined) {
+                        need[r.name] = [];
+                    }
+                    if (!need[r.name].includes(tp)) {
+                        need[r.name].push(tp);
+                    }
+                    /*
+                    if (term.store.getFreeCapacity(tp)<10000 && stor.store.getFreeCapacity(tp)>100000) { // if term full and storage not, put in storage
+                        addResFlowTask(r.name, term.id, stor.id, ?, Math.min(stor.store[tp], 6000));
+                    }
+                    */
+                }
+                
+                continue;
+                
+                if (tp=='LH') {
+                    if (r.memory.mineralThresholds.currentMineralStats[tp]<8000) {
+                        if (need[r.name] == undefined) {
+                            need[r.name] = [];
+                        }
+                        if (!need[r.name].includes(tp)) {
+                            need[r.name].push(tp);
+                        }
+                    }
+                    else if (r.memory.mineralThresholds.currentMineralStats[tp]>11000) {
+                        if (over[r.name] == undefined) {
+                            over[r.name] = [];
+                        }
+                        if (!over[r.name].includes(tp)) {
+                            over[r.name].push(tp);
+                        }
+                        if (term.store[tp]<6000 && term.store.getFreeCapacity(tp)>6000) {
+                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], 6000));
+                        }
+                    }
+                }
+                
+                continue;
+            
+                let nukeState = r.memory.nuked;
+                
+                /*
+                if (r.name=='E1S41') {
+                    if (tp.includes('X')&&stor.store[tp]>10000) {
+                        addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]-10000);
+                    }
+                }
+                */
+                
+                // move all commodities to terminal
+                if (allCommoList().includes(tp) && stor.store[tp]>0) {
+                    addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]);
+                }
+                
+                // if room produce bar from (own or middle rooms) publish bar offer
+                if (['Z', 'K', 'L', 'U', 'O', 'H', 'X', 'G'].includes(tp)) {
+                    let bar = convertRawToBar()[tp];
+                    if (r.memory.mineralThresholds.currentMineralStats[bar]>5000) { // if we can produce and not same room
+                        if (over[r.name] == undefined) {
+                            over[r.name] = [];
+                        }
+                        over[r.name].push(bar);
+                        if (stor.store[bar]>0) {
+                            addResFlowTask(r.name, stor.id, term.id, bar, Math.min(5000, stor.store[bar]));
+                        }
+                    }
+                }
+                
+                // based on room raw commodity type publish bar request
+                if (Object.keys(commodityShoppingList()).includes(tp) && r.memory.mineralThresholds.currentMineralStats[tp]>0) { // raw commo check, sili, bio, mist, metal
+                    let requireObj = commodityShoppingList()[tp]; // {element: bar}
+                    let rawMat = Object.keys(requireObj)[0]; // raw element
+                    let bar = requireObj[rawMat]; // bar
+                    
+                    // log to room regional commodity memory
+                    let mycommodmem = r.memory.regionalCommodity;
+                    if (mycommodmem == undefined) {
+                        r.memory.regionalCommodity = [];
+                        mycommodmem = r.memory.regionalCommodity;
+                    }
+                    if (!mycommodmem.includes(tp)) {
+                        r.memory.regionalCommodity.push(tp);
+                    }
+                    
+                    // ask from other room or buy myself
+                    if (r.memory.mineralMining && r.memory.mineralMining!=rawMat) { // dont send to self
+                        if (r.memory.mineralThresholds.currentMineralStats[bar]<10000) { // if need this rawmat type of bar
+                            if (ican.includes(rawMat)) { // if we can produce
+                                if (need[r.name] == undefined) {
+                                    need[r.name] = [];
+                                }
+                                need[r.name].push(bar);
+                            }
+                            else { // we cannot produce and place order
+                                if (r.memory.mineralThresholds.currentMineralStats[rawMat]<10000 && r.memory.mineralThresholds.currentMineralStats[bar]<5000) {
+                                    let amt = Math.max(0, 10000-r.memory.mineralThresholds.currentMineralStats[rawMat]);
+                                    fo(r.name + ' shop ' + rawMat + ' ' + amt + ' for commod');
+                                    checkTradingEnergyCostAndBuy(r.name, rawMat, amt);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // based on room factory quest level publish bar need
+                if (r.memory.flvl && r.memory.flvl>0) { // if room has flvl
+                    // log what higher commod at that lvl to produce
+                    let whatwecreate = r.memory.whatwecreate;
+                    if (whatwecreate == undefined) {
+                        r.memory.whatwecreate = [];
+                        whatwecreate = r.memory.whatwecreate;
+                    }
+                    let mycommodmem = r.memory.regionalCommodity;
+                    if (mycommodmem && mycommodmem.length!=0 && whatwecreate.length!=mycommodmem.length) {
+                        for (let base of mycommodmem) {
+                            if (Object.keys(COMMODITIES).includes(tp)) {
+                                let citem = COMMODITIES[tp];
+                                if (r.memory.flvl && citem.level == r.memory.flvl) {
+                                    let higherCommod = allCommoObj()[base];
+                                    for (let comp in citem.components) {
+                                        if (higherCommod.includes(tp)) {
+                                            if (!r.memory.whatwecreate.includes(tp)) {
+                                                r.memory.whatwecreate.push(tp);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // log get, now ask for components to create higher order commodities
+                    if (whatwecreate && whatwecreate.length>0) {
+                        for (let higherCommo of whatwecreate) {
+                            // publish nth order product based on flvl
+                            if (tp==higherCommo && r.memory.mineralThresholds.currentMineralStats[tp]>0) { // if we can produce and not same room
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                                if (stor.store[tp]>0) {
+                                    addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]);
+                                }
+                            }
+                            // ask for materials for higher commodity
+                            if (Object.keys(COMMODITIES[higherCommo].components).includes(tp)) {
+                                if (allCommoList().includes(tp)) { // if commodities
+                                    if (r.memory.mineralThresholds.currentMineralStats[tp]<1000) {
+                                        if (need[r.name] == undefined) {
+                                            need[r.name] = [];
+                                        }
+                                        need[r.name].push(tp);
+                                    }
+                                }
+                                else if (convertBarToRaw()[tp] !=undefined) { // if bar
+                                    let rawMat = convertBarToRaw()[tp];
+                                    if (r.memory.mineralMining && r.memory.mineralMining!=rawMat) { // dont send to self
+                                        if (ican.includes(rawMat) && 
+                                            r.memory.mineralThresholds.currentMineralStats[tp]<5000
+                                            ) { // if we can produce and not same room
+                                            if (need[r.name] == undefined) {
+                                                need[r.name] = [];
+                                            }
+                                            need[r.name].push(tp);
+                                        }
+                                        else { // we cannot produce, place order
+                                            if (r.memory.mineralThresholds.currentMineralStats[tp]<5000 && r.memory.mineralThresholds.currentMineralStats[rawMat]<10000) {
+                                                let amt = Math.max(0, 10000-r.memory.mineralThresholds.currentMineralStats[rawMat]);
+                                                fo(r.name + ' shop ' + rawMat + ' ' + amt + ' for commod');
+                                                checkTradingEnergyCostAndBuy(r.name, rawMat, amt);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // publish 0th order commodities
+                if (r.memory.regionalCommodity) {
+                    for (let basic of r.memory.regionalCommodity) { // loop all raw commo
+                        if (!(r.memory.flvl==1 || r.memory.flvl==2)) { // not 1 and 2, we offer 0
+                            if (tp == allCommoObj()[basic][0] && r.memory.mineralThresholds.currentMineralStats[tp]>0) { // if we have unusable 0th we offer
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                                if (stor.store[tp]>0) {
+                                    addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]);
+                                }
+                            }
+                        }
+                        else { // we require 0th
+                            if (tp == allCommoObj()[basic][0] && r.memory.mineralThresholds.currentMineralStats[tp]<2000) { // if we are short
+                                if (need[r.name] == undefined) {
+                                    need[r.name] = [];
+                                }
+                                else if (!need[r.name].includes(tp)) {
+                                    need[r.name].push(tp);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                
+                if (term && tp == 'power') {
+                    if (Game.time%100==50 && r.memory.mineralThresholds.currentMineralStats.power>10000) {
+                        checkTradingPriceAndPostSellOrder(r.name, 'power');
+                    }
+                    if (Game.shard.name=='shard3') {
+                        Game.market.deal('60c38b14516c4e1d82c0eaca', term.store.power, r.name);
+                    }
+                }
+                else if (tp == 'energy' && term && r.controller.level<8 && r.memory.VIP) {
+                    if (r.memory.mineralThresholds.currentMineralStats['energy']<310000) {
+                        checkTradingEnergyCostAndBuy(r.name, 'energy', Math.min(term.store.energy/1.5, term.store.getFreeCapacity('energy')));
+                    }
+                    if (r.memory.mineralThresholds.currentMineralStats['battery']<10000) {
+                        //checkTradingEnergyCostAndBuy(r.name, 'battery', Math.min(term.store.energy/1.5/10, term.store.getFreeCapacity('battery')));
+                    }
+                }
+                
+                if (term && tp == 'XGH2O' && r.controller.level<8 && r.controller.level>5 && r.memory.mineralThresholds.currentMineralStats['XGH2O']<4500) {
+                    //checkTradingPriceAndPostBuyOrder(r.name,'XGH2O', 1000, 12);
+                }
+                else if (term && tp == 'XGH2O' && r.controller.level<8 && r.controller.level>5 && r.memory.mineralThresholds.currentMineralStats['XGH2O']<1500) {
+                    //checkTradingEnergyCostAndBuy(r.name, 'XGH2O', 1000);
+                }
+                
+                if (term && tp == 'battery') {
+                    if (r.controller.level==8) {
+                        if (r.memory.mineralThresholds.currentMineralStats.battery>10000) {  // if room has lots of batteries
+                            // if stor > 0 and term less than 10000
+                            if (stor.store.battery>0 && term.store.battery<10000) {
+                                // move to term
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(Math.max(stor.store[tp], 10000), Math.min(15000-term.store.battery, term.store.getFreeCapacity(tp))));
+                            }
+                            // if term has
+                            if (term.store.battery>0) {
+                                // offer
                                 if (over[r.name] == undefined) {
                                     over[r.name] = [];
                                 }
                                 over[r.name].push(tp);
                             }
-                            else {
-                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
-                            }
                         }
-                        else if (stor.store.energy < 90000 && term.store.energy < 15000) {
+                    }
+                    else if (r.controller.level==7) {
+                        addResFlowTask(r.name, term.id, stor.id, tp, Math.min(term.store[tp], Math.max(0, stor.store.getFreeCapacity('energy')-100000)));
+                        if (_.sum(term.store)>270000 || term.store.battery>50000 || r.memory.mineralThresholds.currentMineralStats.battery>150000 || r.controller.progress>9999999) {
+                            // pass
+                        }
+                        else {
                             if (need[r.name] == undefined) {
                                 need[r.name] = [];
                             }
                             need[r.name].push(tp);
-                            addResFlowTask(r.name, term.id, stor.id, tp, Math.min(90000-stor.store.energy, term.store.energy));
                         }
-                        else if (term.store.energy < 20000) {
-                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(20000, stor.store.energy));
+                    }
+                    else if (r.controller.level==6) {
+                        addResFlowTask(r.name, term.id, stor.id, tp, Math.min(term.store[tp], Math.max(0, stor.store.getFreeCapacity('energy')-100000)));
+                        if (_.sum(term.store)>270000 || term.store.battery>50000 || r.memory.mineralThresholds.currentMineralStats.battery>150000) {
+                            // pass
                         }
-                        else
-                        {
-                            fo(r.name + ' ' + tp + ' in good state');
+                        else {
+                            if (need[r.name] == undefined) {
+                                need[r.name] = [];
+                            }
+                            need[r.name].push(tp);
                         }
-                    }   
+                    }
                 }
-                else if (false) { // (!(r.name=='E11S16' || r.name=='E24S27' || r.name=='E23S16')) {
-                    if (
-                        (tp.length==2 || tp == 'G')
-                        ) {
-                            if (_.sum(term.store)<200000) {
-                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
+                
+                if (term && tp == 'ops') {
+                    if (term.store.ops>20000) {
+                        addResFlowTask(r.name, term.id, stor.id, tp, term.store[tp]-20000);
+                    }
+                }
+                            
+                if (nukeState) {
+                    // move all res to storage
+                    if (nukeState == 1) {
+                        if (tp=='energy') {
+                            if (r.memory.mineralThresholds.currentMineralStats['LH']<10000) {
+                                checkTradingEnergyCostAndBuy(r.name, 'LH', 5000);
                             }
-                    }
-                    else if (
-                            (['GO', 'GHO2', 'XGHO2', 'ZO', 'XZHO2', 'ZHO2', 'XZH2O', 'XLHO2', 'LHO2', 'XUH2O'].includes(tp) && r.name!='E19S19')
-                            ) {
-                                if (term.store[tp]<5000) {
-                                    addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
-                                }
-                    }
-                    else if (
-                            (['XGH2O', 'GH2O', 'GH'].includes(tp) && (r.name!='E23S16'))
-                            ) {
-                        addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
-                    }
-                    else { // none energy flow
-                        if (checkIfBoostMatsNeed(r.name, tp)) { // we need this for boost, we want it no matter what
-                            if (r.memory.mineralThresholds.currentMineralStats[tp]<20000) {
-                                if (need[r.name] == undefined) {
-                                    need[r.name] = [];
-                                }
-                                need[r.name].push(tp);
+                            else if (r.memory.mineralThresholds.currentMineralStats['XGH2O']<2000) {
+                                checkTradingEnergyCostAndBuy(r.name, 'XGH2O', 3000);
                             }
-                            addResFlowTask(r.name, term.id, stor.id, tp, Math.min(30000-stor.store[tp], term.store[tp]-6666));
-                        }
-                        else if (r.controller.level==8 && _.sum(stor.store)>980000) { // level 8 and exploding, move everything to term for send
-                            if (tp.length>1) {
-                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity(tp)));
+                            else if (r.memory.mineralThresholds.currentMineralStats['energy']<500000) {
+                                //checkTradingEnergyCostAndBuy(r.name, 'energy', Math.min(term.store.energy/1.5, term.store.getFreeCapacity('energy')));
+                                //checkTradingEnergyCostAndBuy(r.name, 'battery', Math.min(term.store.energy/1.5/10, term.store.getFreeCapacity('battery')));
+                            }
+                            if (_.sum(stor.store)<900000) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(stor.store.getFreeCapacity('energy'), term.store[tp]-20000), true);
                             }
                         }
-                        else if ((_.sum(stor.store)<950000)&&(Math.abs(r.memory.mineralThresholds.currentMineralStats[tp]-allMineralSum[tp])>5000)) { // amount not averaged
-                            // if we are boosting, we just need it
-                            if (r.memory.forLab && r.memory.forLab.boostLabs && Object.keys(r.memory.forLab.boostLabs).includes(tp)) {
+                        else {
+                            //addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store[tp]), true);
+                        }
+                    }
+                    // check has energy for terminal
+                    // build terminal
+                    // move res to terminal
+                    // check has energy for storage
+                    // build storage
+                }
+                else if (giveUpRn().includes(r.name)) {
+                    let sendEnergy = false;
+                    if (tp!='energy') {
+                        if (basicMinerals.includes(tp)) { // basic, move to stor
+                            if (term.store[tp]>0) {
+                                sendEnergy = false;
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store[tp]));
+                            }
+                        }
+                        else if (tp.length>1) { // compound, move to term and send
+                            if (term.store[tp]>0) { // send from term
+                                term.send(tp, Math.min(5000, term.store[tp]), 'E9S22');
+                                sendEnergy = false;
+                            }
+                            if (stor.store[tp]>0) { // move from term to store
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.max(0, stor.store[tp]));
+                                sendEnergy = false;
+                            }
+                        }
+                    }
+                    if (sendEnergy) {
+                        for (let toSend in term.store) { // start to send
+                            if (toSend!='energy' && toSend.slice(0,3)!='sym' && term.send(toSend, Math.max(5000, term.store[tp]), 'E9S22')==OK) {
+                                break;
+                            }
+                        }
+                        addResFlowTask(r.name, stor.id, term.id, 'energy', stor.store[tp]);
+                    }
+                }
+                /*
+                else if (_.sum(stor.store)>985000) {
+                    if (tp=='energy' && stor.store.energy<5000) {
+                        addResFlowTask(r.name, term.id, stor.id, tp, Math.min(stor.store.getFreeCapacity('energy'), 5000));
+                    }
+                    else if ( tp.slice(0, 3)=='sym' ) {
+                        // pass
+                    }
+                    else {
+                        continue;
+                        addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], 5000));
+                    }
+                    
+                    if (term.store.energy < 20000 && _.sum(term.store)<250000) {
+                        if (need[r.name] == undefined) {
+                            need[r.name] = [];
+                        }
+                        need[r.name].push(tp);
+                    }
+                }
+                */
+                else {
+                    if (tp=='energy') { // prioprity order needed, manual for now <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<&&r.name!='E19S19'
+                        // check energy overflow and move between storage and terminal
+                        // if room < 8
+                        if (r.controller.level<7) { // 6 
+                            if (stor.store.energy < 500000 && _.sum(stor.store) < 900000) {
+                                if (term.store.energy > 20000) {
+                                    // move from term to stor
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store.energy-20000));
+                                }
+                            }
+                            else {
+                                fo(r.name + ' energy problem')
+                            }
+                            if (term.store.getFreeCapacity() > 50000) {
                                 if (need[r.name] == undefined) {
                                     need[r.name] = [];
                                 }
                                 need[r.name].push(tp);
-                            } // not boost
-                            else if (r.memory.mineralThresholds.currentMineralStats[tp]<allMineralSum[tp]) { // average per room threshold we want to keep
-                                if (need[r.name] == undefined) {
-                                    need[r.name] = [];
-                                }
-                                need[r.name].push(tp);
-                            } // over average, we send
-                            else if (stor.store[tp]>30000) {
-                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp]-30000, term.store.getFreeCapacity(tp)));
-                                if (term.store[tp]>6666) {
-                                    if (over[r.name] == undefined) {
-                                        over[r.name] = [];
+                            }
+                        }
+                        else if (r.controller.level<8) { // lvl 7 
+                            if (stor.store.energy < 300000 && _.sum(stor.store) < 990000) {
+                                if (term.store.energy > 20000) {
+                                    // move from term to stor
+                                    if (term.store.getFreeCapacity() > 50000) {
+                                        if (need[r.name] == undefined) {
+                                            need[r.name] = [];
+                                        }
+                                        need[r.name].push(tp);
                                     }
-                                    over[r.name].push(tp);
-                                }
-                            }
-                            else { // stor < 30000
-                                if (term.store[tp]>6666) {
-                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(30000-stor.store[tp], term.store[tp]-6666));
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(990000-_.sum(stor.store), term.store.energy-20000));
                                 }
                                 else {
                                     if (need[r.name] == undefined) {
@@ -1386,39 +1963,205 @@ global.theResourceGodEye = function () {
                                     need[r.name].push(tp);
                                 }
                             }
-                        }
-                        /*else if (term.store[tp]>10000&&stor.store.getFreeCapacity(tp)>100000) {
-                            addResFlowTask(r.name, term.id, stor.id, tp, Math.min(term.store[tp]-10000, stor.store.getFreeCapacity(tp)));
-                        }
-                        else {
-                            if (over[r.name] == undefined) {
-                                over[r.name] = [];
+                            else {
+                                if (_.sum(term.store)>280000) {
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.max(0, term.store.energy-20000));
+                                }
+                                fo(r.name + ' energy problem')
                             }
-                            over[r.name].push(tp);
-                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(5000, stor.store[tp]));
-                        }*/
+                        }
+                        else { // if room == 8
+                            if (r.memory.mineralThresholds.currentMineralStats['energy']<100000) {
+                                checkTradingEnergyCostAndBuy(r.name, 'energy', Math.min(term.store.energy/1.5, term.store.getFreeCapacity('energy')));
+                            }
+    
+                            if (stor.store.energy < 100000) {
+                                if (term.store.energy<20000) {
+                                    if (20000-term.store.energy + 100000-stor.store.energy > 15000) {
+                                        if (need[r.name] == undefined) {
+                                            need[r.name] = [];
+                                        }
+                                        need[r.name].push(tp);
+                                    }
+                                    if (stor.store.energy<10000) {
+                                        addResFlowTask(r.name, term.id, stor.id, tp, Math.min(10000, term.store.energy/2));
+                                    }
+                                }
+                                else {
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
+                                }
+                                if (_.sum(term.store)<900000) {
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
+                                }
+                                else { // store full of bullshit and terminal does not have energy
+                                    fo(r.name + ' resource crisis seriously, need manual operation');
+                                }
+                            }
+                            else if (_.sum(term.store)>280000 && term.store.energy>20000) {
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                            }
+                            else if (stor.store.energy > 100000 && _.sum(term.store) < 280000 && term.store.energy<20000) {
+                                // move e to term and send
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store.energy-100000, term.store.getFreeCapacity()));
+                            }
+                            else if (term.store.energy > 20000) {
+                                // send
+                                if (stor.store.energy > 100000) {
+                                    if (over[r.name] == undefined) {
+                                        over[r.name] = [];
+                                    }
+                                    over[r.name].push(tp);
+                                }
+                                else {
+                                    addResFlowTask(r.name, term.id, stor.id, tp, Math.min(100000-stor.store.energy, term.store.energy-20000));
+                                }
+                            }
+                            else if (stor.store.energy < 90000 && term.store.energy < 15000) {
+                                if (need[r.name] == undefined) {
+                                    need[r.name] = [];
+                                }
+                                need[r.name].push(tp);
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(90000-stor.store.energy, term.store.energy));
+                            }
+                            else if (term.store.energy < 20000) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(20000, stor.store.energy));
+                            }
+                            else
+                            {
+                                fo(r.name + ' ' + tp + ' in good state');
+                            }
+                        }   
                     }
-                }
-                
-                // special boost movement
-                if ((tp.includes('Z')) && tp!=='ZK') {
-                    if (r.name!='E1S27') {
-                        if (stor.store[tp]>0) {
-                            addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]);
-                        }
-                        if (term.store[tp]>0) {
-                            if (over[r.name] == undefined) {
-                                over[r.name] = [];
+                    else if (tp.includes('X')&&tp.length==5) { // t3 boosts
+                        if (term.store[tp]<6666) {
+                            if (term.store.getFreeCapacity(tp)>20000 && stor.store[tp]>0) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], 6666-term.store[tp]));
                             }
-                            over[r.name].push(tp);
+                            else if (r.memory.mineralThresholds.currentMineralStats[tp]<6666) {
+                                if (need[r.name] == undefined) {
+                                    need[r.name] = [];
+                                }
+                                need[r.name].push(tp);
+                            }
+                        }
+                        else if (term.store[tp]>6666) {
+                            if (r.memory.mineralThresholds.currentMineralStats[tp]>16666) {
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                            }
+                            if (stor.store.getFreeCapacity(tp)>100000) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, term.store[tp]-6666);
+                            }
                         }
                     }
-                    else if (r.name=='E1S27') {
-                        if (stor.store[tp]+term.store[tp]<10000) {
-                            if (need[r.name] == undefined) {
-                                need[r.name] = [];
+                    else if (false) { // (!(r.name=='E11S16' || r.name=='E24S27' || r.name=='E23S16')) {
+                        if (
+                            (tp.length==2 || tp == 'G')
+                            ) {
+                                if (_.sum(term.store)<200000) {
+                                    addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
+                                }
+                        }
+                        else if (
+                                (['GO', 'GHO2', 'XGHO2', 'ZO', 'XZHO2', 'ZHO2', 'XZH2O', 'XLHO2', 'LHO2', 'XUH2O'].includes(tp) && r.name!='E19S19')
+                                ) {
+                                    if (term.store[tp]<5000) {
+                                        addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
+                                    }
+                        }
+                        else if (
+                                (['XGH2O', 'GH2O', 'GH'].includes(tp) && (r.name!='E23S16'))
+                                ) {
+                            addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity('energy')));
+                        }
+                        else { // none energy flow
+                            if (checkIfBoostMatsNeed(r.name, tp)) { // we need this for boost, we want it no matter what
+                                if (r.memory.mineralThresholds.currentMineralStats[tp]<20000) {
+                                    if (need[r.name] == undefined) {
+                                        need[r.name] = [];
+                                    }
+                                    need[r.name].push(tp);
+                                }
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(30000-stor.store[tp], term.store[tp]-6666));
                             }
-                            need[r.name].push(tp);
+                            else if (r.controller.level==8 && _.sum(stor.store)>980000) { // level 8 and exploding, move everything to term for send
+                                if (tp.length>1) {
+                                    addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp], term.store.getFreeCapacity(tp)));
+                                }
+                            }
+                            else if ((_.sum(stor.store)<950000)&&(Math.abs(r.memory.mineralThresholds.currentMineralStats[tp]-allMineralSum[tp])>5000)) { // amount not averaged
+                                // if we are boosting, we just need it
+                                if (r.memory.forLab && r.memory.forLab.boostLabs && Object.keys(r.memory.forLab.boostLabs).includes(tp)) {
+                                    if (need[r.name] == undefined) {
+                                        need[r.name] = [];
+                                    }
+                                    need[r.name].push(tp);
+                                } // not boost
+                                else if (r.memory.mineralThresholds.currentMineralStats[tp]<allMineralSum[tp]) { // average per room threshold we want to keep
+                                    if (need[r.name] == undefined) {
+                                        need[r.name] = [];
+                                    }
+                                    need[r.name].push(tp);
+                                } // over average, we send
+                                else if (stor.store[tp]>30000) {
+                                    addResFlowTask(r.name, stor.id, term.id, tp, Math.min(stor.store[tp]-30000, term.store.getFreeCapacity(tp)));
+                                    if (term.store[tp]>6666) {
+                                        if (over[r.name] == undefined) {
+                                            over[r.name] = [];
+                                        }
+                                        over[r.name].push(tp);
+                                    }
+                                }
+                                else { // stor < 30000
+                                    if (term.store[tp]>6666) {
+                                        addResFlowTask(r.name, term.id, stor.id, tp, Math.min(30000-stor.store[tp], term.store[tp]-6666));
+                                    }
+                                    else {
+                                        if (need[r.name] == undefined) {
+                                            need[r.name] = [];
+                                        }
+                                        need[r.name].push(tp);
+                                    }
+                                }
+                            }
+                            /*else if (term.store[tp]>10000&&stor.store.getFreeCapacity(tp)>100000) {
+                                addResFlowTask(r.name, term.id, stor.id, tp, Math.min(term.store[tp]-10000, stor.store.getFreeCapacity(tp)));
+                            }
+                            else {
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                                addResFlowTask(r.name, stor.id, term.id, tp, Math.min(5000, stor.store[tp]));
+                            }*/
+                        }
+                    }
+                    
+                    // special boost movement
+                    if (false && (tp.includes('Z')) && tp!=='ZK') {
+                        if (r.name!='E1S27') {
+                            if (stor.store[tp]>0) {
+                                addResFlowTask(r.name, stor.id, term.id, tp, stor.store[tp]);
+                            }
+                            if (term.store[tp]>0) {
+                                if (over[r.name] == undefined) {
+                                    over[r.name] = [];
+                                }
+                                over[r.name].push(tp);
+                            }
+                        }
+                        else if (r.name=='E1S27') {
+                            if (stor.store[tp]+term.store[tp]<10000) {
+                                if (need[r.name] == undefined) {
+                                    need[r.name] = [];
+                                }
+                                need[r.name].push(tp);
+                            }
                         }
                     }
                 }
@@ -1428,6 +2171,69 @@ global.theResourceGodEye = function () {
     fo('need: ' + JSON.stringify(need));
     fo('over: ' + JSON.stringify(over));
     return [need, over]
+}
+
+global.roomNeedRes = function (r, need, tp) {
+    let s = r.storage;
+    let t = r.terminal;
+    if (s && t) {
+        if (need[r.name] == undefined) {
+            need[r.name] = [];
+        }
+        if (!need[r.name].includes(tp)) {
+            need[r.name].push(tp);
+        }
+        // move res to storage if have room
+        if (s.store.getFreeCapacity(tp) > 100000) {
+            if (t.store.getFreeCapacity(tp) > 30000) {
+                addResFlowTask(r.name, t.id, s.id, tp, Math.min(6666, Math.max(0, t.store[tp]-6666)));
+            }
+            else {
+                fo(r.name+' terminal exploding and blocking transfer: ' + tp);
+            }
+        }
+        else {
+            fo(r.name+' storage exploding and blocking transfer: ' + tp);
+        }
+    }
+    else {
+        fo(r.name+' need to rebuild storage or terminal')
+    }
+    return need
+}
+
+global.roomOverRes = function (r, need, over, tp) {
+    let s = r.storage;
+    let t = r.terminal;
+    if (s && t) {
+        // check over need duplication
+        if (need[r.name] && need[r.name].includes(tp)) {
+            fo(r.name + ' resflow bugged, cannot need and over at the same time: ' + tp);
+            removeElementInArrayByElement(tp, need[r.name]);
+        }
+        if (over[r.name] == undefined) {
+            over[r.name] = [];
+        }
+        if (!over[r.name].includes(tp)) {
+            over[r.name].push(tp);
+        }
+        // move res to term if have room
+        if (t.store.getFreeCapacity(tp) > 30000) {
+            if (s.store[tp] > 0) {
+                addResFlowTask(r.name, s.id, t.id, tp, Math.min(6666, Math.max(0, 6666-t.store[tp])));
+            }
+            else {
+                // room lack this type
+            }
+        }
+        else {
+            fo(r.name+' terminal exploding and blocking send: ' + tp);
+        }
+    }
+    else {
+        fo(r.name+' need to rebuild storage or terminal')
+    }
+    return need
 }
 
 global.mineralFlowToRoom = function (r, tp, destrn) {
@@ -1442,24 +2248,24 @@ global.mineralFlowToRoom = function (r, tp, destrn) {
     }
 }
 
-global.addResFlowTask = function (rn, fromId, toId, tp, a) {
+global.addResFlowTask = function (rn, fromId, toId, tp, a, urg=undefined) {
     if (a>0) {
         let r = Game.rooms[rn];
         let tasks = r.memory.resTask;
         if (tasks == undefined) {
             r.memory.resTask = {};
         }
-        if (r.memory.resTask[tp] != undefined && r.memory.resTask[tp].from==fromId) {
+        if (r.memory.resTask[tp] != undefined && urg!=true && r.memory.resTask[tp].from==fromId) {
             return
         }
         else {
-            if (tp!='energy' && Game.getObjectById(toId).store.getFreeCapacity('energy')<5000) {
+            if (tp != 'energy' && (Game.getObjectById(toId).structureType != STRUCTURE_POWER_SPAWN && Game.getObjectById(toId).store.getFreeCapacity('energy')<5000)) {
                 // pass
-                fo(Game.getObjectById(toId) + ' exploded!!!!')
+                fo(rn + ' ' + Game.getObjectById(toId).structureType + ' exploded!!!!')
                 return
             }
             else {
-                r.memory.resTask[tp] = {from: fromId, to: toId, a: a};
+                r.memory.resTask[tp] = {from: fromId, to: toId, a: a, urg: urg};
             }
         }
         fo(rn + ' added ' + a + ' ' + tp + ' moving resTask from ' + Game.getObjectById(fromId).structureType + ' to ' +  Game.getObjectById(toId).structureType);
@@ -1476,6 +2282,16 @@ global.checkIfBoostMatsNeed = function (shouer, tp) {
     return false
 }
 
+global.shuffleArrayRandomly = function (array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array
+}
+
 global.checkMineralStatsAndSend = function (interval=277) {
     if (Game.time%interval==0) {
         // get over flow item
@@ -1484,6 +2300,20 @@ global.checkMineralStatsAndSend = function (interval=277) {
         [need, over] = theResourceGodEye()
         let checker = {};
         
+        let cutOffVIP = false;
+        for (let shouer in need) {
+            if (need[shouer].includes('energy')&&Game.rooms[shouer].memory.VIP) {
+                cutOffVIP = true;
+                break;
+            }
+        }
+        if (cutOffVIP) {
+            for (let shouer in need) {
+                if (need[shouer].includes('energy')&& !Game.rooms[shouer].memory.VIP) {
+                    removeElementInArrayByElement('energy', need[shouer]);
+                }
+            }
+        }
         let cutOffSeven = false;
         
         for (let shouer in need) {
@@ -1515,41 +2345,52 @@ global.checkMineralStatsAndSend = function (interval=277) {
             }
         }
         
+        let shouers = shuffleArrayRandomly(Object.keys(need));
         for (let faer in over) {
             for (let tp of over[faer]) { //(tp == 'energy') {
-                for (let shouer in need) {
+                for (let shouer of shouers) {
                     //let rmd = Game.map.getRoomLinearDistance(faer, shouer);
                     //if (rmd<=8 && basicMinerals.includes(tp)) {
-                    if (_.sum(Game.rooms[shouer].terminal.store)<285000) {
-                        if ( faer != shouer && 
-                            (((tp=='energy')||(tp!=='energy' && Game.rooms[faer].terminal.store[tp]>10000))) || // basicMinerals.includes(tp) && 
-                            (checkIfBoostMatsNeed(shouer, tp))) {  // compund for boosts
-                            if (need[shouer].includes(tp)) { // 1 need 1 over matched
-                                let quant  = 2000;
-                                if (tp == 'energy') {
-                                    quant = Math.max(Game.rooms[faer].terminal.store.energy/2-20000, quant);
-                                }
-                                let sendRes = Game.rooms[faer].terminal.send(tp, Math.min(quant,Game.rooms[faer].terminal.store[tp]), shouer);
-                                fo(faer + ' tried to send ' + quant + ' ' + tp + ' to ' + shouer + ' with result: ' + sendRes);
-                                if (sendRes == OK) {
-                                    fo(faer + ' send ' + quant + ' ' + tp + ' to ' + shouer);
-                                    eSent = true;
-                                    break;
-                                }
-                                else if (sendRes == ERR_NOT_ENOUGH_RESOURCES) { // if not enough res
-                                    let far = Game.rooms[faer]
-                                    if (far.terminal.store[tp] == undefined || Game.rooms[faer].terminal.store[tp] < quant) {
-                                        addResFlowTask(faer, far.storage.id, far.terminal.id, tp, quant);
+                    if ( faer != shouer && need[shouer].includes(tp)) { // 1 need 1 over matched
+                        if (_.sum(Game.rooms[shouer].terminal.store)<285000 || (tp=='power'&&Game.rooms[shouer].terminal.store.getFreeCapacity('power')>2000)) {
+                            let quant  = 2000;
+                            if (  
+                                (((tp=='energy')||(tp!=='energy' && Game.rooms[faer].terminal.store[tp]>quant))) || // basicMinerals.includes(tp) && 
+                                (checkIfBoostMatsNeed(shouer, tp)) || // boost mats
+                                (Object.keys(convertBarToRaw()).includes(tp)) || // bars
+                                (allCommoList().includes(tp)) // commodities
+                                ) {
+                                
+                                    if (tp == 'energy') {
+                                        quant = Math.max(Game.rooms[faer].terminal.store.energy/2-20000, quant);
                                     }
-                                    else if (far.terminal.store.energy == undefined || Game.rooms[faer].terminal.store.energy < quant) {
-                                        addResFlowTask(faer, far.storage.id, far.terminal.id, 'energy', quant);
+                                    let sendRes = Game.rooms[faer].terminal.send(tp, Math.min(quant,Game.rooms[faer].terminal.store[tp]), shouer);
+                                    fo(faer + ' tried to send ' + quant + ' ' + tp + ' to ' + shouer + ' with result: ' + sendRes);
+                                    if (sendRes == OK) {
+                                        fo(faer + ' send ' + quant + ' ' + tp + ' to ' + shouer);
+                                        eSent = true;
+                                        break;
                                     }
-                                    else {
-                                        fo('myTrading code went wrong');
+                                    else if (sendRes == ERR_NOT_ENOUGH_RESOURCES) { // if not enough res
+                                        let far = Game.rooms[faer]
+                                        if (far.terminal.store[tp] == undefined || Game.rooms[faer].terminal.store[tp] < quant) {
+                                            addResFlowTask(faer, far.storage.id, far.terminal.id, tp, quant);
+                                        }
+                                        else if (far.terminal.store.energy == undefined || Game.rooms[faer].terminal.store.energy < quant) {
+                                            addResFlowTask(faer, far.storage.id, far.terminal.id, 'energy', quant);
+                                        }
+                                        else {
+                                            fo('myTrading code went wrong');
+                                        }
                                     }
-                                }
                             }
                         }
+                    }
+                }
+                // not matched, check commodities for sell
+                if (higherOrderCommoList().includes(tp)) {
+                    if (sellGoodValueCommodities(faer, tp) == OK) {
+                        break
                     }
                 }
             }
@@ -1677,6 +2518,89 @@ global.clearResFlowTastMem = function() {
         if (cp.memory.role == 'balancer') {
             cp.memory.flowTask = undefined;
         }
+    }
+}
+
+global.sellGoodValueCommodities = function (faer, tp) {
+    if (Memory.maimai && Memory.maimai.bling && Memory.maimai.bling[tp] && Memory.maimai.bling[tp].amount) {
+        if (Memory.maimai.bling[tp].amount>0) {
+            //fo(faer + ' sell ' + tp);
+            return Game.market.deal(Memory.maimai.bling[tp].id, Math.min(Game.rooms[faer].terminal.store[tp], Memory.maimai.bling[tp].amount), faer);
+        }
+        else {
+            Memory.maimai.bling[tp] = undefined;
+        }
+    }
+}
+
+global.estimateCommodityPrices = function () {
+    //let cpuc = Game.cpu.getUsed();
+    let allcommo = higherOrderCommoList();
+    if (Memory.maimai==undefined) {
+        Memory.maimai = {data: {histhigh: {}, tol: {}}, bling: {}};
+    }
+    for (let tp of allcommo) {
+        let highest = getAndLogHighestOrderOfATp(tp);
+        if (highest) {
+            let histhigh = Memory.maimai.data.histhigh[tp];
+            if (histhigh==undefined) {
+                Memory.maimai.data.histhigh[tp] = highest.price;
+            }
+            else {
+                let histtol = Memory.maimai.data.tol[tp];
+                if (histtol == undefined) {
+                    Memory.maimai.data.tol[tp] = 0.005;
+                }
+                else {
+                    let update=false;
+                    if (Memory.maimai.lastUpdated == undefined) {
+                        Memory.maimai.lastUpdated = Game.time;
+                    }
+                    if (Game.time>Memory.maimai.lastUpdated+500) {
+                        update = true;
+                        Memory.maimai.lastUpdated = Game.time;
+                    }
+                    
+                    if (highest.price>histhigh*(1+histtol)) {
+                        Memory.maimai.bling[tp] = highest;
+                        Memory.maimai.data.histhigh[tp] = highest.price;
+                    }
+                    else if (histhigh*(1+histtol)>=highest.price && highest.price>histhigh) {
+                        Memory.maimai.bling[tp] = highest;
+                        if (update) {
+                            Memory.maimai.data.tol[tp] = Memory.maimai.data.tol[tp]*0.9;
+                        }
+                    }
+                    else if (histhigh>=highest.price && highest.price>histhigh*(1-histtol)) {
+                        Memory.maimai.bling[tp] = highest;
+                        if (update) {
+                            Memory.maimai.data.histhigh[tp] = Memory.maimai.data.histhigh[tp] * 0.98;
+                        }
+                    }
+                    else if (histhigh*(1-histtol)>=highest.price) {
+                        Memory.maimai.bling[tp] = undefined;
+                        if (update) {
+                            Memory.maimai.data.tol[tp] = Memory.maimai.data.tol[tp]*1.1;
+                        }
+                    }
+                    else {
+                        fo('commo impossible price bug');
+                    }
+                }
+            }
+        }
+    }
+    //fo(Game.cpu.getUsed() - cpuc)
+}
+
+global.getAndLogHighestOrderOfATp = function (tp) {
+    let allors = Game.market.getAllOrders({type: ORDER_BUY, resourceType: tp});
+    if (allors.length>0) {
+        let hp = Math.max.apply(Math, allors.map(function(o) { return o.price; }));
+        return allors.find(function(o){ return o.price == hp; })
+    }
+    else {
+        return undefined
     }
 }
 

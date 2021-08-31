@@ -1,18 +1,85 @@
 var addToQ = require('action.addToSQ');
+var getB = require('action.getBoost');
+var evac = require('action.evacuate');
+
+let keyRoles = ['quads', 'powerSourceAttacker', 'powerSourceHealer'];
 
 Creep.prototype.runRole = function (roles) {
-    //roles[this.memory.role].run(this);
+    let debugRole = '';
+    if (this.memory.role == debugRole) {
+        if (getB.run(this)!=true) { // check for boost first
+            return
+        }
+        else {
+            roles[this.memory.role].run(this);
+            return
+        }
+    }
+    if (Game.shard.name=='shard3' && Game.cpu.bucket<50 && !keyRoles.includes(this.memory.role)) {
+        return
+    }
+    else if (Game.shard.name=='shard3' && (Game.time%Math.max(1, Math.ceil(-Game.cpu.bucket/10000*5+6)-1)>0) && (this.memory.role=='mover'||this.memory.role=='pickuper'||(this.memory.role=='dickHead'&&this.memory.in)||(this.memory.role=='maintainer'&&this.memory.posiNum!=6)||this.memory.role=='loader'||this.memory.role=='labber') && (this.ticksToLive>10)) {
+        return //  && (this.room.controller && this.room.controller.my && this.room.controller.level>4)
+    }
     try {
-        roles[this.memory.role].run(this);
-        if (this.memory.isNeeded) {
-            addToQ.run(this);
+        if (getB.run(this)!=true) { // check for boost first
+            return
+        }
+        else {
+            
+            /*
+            if (this.memory.role=='gays') {
+                this.memory.target = 'E1S29';
+                this.memory.role='ranger';
+            }
+            */
+            
+            /*
+            if (this.room.name=='E8S48'&&this.memory.role!='longDistanceHarvester'&&Game.shard=='shard2') {
+                this.memory.foundRoute = undefined;
+                this.memory.target = 'E7S48';
+            }
+            */
+            /*
+            if (false && this.memory.home && this.memory.home == 'E7S48' && evac.run(this)) {
+                return
+            }
+            else if (this.memory.role == 'sacrificer' && this.memory.target == 'E7S48') {
+                this.memory.role = 'stealer';
+                this.memory.home = 'E7S48';
+                this.memory.target = 'E7S49';
+            }
+            else if (this.memory.role == 'stealer' && this.memory.target == 'E7S49') {
+                this.memory.role = 'stealer';
+                this.memory.target = 'E7S48';
+            }
+            else if (this.memory.role == 'stealer') {
+                this.memory.role = 'sacrificer';
+                this.memory.target = 'E7S48';
+            }*/
+            if (true) {
+                roles[this.memory.role].run(this);
+            }
+            if (this.memory.isNeeded) {
+                addToQ.run(this);
+            }
         }
     }
     catch (err) {
-        console.log('error: role name fault: ' + this.memory.role + this.pos);
-        //unpackCreepMemory(this.name);
+        console.log('error: role name fault: ' + this.memory.role + this.pos + '\n' + err.stack);
+        unpackCreepMemory(this.name);
     }
 };
+
+Creep.prototype.move1tile = function (x, y) {
+    if (this.pos.getRangeTo(x, y)>1) {
+        this.travelTo(x, y);
+    }
+    else {
+        let direction = this.pos.getDirectionTo(x, y);
+        this.move(direction);
+    }
+}
 
 Creep.prototype.longRangeCachedTravelTo = function (fromPos, toPos) {
     let creep = this;

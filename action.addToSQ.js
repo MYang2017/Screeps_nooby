@@ -1,6 +1,6 @@
 module.exports = {
-    run: function(creep) {
-        if (creep.ticksToLive==1) {
+    run: function(creep, tickToAdd=1) {
+        if (creep.ticksToLive==tickToAdd) {
             let h = creep.memory.home;
             if (h==undefined) {
                 h = creep.room.name;

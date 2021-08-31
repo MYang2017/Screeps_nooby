@@ -33,18 +33,22 @@ module.exports = {
                 }
             }
             else { // room level too low, go for resources
-                if (creep.harvest(Game.getObjectById(ifDropped)) == ERR_NOT_IN_RANGE) {
+                let toMua = Game.getObjectById(ifDropped);
+                if (creep.pos.getRangeTo(toMua)>1) {
                     if (creep.memory.storedTarget) {
                         creep.memory.storedTarget.x = Game.getObjectById(ifDropped).pos.x; creep.memory.storedTarget.y = Game.getObjectById(ifDropped).pos.y; creep.memory.storedTarget.roomName = Game.getObjectById(ifDropped).room.name;
                     }
                     creep.travelTo(Game.getObjectById(ifDropped), { maxRooms: 1 });
                 }
                 else {
-                    creep.travelTo(Game.getObjectById(ifDropped));
+                    if (creep.room.controller&&creep.pos.getRangeTo(creep.room.controller)<4) {
+                        creep.upgradeController(creep.room.controller);
+                    }
+                    creep.harvest(toMua);
                 }
                 return
             }
         }
-        dog.run(creep);
+        //dog.run(creep);
     }
 };

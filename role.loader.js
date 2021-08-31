@@ -37,7 +37,9 @@ module.exports = {
             for (let cont of conts) {
                 for (let sp of sps) {
                     if (cont.pos.getRangeTo(sp) < 3) {
-                        return cont.id
+                        if (cont.pos.findInRange(FIND_SOURCES, 1).length==0) {
+                            return cont.id
+                        }
                     }
                 }
             }
@@ -49,7 +51,7 @@ module.exports = {
                 }
             }
             
-            let toFill = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => ((s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION) && s.energy < s.energyCapacity|| ( s.structureType == STRUCTURE_TOWER && s.store.energy < 0.5*_.sum(s.store))) })
+            let toFill = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, { filter: (s) => (((s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION) && s.energy < s.energyCapacity|| ( s.structureType == STRUCTURE_TOWER && s.store.energy < 0.5*_.sum(s.store))) && ifNotBunkerBlocked(creep.room, s.pos)) })
             if (toFill) {
                 return toFill.id
             }
@@ -58,6 +60,7 @@ module.exports = {
         
         
         let structToFill = itemToFill(creep);
+
         if (structToFill == undefined) {
             lorry.run(creep);
         }
@@ -85,6 +88,15 @@ module.exports = {
                 }
             }
             else {
+                if (creep.room.storage && creep.room.storage.store.energy>0) {
+                    if (creep.pos.getRangeTo(creep.room.storage)>1) {
+                        creep.travelTo(creep.room.storage);
+                    }
+                    else {
+                        creep.withdraw(creep.room.storage, 'energy');
+                    }
+                    return
+                }
                 getE.run(creep);
             }
         }

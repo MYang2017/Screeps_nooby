@@ -31,11 +31,12 @@ module.exports = {
                 creep.travelTo(new RoomPosition(25,25, creep.memory.target));
             }
             else { // else decide preferred location
-                creep.memory.preferredLocation = whichOneOfFourCoornersIsSafest(creep.memory.room);
+                creep.memory.preferredLocation = whichOneOfFourCoornersIsSafest(creep.memory.target);
             }
         }
 
         creep.heal(creep);
+        creep.rangedMassAttack();
         /*let toHeal = creep.pos.findClosestByRange(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) } );
         if (toHeal) { // if there is damaged creep, go heal
             creep.heal(toHeal);

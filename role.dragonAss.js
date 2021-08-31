@@ -1,8 +1,11 @@
 var actionRecycle = require('action.recycle');
 let fleee = require('action.flee');
+let sub = require('role.trader');
 
 module.exports = {
     run: function(creep) {
+        sub.run(creep);
+        return
         // if creep born time undi
         if (creep.memory.bornTime == undefined) {
             // creep born time = Game.time

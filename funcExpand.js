@@ -1,31 +1,51 @@
-global.sendClaimer = function (home, target) { // route function not ready yet!
+global.sendClaimer = function (home, target, sendP = true, bigClaim = undefined, no = 1) { // route function not ready yet!
     let room = Game.rooms[home];
 
     let spawningQueue = room.memory.forSpawning.spawningQueue;
     console.log('Room ' + home + ' sent claimer ' + target);
-    spawningQueue.push({ memory: { role: 'claimer', target: target }, priority: 18 });
-
-
-    // Game,creeps.Samantha.memory.route = {'E58S2': 'E58S3', 'E58S3': 'E55N3'};
-    let route = undefined;
-    if (target == 'E13S53') {
-        route = { 'E9S49': 'E10S51', 'E10S51': 'E11S50', 'E11S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53' };
+    if (no == 1) {
+       spawningQueue.push({ memory: { role: 'claimer', target: target, attack: bigClaim }, priority: 18 });
     }
-    else if (target == 'E9S51') {
-        route = { 'E11S47': 'E10S51', 'E10S51': 'E9S51' };
+    else {
+        let us = generateRandomStrings();
+        let tr = Game.rooms[target];
+        if (tr) {
+            if (tr && tr.controller && tr.controller.level == 1) {
+                let ttd = tr.controller.ticksToDowngrade;
+                if (ttd>0) {
+                    let noclaimpart = (tr.controller.ticksToDowngrade-1300)/300;
+                    if (noclaimpart>0) {
+                        let euse = noclaimpart * (600+50);
+                        no = Math.min(3, Math.ceil(euse/room.energyCapacityAvailable));
+                    }
+                    else {
+                        return
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < no; i++) {
+            let cn = i + us;
+            spawningQueue.push({ memory: { role: 'claimer', target: target, attack: bigClaim, uniqueString: cn, no: no }, priority: 18 });
+        }
     }
-
-    room.memory.forSpawning.spawningQueue.push({ memory: { energy: room.energyCapacityAvailable * .875, role: 'pioneer', target: target, home: room.name, superUpgrader: false, route: route }, priority: 8 });
-    console.log('Room ' + home + ' sent fitst pioneer to room ' + target);
-
-    room.memory.startClaimRoom = true;
+    
+    if (sendP) {
+        room.memory.forSpawning.spawningQueue.push({ memory: { energy: room.energyCapacityAvailable * .875, role: 'pioneer', target: target, home: room.name, superUpgrader: false, route: route }, priority: 8 });
+        console.log('Room ' + home + ' sent fitst pioneer to room ' + target);
+    }
 }
 
 // this is the main function
 global.helpSubroom = function (home, target) { // send claimer and first pioneer to new unclaimed room
     let room = Game.rooms[home];
 
-    room.memory.subRoom = target;
+    if (room.memory.subRoom == undefined) {
+        room.memory.subRoom = [target];
+    }
+    else {
+        room.memory.subRoom.push(target);
+    }
 
     sendClaimer(home, target);
 }
@@ -34,21 +54,20 @@ global.sendPioneer = function (roomName, toHelpName, ifSuper, energy) {
     Game.rooms[roomName].memory.forSpawning.spawningQueue.push({ memory: { energy: energy, role: 'pioneer', target: toHelpName, home: roomName, superUpgrader: ifSuper, route: undefined }, priority: 16 });
 }
 
-global.sendSacrificer = function (rn, tarrn) {
-    Game.rooms[rn].memory.forSpawning.spawningQueue.push({ memory: { role: 'sacrificer', home: rn, target: tarrn }, priority: 9.5 });
+global.sendSacrificer = function (rn, tarrn, tp=undefined, capa=undefined) {
+    Game.rooms[rn].memory.forSpawning.spawningQueue.push({ memory: { role: 'sacrificer', home: rn, target: tarrn, toTp: tp, capa: capa }, priority: 9.5 });
 }
 
 global.ifKeepHelping = function (home, target) { // if keep sending pioneers
     let room = Game.rooms[home];
     let helpedRoom = Game.rooms[target];
 
-    if (room.memory.startClaimRoom) { // if in the process of claiming a sub room
+    if (room.memory.subRoom && room.memory.subRoom.length>0) { // if in the process of claiming a sub room
         if (helpedRoom == undefined || (ifSpawnAvailable(target).length < 1)) { // if sub room spawn not ready
             return true
         }
         else { // if sub room mature, stop sending pioneers
-            delete room.memory.subRoom;
-            room.memory.startClaimRoom = false;
+            removeElementInArrayByElement(target, room.memory.subRoom);
             helpedRoom.memory.needHelp = false;
             return false
         }
@@ -61,7 +80,7 @@ global.ifKeepHelping = function (home, target) { // if keep sending pioneers
 
 global.startClaimRoom = function (home) {
     let room = Game.rooms[home];
-    if (room.memory.startClaimRoom == undefined || room.memory.startClaimRoom == false) {
+    if (room.memory.subRoom == undefined || room.memory.subRoom.length == 0) {
         return false
     }
     else {
@@ -71,41 +90,47 @@ global.startClaimRoom = function (home) {
 
 // check every xxx ticks to provid pioneers
 global.mainBuildSub = function (room, route) {
-    let subRoomName = room.memory.subRoom;
-
-    let subRoom = Game.rooms[subRoomName];
-
-
-    if (subRoomName == undefined) {
-        return false
-    }
-    else {
-        if (ifKeepHelping(room.name, subRoomName)) {
-            route = undefined;
-            if (subRoomName == 'E13S53') {
-                route = { 'E9S49': 'E10S51', 'E10S51': 'E11S50', 'E11S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53' };
+    let subRoomNames = room.memory.subRoom;
+    if (subRoomNames && subRoomNames.length>0) {
+        for (let subRoomName of subRoomNames) {
+    
+            let subRoom = Game.rooms[subRoomName];
+        
+        
+            if (subRoomName == undefined) {
+                return false
             }
-            else if (subRoomName == 'E9S51') {
-                route = { 'E11S47': 'E10S51', 'E10S51': 'E9S51' };
+            else {
+                if (ifKeepHelping(room.name, subRoomName)) {
+                    route = undefined;
+        
+                    if (subRoom == undefined && Game.time%1500==111) { // if decayed and lost
+                        console.log('Room ' + room.name + ' sent claimer ' + subRoomName);
+                        room.memory.forSpawning.spawningQueue.push({ memory: { role: 'claimer', target: subRoomName }, priority: 18 });
+                    }
+                    
+                    let rdist = Game.map.getRoomLinearDistance(room.name, subRoomName);
+                    let ttt = rdist*50+50;
+                    
+                    if (Game.time%(Math.max(399, 1500-ttt))==0) {
+                        let ecap = room.energyCapacityAvailable;
+                        let eReses = Memory.mapInfo[subRoomName].eRes;
+                        if (Game.shard.name=='shardSeason') { // 1 big in season3
+                            room.memory.forSpawning.spawningQueue.push({ memory: { energy: ecap, role: 'pioneer', target: subRoomName, home: room.name, superUpgrader: false, route: route }, priority: 0.4 });
+                            console.log('Room ' + room.name + ' sent pioneer to room ' + subRoomName);
+                        }
+                        else {
+                            for (let eRes in eReses) {
+                                room.memory.forSpawning.spawningQueue.push({ memory: { energy: ecap, role: 'pioneer', target: subRoomName, home: room.name, superUpgrader: false, route: route }, priority: 0.4 });
+                                console.log('Room ' + room.name + ' sent pioneer to room ' + subRoomName);
+                            }
+                        }
+                    }
+                }
+                else {
+                    return false
+                }
             }
-
-            if (subRoom == undefined) { // if decayed and lost
-                console.log('Room ' + room.name + ' sent claimer ' + subRoomName);
-                room.memory.forSpawning.spawningQueue.push({ memory: { role: 'claimer', target: subRoomName }, priority: 18 });
-            }
-
-            let ecap = room.energyCapacityAvailable;
-            if (ecap > 1800) {
-                ecap = 1800;
-            }
-            let eReses = Memory.mapInfo[subRoomName].eRes;
-            for (let eRes in eReses) {
-                room.memory.forSpawning.spawningQueue.push({ memory: { energy: ecap, role: 'pioneer', target: subRoomName, home: room.name, superUpgrader: false, route: route }, priority: 0.4 });
-                console.log('Room ' + room.name + ' sent pioneer to room ' + subRoomName);
-            }
-        }
-        else {
-            return false
         }
     }
 }
@@ -113,6 +138,10 @@ global.mainBuildSub = function (room, route) {
 global.ifWaitForRenew = function (creep) {
     if (creep.memory.stayToBePumped == undefined) {
         creep.memory.stayToBePumped = false;
+    }
+    if (creep.room.name=='E29S51' && Game.shard.name=='shard3') {
+        creep.memory.stayToBePumped = false;
+        return false
     }
     if (creep.memory.stayToBePumped == false) {
         if (creep.ticksToLive < 200) {
@@ -369,6 +398,16 @@ global.generateTDLRRoomnames = function (rn) {
     return ret
 }
 
+global.areRoomsDirectlyConnected = function (rn1, rn2) {
+    let route = Game.map.findRoute(rn1, rn2);
+    if (route && route.length==1) {
+        return true
+    }
+    else {
+        return false
+    }
+}
+
 global.parseRoomName = function (roomName) {
     let kWorldSize = Game.map.getWorldSize();
     let room = /^([WE])([0-9]+)([NS])([0-9]+)$/.exec(roomName);
@@ -381,6 +420,110 @@ global.parseRoomName = function (roomName) {
         throw new Error('Invalid room name ' + roomName);
     }
     return { x: rx, y: ry };
+}
+
+global.reduceArrayOfRoomnamesToMinRectBoundRoomnames = function (rns) {
+    // run normally
+    let minrns = reduceRectangleRoomArea(rns);
+    // if room names contain 0s
+    let check = false;
+    let rerun = true;
+    for (let rn of minrns) {
+        if (rn.includes('W0')) {
+            check = true;
+            break
+        }
+    }
+    if (check) {
+        for (let rn of minrns) {
+            if (rn.includes('E0')) {
+                rerun = false;
+                break
+            }
+        }
+    }
+    if (rerun) {
+        let additionrns = [];
+        for (let rn of rns) {
+            if (rn.includes('W0')) {
+                
+            }
+            else {
+                additionrns.push(rn);
+            }
+        }
+        additionrns = reduceRectangleRoomArea(additionrns);
+        for (let additionrn of additionrns) {
+            if (minrns.includes(additionrn)) {
+                
+            }
+            else {
+                minrns.push(additionrn)
+            }
+        }
+    }
+    return minrns
+}
+
+global.reduceRectangleRoomArea = function (rns) {
+    if (rns.length<=2) {
+        return rns
+    }
+    else {
+        let minrns = [];
+        let xmin;
+        let xmax;
+        let ymin;
+        let ymax;
+        let rn1 = parseRoomName(rns[0]);
+        let rn2 = parseRoomName(rns[1]);
+        // initial bound
+        if (rn1.x <= rn2.x) {
+            xmin = rn1.x;
+            xmax = rn2.x;
+        }
+        else {
+            xmin = rn2.x;
+            xmax = rn1.x;
+        }
+        if (rn1.y <= rn2.y) {
+            ymin = rn1.y;
+            ymax = rn2.y;
+        }
+        else {
+            ymin = rn2.y;
+            ymax = rn1.y;
+        }
+        // update boundary by all room names
+        for (rn of rns) {
+            [xmin, xmax, ymin, ymax] = updateBoundByRoomnameAndBound(rn, xmin, xmax, ymin, ymax);
+        }
+        // only keep room names at boundary
+        for (rn of rns) {
+            let pn = parseRoomName(rn);
+            if ((pn.x == xmin || pn.x == xmax) && (pn.y == ymin || pn.y == ymax)) {
+                minrns.push(rn);
+            }
+        }
+        return minrns
+    }
+}
+
+global.updateBoundByRoomnameAndBound = function(rn, xmin, xmax, ymin, ymax) {
+    let pn = parseRoomName(rn);
+    if (pn.x<=xmin) {
+        xmin = pn.x;
+    }
+    else if (pn.x>=xmax) {
+        xmax = pn.x;
+    }
+    if (pn.y<=ymin) {
+        ymin = pn.y;
+    }
+    else if (pn.y>=ymax) {
+        ymax = pn.y;
+    }
+    return [xmin, xmax, ymin, ymax]
 }
 
 global.isHighway = function (rn) {
@@ -475,7 +618,10 @@ global.generateAllRoomnamesWithinDistance = function (roomName, dist) {
 
     for (let i = -dist; i <= dist; i++) {
         for (let j = -dist; j <= dist; j++) {
-            rns.push(generateRoomName(cx + i, cy + j));
+            let rn = generateRoomName(cx + i, cy + j);
+            if (rn && Game.map.getRoomStatus(rn) && Game.map.getRoomStatus(rn).status && Game.map.getRoomStatus(rn).status=='normal') {
+                rns.push(rn);
+            }
         }
     }
 
@@ -561,9 +707,9 @@ global.unpackCreepMemory = function (creepName) {
         Game.creeps[creepName].memory.role = roleWillBe;
         Game.creeps[creepName].memory.target = targetRoomName;
         Game.creeps[creepName].memory.working = false;
-        Game.creeps[creepName].memory.route = JSON.parse(route);
+        //Game.creeps[creepName].memory.route = JSON.parse(route);
     }
-    else { // in the wrong shard, an error transfer
+    else if (false) { // in the wrong shard, an error transfer
         console.log('intersharder ' + Game.creeps[creepName].name + ' in wrong shard: ' + Game.shard.name + Game.creeps[creepName].pos)
         let sp = Game.creeps[creepName].pos.findInRange(FIND_MY_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_SPAWN });
         if (sp.length > 0) {
@@ -827,4 +973,148 @@ global.levelEightHelpSevenSuperUp = function (rn8, rn7, inter, rem) {
         Game.rooms[rn8].memory.forSpawning.spawningQueue.push({ memory: { energy: 3200, role: 'pioneer', target: rn7, home: rn8, superUpgrader: true }, priority: 40 });
     }
     //Game.rooms['E5S21'].memory.forSpawning.spawningQueue.push({memory:{energy: 3200, role: 'pioneer', target: 'E4S23', home: 'E5S21', superUpgrader: true},priority: 40});
+}
+
+global.intershardsacrificer = function (mainshardn, rn, tn) {
+    if (Game.shard.name == mainshardn) {
+        //Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E10S50', portalId: '5c0e406c504e0a34e3d61d5a', targetRoomName: tn, roleWillBe: 'sacrificer', body: body, route: { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'}, role: 'oneWayInterSharder'},priority: 1.5});
+        if (rn=='E11S47') {
+            Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E0S40', portalId: '5c0e406c504e0a34e3d61dba', targetRoomName: tn, roleWillBe: 'sacrificer', body: undefined, route: { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'}, role: 'oneWayInterSharder'},priority: 1.5});
+        }
+        else if (rn=='E29S51') {
+            Game.rooms[rn].memory.forSpawning.spawningQueue.push({memory:{targetShardName: 'shard2', portalRoomName: 'E30S50', portalId: '5c0e406c504e0a34e3d61dd8', targetRoomName: tn, roleWillBe: 'sacrificer', body: undefined, route: { 'E10S50': 'E10S53', 'E10S53': 'E13S54', 'E13S54': 'E13S53'}, role: 'oneWayInterSharder'},priority: 1.5});
+        }
+        else {
+            fo('no portal info');
+        }
+    }
+}
+
+global.getATypeOfRes = function (r, res) {
+    let tm = r.terminal;
+    let st = r.storage;
+    if (tm) {
+        if (tm.store[res]>1000) {
+            return tm
+        }
+        else {
+            if (st && st.store[res]>1000) {
+                return st
+            }
+            else {
+                if (tm.store[res]>0) {
+                    return tm
+                }
+                else {
+                    if (st && st.store[res]>0) {
+                        return st
+                    }
+                    else {
+                        return false    
+                    }
+                }
+            }
+        }
+    }
+    else {
+        if (st && st.store[res]>0) {
+            return st
+        }
+        else {
+            return false
+        }
+    }
+}
+
+global.putATypeOfRes = function (r, res) {
+    let tm = r.terminal;
+    let st = r.storage;
+    if (tm) {
+        if (tm.store.getFreeCapacity(res)>0) {
+            return tm
+        }
+        else {
+            if (st && st.store.getFreeCapacity(res)>0) {
+                return st
+            }
+        }
+    }
+    else {
+        if (st && st.store.getFreeCapacity(res)>0) {
+            return st
+        }
+        else {
+            return false
+        }
+    }
+}
+
+global.superUpgraderBoostManager = function (r, noparts) {
+    // if room no lab
+    if (r.controller.level<6) {
+        return true
+    }
+    
+    let labs = r.find(FIND_MY_STRUCTURES, {filter: l=>l.structureType==STRUCTURE_LAB});
+    if (labs.length==0) {
+        return true
+    }
+    
+    let hasFreeLab = false;
+    for (lab of labs) {
+        if (lab.cooldown<=noparts*3) {
+            hasFreeLab = true;
+            break
+        }
+    }
+    if (hasFreeLab == false) {
+        return true
+    }
+    
+    /*
+    if (r.memory.mineralThresholds.currentMineralStats['XGH2O']>0) {
+        return 'XGH2O'
+    }
+    */
+    if (r.memory.mineralThresholds.currentMineralStats['GH2O']>0) {
+        return 'GH2O'
+    }
+    if (r.memory.mineralThresholds.currentMineralStats['GH']>0) {
+        return 'GH'
+    }
+    return true
+}
+
+global.pioneerBoostManager = function (r, noparts) {
+    // if room no lab
+    if (r.controller.level<6) {
+        return true
+    }
+    
+    let labs = r.find(FIND_MY_STRUCTURES, {filter: l=>l.structureType==STRUCTURE_LAB});
+    if (labs.length==0) {
+        return true
+    }
+    
+    let hasFreeLab = false;
+    for (lab of labs) {
+        if (lab.cooldown<=noparts*3) {
+            hasFreeLab = true;
+            break
+        }
+    }
+    if (hasFreeLab == false) {
+        return true
+    }
+
+    if (r.memory.mineralThresholds.currentMineralStats['XLH2O']>0) {
+        return 'XLH2O'
+    }
+    if (r.memory.mineralThresholds.currentMineralStats['LH2O']>0) {
+        return 'LH2O'
+    }
+    if (r.memory.mineralThresholds.currentMineralStats['LH']>0) {
+        return 'LH'
+    }
+    return true
 }

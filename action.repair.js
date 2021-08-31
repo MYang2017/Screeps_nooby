@@ -9,10 +9,19 @@ module.exports = {
                 delete room.memory.toRepairId;
             }
             else {
-                if (creep.repair(structure) == ERR_NOT_IN_RANGE) {
+                if (creep.pos.getRangeTo(structure)>3) {
                     creep.travelTo(structure, { maxRooms: 1 });
                 }
-                if (structure.hits > 0.95 * structure.hitsMax) { // if structure is healthy, find another to repair
+                else {
+                    creep.repair(structure);
+                    if (creep.pos.findInRange(FIND_MY_CREEPS, 1).length>1) {
+                        let thingUnderFeet = creep.room.lookForAt(LOOK_STRUCTURES, creep)[0];
+                        if (thingUnderFeet && thingUnderFeet.structureType && thingUnderFeet.structureType == STRUCTURE_ROAD) {
+                            creep.move(getRandomInt(1, 8));
+                        }
+                    }
+                }
+                if (structure.hits > 0.20 * structure.hitsMax) { // if structure is healthy, find another to repair
                     if (cacheContainerOrRoadToBuild(room,0.8,1)==undefined) { // if not found anything to repair
                       actionUpgrade.run(creep);
                     }

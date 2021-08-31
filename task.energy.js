@@ -44,7 +44,7 @@ global.structureGetE = function (rn) {
         }
         // middle place container
         for (let sp of sps) {
-            if (cont.pos.getRangeTo(sp) < 3) {
+            if (cont.pos.getRangeTo(sp) < 3 && cont.pos.findInRange(FIND_SOURCES, 1).length==0) {
                 r.memory.toFillE.push({id: cont.id, posi: cont.pos, t: cont.structureType});
                 break;
             }
@@ -424,6 +424,10 @@ global.energyGetTaskManager = function(rn) {
     // clean dead contracts
     for (let contractId in contracts) {
         let contract = contracts[contractId];
+        if (contract == undefined) {
+            contracts[contractId] = undefined;
+            continue
+        }
         let offerCreep = Game.getObjectById(contract.offerId);
         if (offerCreep==undefined) {
             contracts[contractId] = undefined;

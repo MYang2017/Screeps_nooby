@@ -21,7 +21,7 @@ global.initiateShooterRoomMemory = function (roomName) {
         Memory.myShooterRoomList = {};
         Memory.myShooterRoomList[shardName] = [];
     }
-
+    
     if (!Memory.myShooterRoomList[shardName].includes(roomName)) {
         Memory.myShooterRoomList[shardName].push(roomName);
     }
@@ -583,30 +583,33 @@ global.initiateCreepsSpawnInfo = function (roomName) {
 }
 
 global.updateWallRampartRepairerNo = function (rn) {
+    if (Game.shard.name == 'shardSeason' && (rn == 'W19S18' || rn == 'W9S9')) {
+        //return 1
+    }
     let r = Game.rooms[rn];
+    if (r.memory.nuked) {
+        return 3
+    }
+    if (r.controller.level<6) {
+        return 1
+    }
     if (r.storage) { var eSitu = r.storage.store.energy };
     if (r.terminal) { eSitu += r.terminal.store.energy }
 
     let en = r.find(FIND_CONSTRUCTION_SITES, {
         filter: object => ((object.structureType == STRUCTURE_WALL) || (object.structureType == STRUCTURE_RAMPART))
     });
-
-    if ((eSitu > 240000) && (r.memory.toRepairWallOrRampartId == undefined || Game.getObjectById(r.memory.toRepairWallOrRampartId).hits < 680000) || (r.controller.level == 8 && en.length > 0)) {
-        let em = r.find(FIND_STRUCTURES, {
-            filter: object => ((object.structureType == STRUCTURE_WALL) || (object.structureType == STRUCTURE_RAMPART))
-        });
-
-        let tot = em.concat(en).length;
-
-        if (tot > 0) {
-            return 1
-        }
-    }
-    else if (eSitu > 15000 && r.controller.level == 4) {
+    
+    if (en.length>0) {
         return 1
     }
-    else if (eSitu > 100000) {
-        return 0
+    
+    let em = r.find(FIND_STRUCTURES, {
+        filter: object => ( ((object.structureType == STRUCTURE_WALL) || (object.structureType == STRUCTURE_RAMPART))) && object.hits<200000
+    });
+
+    if (em.length>0) {
+        return 1
     }
 }
 
@@ -626,6 +629,10 @@ global.updateBuilderNo = function (rn) {
 
 global.decomposeRoomNameIntoFourParts = function (roomName) {
     return roomName.match(/[a-zA-Z]+|[0-9]+/g)
+}
+
+global.calcEuclideanDistance = function (pos1, pos2) {
+    return (pos1.x-pos2.x)**2 + (pos1.y-pos2.y)**2;
 }
 
 global.calculateNeighbourNames = function (roomName) {
@@ -655,6 +662,31 @@ global.ifSurrounded = function (creep) {
             if (((creep.room.lookForAt(LOOK_TERRAIN, x, y) == 'plain') || (creep.room.lookForAt(LOOK_TERRAIN, x, y) == 'swamp'))
                 && (creep.room.lookForAt(LOOK_CREEPS, x, y)[0] == undefined)) {
                 return [x, y]
+            }
+        }
+    }
+    return null
+}
+
+global.returnCreepStandableSpotAroundAPoint = function (pos, range=1) {
+    let r = Game.rooms[pos.roomName];
+    var index = [-1, 0, 1];
+    if (range==2) {
+        index = [-2, -1, 0, 1, 2];
+    }
+    let x;
+    let y;
+    for (let i = 0; i < (2*range+1); i++) {
+        for (let j = 0; j < (2*range+1); j++) {
+            // if terrain is plain or swamp and it is not occupied by other creeps
+            x = pos.x + index[i];
+            y = pos.y + index[j];
+            //console.log(x,y)
+            let tolookpos = new RoomPosition(x, y, r.name);
+            if (!(index[i]==0 && index[j]==0) && 
+                ((r.lookForAt(LOOK_TERRAIN, x, y) == 'plain') || (r.lookForAt(LOOK_TERRAIN, x, y) == 'swamp'))
+                && (tolookpos.findInRange(FIND_CREEPS, 0).length==0) && (tolookpos.findInRange(FIND_STRUCTURES, 0, {filter:s=>s.structureType!=STRUCTURE_ROAD && s.structureType!=STRUCTURE_CONTAINER && (s.structureType!=STRUCTURE_RAMPART || !s.structureType.my)}).length==0)) {
+                    return [x, y]
             }
         }
     }
@@ -721,6 +753,36 @@ global.tilesSurrounded = function (obj) {
     return tilesSurrounded
 }
 
+global.walkableTilesSurrounded = function (pos) {
+    let index = [-1, 0, 1];
+    let out = [];
+    
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            // if terrain is plain or swamp
+            if (index[i]!=0 || index[j]!=0) {
+                x = pos.x + index[i];
+                y = pos.y + index[j];
+                //console.log(x,y)
+                if (((Game.rooms[pos.roomName].lookForAt(LOOK_TERRAIN, x, y) == 'plain') || (Game.rooms[pos.roomName].lookForAt(LOOK_TERRAIN, x, y) == 'swamp'))) {
+                    let strucs = Game.rooms[pos.roomName].lookForAt(LOOK_STRUCTURES, x, y);
+                    let isValid = true;
+                    for (let struc of strucs) {
+                        if (struc.structureType!=STRUCTURE_RAMPART && struc.structureType!=STRUCTURE_ROAD && struc.structureType!=STRUCTURE_CONTAINER) {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                    if (isValid) {
+                        out.push({x: x, y: y});
+                    }
+                }
+            }
+        }
+    }
+    return out
+}
+
 global.validSurrounds = function (obj) {
     var index = [-1, 0, 1]
     for (let i = 0; i < 3; i++) {
@@ -738,7 +800,7 @@ global.validSurrounds = function (obj) {
 }
 
 global.determineIfFucked = function (myRoom) {
-    var targets = myRoom.find(FIND_HOSTILE_CREEPS, { filter: s => (!allyList().includes(s.owner.username)) });
+    var targets = myRoom.find(FIND_HOSTILE_CREEPS, { filter: s => (!allyList().includes(s.owner.username) && s.getActiveBodyparts(ATTACK) + s.getActiveBodyparts(RANGED_ATTACK) > 0) });
     //var mines = myRoom.find(FIND_MY_CREEPS);
     var enemyPartsCount = 0;
     var myPartsCount = 0;
@@ -765,8 +827,7 @@ global.determineIfFucked = function (myRoom) {
 }
 
 global.determineIfRoomInvaded = function (myRoom) {
-    let invadersNumber = myRoom.find(FIND_HOSTILE_CREEPS, { filter: s => s.owner.username == 'Invader' }).length;
-    invadersNumber = invadersNumber + myRoom.find(FIND_HOSTILE_CREEPS, { filter: s => s.owner.username == 'wtfrank' && s.getActiveBodyparts(HEAL) > 0 }).length;
+    let invadersNumber = myRoom.find(FIND_HOSTILE_CREEPS, { filter: s => (!allyList().includes(s.owner.username)) && (s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)+s.getActiveBodyparts(WORK)+s.getActiveBodyparts(CLAIM)>1) }).length;
 
     return invadersNumber
 }
@@ -836,7 +897,7 @@ global.linkTransfer = function (room) {
             if (room.memory.forLinks.receiverCoreLinkId && Game.getObjectById(room.memory.forLinks.receiverCoreLinkId).energy < 700) {
                 linkTransferToCentre(Game.getObjectById(room.memory.forLinks.receiverCoreLinkId), linksInRoom);
             }
-            else if (room.memory.forLinks.receiverUpLinkId && Game.getObjectById(room.memory.forLinks.receiverUpLinkId).energy < 700) {
+            else if (room.memory.forLinks.receiverUpLinkId && Game.getObjectById(room.memory.forLinks.receiverUpLinkId).energy < 50) {
                 linkTransferToCentre(Game.getObjectById(room.memory.forLinks.receiverUpLinkId), linksInRoom);
             }
         }
@@ -883,7 +944,7 @@ global.linkTransfer = function (room) {
                 }
             }
 
-            if (receiverUpLink && receiverUpLink.energy < 700) {
+            if (receiverUpLink && receiverUpLink.energy < 50) {
                 if (receiverLink) {
                     usedLink = linkTransferToCentre(receiverUpLink, linksInRoom.concat(receiverLink));
                     if (usedLink && usedLink.id != receiverLink.id) {
@@ -904,46 +965,49 @@ global.linkTransfer = function (room) {
     }
 }
 
-global.initiateLinksInRoom = function (room) {
-    room.memory.forLinks = {};
-
-    let roomName = room.name
-
-    let links = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_LINK });
-
-    if (links && links.length > 0) {
-
-        for (let link of links) {
-            if (link.pos.getRangeTo(room.storage) < 3) {
-                room.memory.forLinks.receiverLinkId = link.id;
-            }
-            else if (link.pos.getRangeTo(room.controller) < 4) {
-                room.memory.forLinks.receiverUpLinkId = link.id;
-            }
-            else {
-                let senderLink = true;
-                let sps = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_SPAWN });
-                for (let sp of sps) {
-                    if (link.pos.getRangeTo(sp) < 3) {
-                        room.memory.forLinks.receiverCoreLinkId = link.id;
-                        senderLink = false;
+global.initiateLinksInRoom = function (room, enforce = false) {
+    let storedlinks = room.memory.forLinks;
+    if (storedlinks == undefined || (Game.time%50==0||enforce)) {
+        room.memory.forLinks = {};
+    
+        let roomName = room.name
+    
+        let links = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_LINK });
+    
+        if (links && links.length > 0) {
+    
+            for (let link of links) {
+                if (link.pos.getRangeTo(room.storage) < 3) {
+                    room.memory.forLinks.receiverLinkId = link.id;
+                }
+                else if (link.pos.getRangeTo(room.controller) < 4 && link.pos.findInRange(FIND_SOURCES, 1).length==0) {
+                    room.memory.forLinks.receiverUpLinkId = link.id;
+                }
+                else {
+                    let senderLink = true;
+                    let sps = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_SPAWN });
+                    for (let sp of sps) {
+                        if (link.pos.getRangeTo(sp) < 3) {
+                            room.memory.forLinks.receiverCoreLinkId = link.id;
+                            senderLink = false;
+                        }
+                    }
+                    if (!room.memory.forLinks.linksIdsInRoom) {
+                        room.memory.forLinks.linksIdsInRoom = [];
+                    }
+                    if (senderLink) {
+                        room.memory.forLinks.linksIdsInRoom.push(link.id);
                     }
                 }
-                if (!room.memory.forLinks.linksIdsInRoom) {
-                    room.memory.forLinks.linksIdsInRoom = [];
-                }
-                if (senderLink) {
-                    room.memory.forLinks.linksIdsInRoom.push(link.id);
-                }
             }
+    
+            room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 1;
+            room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
         }
-
-        room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 1;
-        room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
-    }
-    else {
-        room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 0;
-        room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
+        else {
+            room.memory.forSpawning.roomCreepNo.minCreeps['linkKeeper'] = 0;
+            room.memory.forSpawning.roomCreepNo.creepEnergy['linkKeeper'] = 640;
+        }
     }
 }
 
@@ -975,7 +1039,7 @@ global.whichWallToBuild = function (room) {
 }
 
 global.cacheContainerOrRoadToBuild = function (room, containerThreshold, roadThreshold) {
-    let toRepair = room.find(FIND_STRUCTURES, { filter: c => ((c.structureType == STRUCTURE_CONTAINER && c.hits < containerThreshold * c.hitsMax) || (c.structureType == STRUCTURE_ROAD && c.hits < roadThreshold * c.hitsMax) && (c.id != '5ba36cbf964822546cb96c08')) });
+    let toRepair = room.find(FIND_STRUCTURES, { filter: c => ((c.structureType == STRUCTURE_CONTAINER && c.hits < containerThreshold * c.hitsMax) || (c.structureType == STRUCTURE_ROAD && c.hits < roadThreshold * c.hitsMax) ) });
 
     if (toRepair.length > 0) {
         let byHits = toRepair.slice(0);
@@ -1057,6 +1121,7 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
 
     if ((creep.memory.role == 'longDistanceBuilder') || (creep.memory.role == 'harvester') || (creep.memory.role == 'keeperLairLorry') || ((RCL > 0) && (creep.memory.role == 'pioneer'))) {
         var notMineButExisted = room.storage;
+        let safeMining = creep.room.controller && creep.room.controller.my && creep.room.controller.safeMode;
         if (notMineButExisted && notMineButExisted.store.energy > 0) {
             return [notMineButExisted.id, false]
         }
@@ -1067,19 +1132,25 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                 for (let container of containers) {
                     containersResource += container.store.energy;
                 }
-                if (containersResource > creep.carryCapacity) {
+                if (containersResource > 2*creep.carryCapacity) {
                     ifLink = false;
                     ifStorage = false;
                 }
                 else {
-                    var dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, { filter: c => ((c.resourceType == RESOURCE_ENERGY) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) && (c.energy > 0.5 * creep.carryCapacity)) });
+                    var dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, { filter: c => ((c.resourceType == RESOURCE_ENERGY) && (!(creep.room.controller && creep.room.controller.my && creep.room.controller.safeMode)&&(c.pos.findInRange(FIND_HOSTILE_CREEPS, 4).length == 0)) && (c.energy > 0.5 * creep.carryCapacity)) });
                     if (dropped != undefined) {
                         return [dropped.id, true]
                     }
                     else {
-                        let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) })
+                        let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) })
+                        if (safeMining) {
+                            energyResources = room.find(FIND_SOURCES);
+                        }
                         if (energyResources.length == 2) { // if two E resources go to the unoccupied one
-                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) });// find closest energy source
+                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) });// find closest energy source
+                            if (safeMining) {
+                                energySource = creep.pos.findClosestByRange(FIND_SOURCES);
+                            }
                             if (((energySource.energy > 0) && (ifSurrounded(energySource) == null) && (creep.pos.getRangeTo(energySource) > 1)) || (energySource.energy == 0)) { // if full
                                 let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
                                 goToId = energyResources[1 - indexOfCurrent].id;
@@ -1090,7 +1161,10 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                             return [undefined, goToId]
                         }
                         else if (energyResources.length > 2) {
-                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) });// find closest energy source
+                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) });// find closest energy source
+                            if (safeMining) {
+                                energySource = creep.pos.findClosestByRange(FIND_SOURCES);
+                            }
                             if (((energySource.energy > 0) && (ifSurrounded(energySource) == null) && (creep.pos.getRangeTo(energySource) > 1)) || (energySource.energy == 0)) { // if full
                                 let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
                                 goToId = energyResources[(indexOfCurrent + 1) % energyResources.length].id;
@@ -1108,18 +1182,30 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
             }
             else {
                 var dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, { filter: c => ((c.resourceType == RESOURCE_ENERGY) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) && (c.energy > 0.5 * creep.carryCapacity)) });
+                if (safeMining) {
+                    dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, { filter: c => (c.resourceType == RESOURCE_ENERGY) });
+                }
                 if (dropped != undefined) {
                     return [dropped.id, true]
                 }
                 else {
                     var ruined = creep.pos.findClosestByRange(FIND_RUINS, { filter: c => ((c.store['RESOURCE_ENERGY']) && (c.store['RESOURCE_ENERGY'] > 0) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) && (c.energy > 0.5 * creep.carryCapacity)) });
+                    if (safeMining) {
+                        ruined = creep.pos.findClosestByRange(FIND_RUINS, { filter: c => ((c.store['RESOURCE_ENERGY']) && (c.store['RESOURCE_ENERGY'] > 0) && (c.energy > 0.5 * creep.carryCapacity)) });
+                    }
                     if (ruined != undefined) {
                         return [ruined.id, true]
                     }
                     else {
-                        let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) })
+                        let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) })
+                        if (safeMining) {
+                            energyResources = room.find(FIND_SOURCES)
+                        }
                         if (energyResources.length > 1) { // if two E resources go to the unoccupied one
-                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) });// find closest energy source
+                            let energySource = creep.pos.findClosestByRange(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) });// find closest energy source
+                            if (safeMining) {
+                                energySource = creep.pos.findClosestByRange(FIND_SOURCES);
+                            }
                             if (((energySource.energy > 0) && (ifSurrounded(energySource) == null) && (creep.pos.getRangeTo(energySource) > 1)) || (energySource.energy == 0)) { // if full
                                 let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
                                 goToId = energyResources[1 - indexOfCurrent].id;
@@ -1144,9 +1230,9 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                 return [dropped.id, true]
             }
             else { // if no dropped find energy sources
-                let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) })
+                let energyResources = room.find(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) })
                 if (energyResources.length > 1) {
-                    let energySource = creep.pos.findClosestByPath(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) });// find closest energy source
+                    let energySource = creep.pos.findClosestByPath(FIND_SOURCES, { filter: c => (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0) });// find closest energy source
                     if (energySource) {
                         if (((energySource.energy > 1) && (ifSurrounded(energySource) == null) && (creep.pos.getRangeTo(energySource) > 1)) || (energySource.energy == 0)) { // if full
                             let indexOfCurrent = energyResources.indexOf(energySource); // go to the other one
@@ -1250,10 +1336,10 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
     }*/
 
     if (ifDropped) { // find energy in links
-        var droppeds = room.find(FIND_DROPPED_RESOURCES, { filter: c => ((c.resourceType == RESOURCE_ENERGY) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0)) });
+        var droppeds = room.find(FIND_DROPPED_RESOURCES, { filter: c => ((c.resourceType == RESOURCE_ENERGY) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0)) });
         for (let dropped of droppeds) {
             if (dropped.energy > 1000) { // if dropped energy is quite a big amount, clear that dropped energy first
-                let range = creep.pos.getRangeTo(dropped) + 1;
+                let range = creep.pos.getRangeTo(dropped) + 1 + Math.random()*10;
                 let energy = Math.min(dropped.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
                 if (supperDroppedWeight * energy / range > resourceness) {
                     resourceness = supperDroppedWeight * energy / range;
@@ -1262,7 +1348,7 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                 }
             }
             else {
-                let range = creep.pos.getRangeTo(dropped) + 1;
+                let range = creep.pos.getRangeTo(dropped) + 1 + Math.random()*10;
                 let energy = Math.min(dropped.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
                 if (droppedWeight * energy / range > resourceness) {
                     resourceness = droppedWeight * energy / range;
@@ -1271,9 +1357,9 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                 }
             }
         }
-        droppeds = room.find(FIND_TOMBSTONES, { filter: c => ((c.store.energy > 0) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0)) });
+        droppeds = room.find(FIND_TOMBSTONES, { filter: c => ((c.store.energy > 0) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter:c=> c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0}).length == 0)) });
         for (let dropped of droppeds) {
-            let range = creep.pos.getRangeTo(dropped) + 1;
+            let range = creep.pos.getRangeTo(dropped) + 1 + Math.random()*10;
             let energy = Math.min(dropped.store.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
             if (droppedWeight * energy / range > resourceness) {
                 resourceness = droppedWeight * energy / range;
@@ -1284,10 +1370,10 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
     }
 
     if (ifContainer) { // find energy in links
-        var containers = room.find(FIND_STRUCTURES, { filter: c => ((c.structureType == STRUCTURE_CONTAINER) && (c.store.energy > creep.carryCapacity) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0)) });
+        var containers = room.find(FIND_STRUCTURES, { filter: c => ((c.structureType == STRUCTURE_CONTAINER) && (c.store.energy > creep.carryCapacity) && (c.pos.findInRange(FIND_HOSTILE_CREEPS, 3).length == 0) && (c.pos.findInRange(FIND_MY_CREEPS, 1, { filter: c => (c.memory.role == 'dickHead' || c.memory.role == 'linkKeeper' || c.memory.role == 'dickHeadpp' || c.memory.role == 'newDickHead' || c.memory.role == 'maintainer' || c.memory.role == 'balancer') && c.getActiveBodyparts(CARRY) > 0 }).length == 0)) });
         let sps = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_SPAWN });
         for (let container of containers) {
-            let range = creep.pos.getRangeTo(container) + 1;
+            let range = creep.pos.getRangeTo(container) + 1 + Math.random()*10;
             let energy = Math.min(container.store.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
             let takeThis = true;
             // check container not central containers
@@ -1299,6 +1385,29 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
                 // middle place container
                 for (let sp of sps) {
                     if (container.pos.getRangeTo(sp) < 3) {
+                        takeThis = false;
+                    }
+                }
+                if (room.memory.newBunker) {
+                    let ori = room.memory.newBunker.orient;
+                    let setPoint = room.memory.newBunker.setPoint;
+                    let twpos;
+                    if (ori == 'L') {
+                        twpos = { x: setPoint.x + 2, y: setPoint.y };
+                    }
+                    else if (ori == 'U') {
+                        twpos = { x: setPoint.x, y: setPoint.y + 2 };
+                    }
+                    else if (ori == 'R') {
+                        twpos = { x: setPoint.x - 2, y: setPoint.y };
+                    }
+                    else if (ori == 'D') {
+                        twpos = { x: setPoint.x, y: setPoint.y - 2 };
+                    }
+                    else {
+                        fo('myFunc wrong tower pos')
+                    }
+                    if (container.pos.getRangeTo(twpos.xy, twpos.y)<3) {
                         takeThis = false;
                     }
                 }
@@ -1317,7 +1426,7 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
         var storage = room.storage;
         if (storage.store.energy == 0 && room.terminal) {
             storage = room.terminal;
-            let range = creep.pos.getRangeTo(storage) + 1; // +1 tp prevent 0 in demoniator, if creep is standing on source
+            let range = creep.pos.getRangeTo(storage) + 1 + Math.random()*10; // +1 tp prevent 0 in demoniator, if creep is standing on source
             let energy = Math.min(storage.store.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
             if (storageWeight * energy / range > resourceness) {
                 resourceness = storageWeight * energy / range;
@@ -1326,7 +1435,7 @@ global.evaluateEnergyResources = function (creep, ifLink, ifStorage, ifDropped, 
             }
         }
         else {
-            let range = creep.pos.getRangeTo(storage) + 1; // +1 tp prevent 0 in demoniator, if creep is standing on source
+            let range = creep.pos.getRangeTo(storage) + 1 + Math.random()*10; // +1 tp prevent 0 in demoniator, if creep is standing on source
             let energy = Math.min(storage.store.energy, creep.carryCapacity - creep.carry.energy); // how much energy can be taken, min of stored energy or space of creep
             if (storageWeight * energy / range > resourceness) {
                 resourceness = storageWeight * energy / range;
@@ -1579,20 +1688,27 @@ global.earlyRoomUpgraderBalancing = function (r, Ecap, upNumber) {
     if (upNumber < 0) {
         return 0
     }
-    else if (upNumber >= 4) {
-        return 4
+    else if (upNumber >= 6) {
+        return 6
     }
     else {
         if (upNumber == null || upNumber == undefined) {
             upNumber = 0;
         }
         if (Game.time % 1 == 0) {
-            let droppedE = _.sum(r.find(FIND_DROPPED_RESOURCES, { filter: c => (c.resourceType == RESOURCE_ENERGY) }), 'amount');
-            if (droppedE > 1500) {
-                upNumber += 1;
+            if (r.find(FIND_STRUCTURES, {structureType:STRUCTURE_CONTAINER}).length>2 && r.find(FIND_MY_STRUCTURES, {structureType:STRUCTURE_TOWER}).length>1) {
+                upNumber = 1;
+                r.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader'] = 1;
             }
-            else if (droppedE < 500) {
-                upNumber -= 1;
+            else {
+                r.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader'] = 0;
+                let droppedE = _.sum(r.find(FIND_DROPPED_RESOURCES, { filter: c => (c.resourceType == RESOURCE_ENERGY) }), 'amount');
+                if (droppedE > 1500 || (Ecap <= 550 && droppedE > 500)) {
+                    upNumber += 1;
+                }
+                else if (droppedE < 500) {
+                    upNumber -= 1;
+                }
             }
         }
         return upNumber
@@ -1618,7 +1734,13 @@ global.newLinkSuperUpgraderPosisCach = function (rn) {
             if (!(t.pos.findInRange(FIND_STRUCTURES, 3, { filter: o => o.resourceType == STRUCTURE_SPAWN }).length > 0)) {
                 if ((!r.memory.superUpgraderPosisCach) || (r.memory.superUpgraderPosisCach.length == 0)) {
                     let posis = returnALLAvailableLandCoords(r, t.pos)
-                    r.memory.superUpgraderPosisCach = posis;
+                    let tocach = [];
+                    for (let posi of posis) {
+                        if (r.controller.pos.getRangeTo(posi.x, posi.y)<4) {
+                            tocach.push(posi);
+                        }
+                    }
+                    r.memory.superUpgraderPosisCach = tocach;
                 }
             }
         }
@@ -1651,59 +1773,73 @@ global.superUpgraderPosisCach = function (rn) {
         let goodPosis = []
 
         if ((stor) && (Math.max(Math.abs((stor.pos.x - contr.pos.x)), Math.abs((stor.pos.y - contr.pos.y))) < 3)) {
-            let x = 0;
-            let y = 0;
-            let delta = [0, -1];
-            // spiral width
-            let width = 3;
-            // spiral height
-            let height = 3;
+            // pass
+        }
+        else {
+            let tws = contr.pos.findInRange(FIND_MY_STRUCTURES, 3, {filter:t=>t.structureType==STRUCTURE_TOWER});
+            if (tws.length>0) {
+                stor = tws[0];
+            }
+            else {
+                let ctns = contr.pos.findInRange(FIND_STRUCTURES, 3, {filter:t=>t.structureType==STRUCTURE_CONTAINER && t.pos.findInRange(FIND_SOURCES, 1).length==0});
+                if (ctns.length>0) {
+                    stor = ctns[0];
+                }
+                else {
+                    return false
+                }
+            }
+        }
+        
+        let x = 0;
+        let y = 0;
+        let delta = [0, -1];
+        // spiral width
+        let width = 3;
+        // spiral height
+        let height = 3;
 
-            for (let i = Math.pow(Math.max(width, height), 2); i > 0; i--) {
-                if ((-width / 2 < x && x <= width / 2) && (-height / 2 < y && y <= height / 2)) {
-                    let xp = stor.pos.x + x;
-                    let yp = stor.pos.y + y;
+        for (let i = Math.pow(Math.max(width, height), 2); i > 0; i--) {
+            if ((-width / 2 < x && x <= width / 2) && (-height / 2 < y && y <= height / 2)) {
+                let xp = stor.pos.x + x;
+                let yp = stor.pos.y + y;
 
-                    if (!((x == 0) && (y == 0))) {
+                if (!((x == 0) && (y == 0))) {
 
 
-                        if (Math.abs(contr.pos.x - stor.pos.x) > 1) { // horizontal config
-                            if (!(
-                                ((xp > Math.max(contr.pos.x, stor.pos.x)) || (xp < Math.min(contr.pos.x, stor.pos.x)))
-                                && (!(yp == stor.pos.y))
-                            )) {
-                                if ((r.lookForAt(LOOK_TERRAIN, xp, yp) == 'plain') || (r.lookForAt(LOOK_TERRAIN, xp, yp) == 'swamp')) {
-                                    goodPosis.push({ x: xp, y: yp, roomName: rn });
-                                }
+                    if (Math.abs(contr.pos.x - stor.pos.x) > 1) { // horizontal config
+                        if (!(
+                            ((xp > Math.max(contr.pos.x, stor.pos.x)) || (xp < Math.min(contr.pos.x, stor.pos.x)))
+                            && (!(yp == stor.pos.y))
+                        )) {
+                            if ((r.lookForAt(LOOK_TERRAIN, xp, yp) == 'plain') || (r.lookForAt(LOOK_TERRAIN, xp, yp) == 'swamp')) {
+                                goodPosis.push({ x: xp, y: yp, roomName: rn });
                             }
                         }
-                        else { // vertical config
-                            if (!(((yp > Math.max(contr.pos.y, stor.pos.y)) || (yp < Math.min(contr.pos.y, stor.pos.y))) && (!(xp == stor.pos.x)))) {
-                                if ((r.lookForAt(LOOK_TERRAIN, xp, yp) == 'plain') || (r.lookForAt(LOOK_TERRAIN, xp, yp) == 'swamp')) {
-                                    goodPosis.push({ x: xp, y: yp, roomName: rn });
-                                }
+                    }
+                    else { // vertical config
+                        if (!(((yp > Math.max(contr.pos.y, stor.pos.y)) || (yp < Math.min(contr.pos.y, stor.pos.y))) && (!(xp == stor.pos.x)))) {
+                            if ((r.lookForAt(LOOK_TERRAIN, xp, yp) == 'plain') || (r.lookForAt(LOOK_TERRAIN, xp, yp) == 'swamp')) {
+                                goodPosis.push({ x: xp, y: yp, roomName: rn });
                             }
                         }
                     }
                 }
-
-                if (x === y
-                    || (x < 0 && x === -y)
-                    || (x > 0 && x === 1 - y)) {
-                    // change direction
-                    delta = [-delta[1], delta[0]]
-                }
-
-                x += delta[0];
-                y += delta[1];
             }
 
-            r.memory.superUpgraderPosisCach = goodPosis;
-            return true
+            if (x === y
+                || (x < 0 && x === -y)
+                || (x > 0 && x === 1 - y)) {
+                // change direction
+                delta = [-delta[1], delta[0]]
+            }
+
+            x += delta[0];
+            y += delta[1];
         }
-        else { // storage and controller too far away, need another structure, link container or terminal etc...
-            return false
-        }
+
+        r.memory.superUpgraderPosisCach = goodPosis;
+        return true
     }
     else { // if cach already registered
         return true
@@ -1713,6 +1849,10 @@ global.superUpgraderPosisCach = function (rn) {
 global.superUpgraderBalancing = function (roomName) {
     //let upgradersNo = {E99N17:{0:1,1:2,2:4},E97N13:{0:1,1:2,2:4}};
     let room = Game.rooms[roomName];
+    if (room.memory.battleMode) {
+        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+        return
+    }
     let lvl = room.controller.level;
     let totalProgress = ifConstructionSiteInRoom(room);
     let motherRoomName = room.memory.startMB;
@@ -1752,34 +1892,76 @@ global.superUpgraderBalancing = function (roomName) {
         }
         else {
             if (lvl != 8) {
-                if (room.storage != undefined) { // 4 5 6 7
-                    let storageEnergy = room.storage.store.energy;
-                    let termic = 0;
-                    if (room.terminal) {
-                        termic = _.sum(room.terminal.store)
+                if (room.storage != undefined || (room.memory.newBunker && room.memory.newBunker.layout && room.memory.newBunker.layout.recCtn && room.memory.newBunker.layout.recCtn.length>0)) { // 4 5 6 7
+                    if (false && Game.cpu.bucket<8000) {
+                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+                        return
                     }
-                    if (room.memory.mineralThresholds && room.memory.mineralThresholds.currentMineralStats) {
-                        storageEnergy = room.memory.mineralThresholds.currentMineralStats.energy;
-                    }
-                    if (storageEnergy > 300000 || (_.sum(room.storage.store) + termic > 900000 + 260000)) { // room keeps being pumped
-                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 3;
-                        console.log(roomName + ' superUpgrader No set to ' + '3');
-                    }
-                    else if (storageEnergy > 200000) {
-                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 2;
-                        console.log(roomName + ' superUpgrader No set to ' + '2');
-                    }
-                    else if (storageEnergy > 100000) {
-                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
-                        console.log(roomName + ' superUpgrader No set to ' + '1');
+                    if (!room.storage) {
+                        let recCtn = Game.getObjectById(room.memory.newBunker.layout.recCtn[0].id);
+                        if (recCtn.store.energy>1500) {
+                            room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 2;
+                            console.log(roomName + ' superUpgrader No set to ' + '1');
+                        }
+                        else if (recCtn.store.energy>500) {
+                            room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                            console.log(roomName + ' superUpgrader No set to ' + '1');
+                        }
+                        else {
+                            room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+                            console.log(roomName + ' superUpgrader No set to ' + '0');
+                        }
+                        room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
+                        console.log(roomName + ' upgrader No set to 0');
                     }
                     else {
-                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
-                        console.log(roomName + ' superUpgrader No set to ' + '0');
+                        let storageEnergy = room.storage.store.energy;
+                        let termic = 0;
+                        let extra = 0;
+                        if (room.memory.getSaced == true) {
+                            extra = 1;
+                        }
+                        if (room.terminal) {
+                            termic = _.sum(room.terminal.store)
+                        }
+                        if (room.memory.mineralThresholds && room.memory.mineralThresholds.currentMineralStats) {
+                            storageEnergy = room.memory.mineralThresholds.currentMineralStats.energy;
+                        }
+                        if (storageEnergy > 170000) {
+                            if (room.terminal && Game.shard.name == 'shardSeason') {
+                                if (storageEnergy > 300000) {
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 3;
+                                    console.log(roomName + ' superUpgrader No set to ' + '3');
+                                }
+                                else if (storageEnergy > 250000) {
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 2;
+                                    console.log(roomName + ' superUpgrader No set to ' + '2');
+                                }
+                                else if (storageEnergy > 200000) {
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                                    console.log(roomName + ' superUpgrader No set to ' + '1');
+                                }
+                            }
+                            else {
+                                if (storageEnergy > 300000 || (_.sum(room.storage.store) + termic > 900000 + 260000)) { // room keeps being pumped
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 3+extra;
+                                    console.log(roomName + ' superUpgrader No set to ' + '3');
+                                }
+                                else if (storageEnergy > 200000) {
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 2+extra;
+                                    console.log(roomName + ' superUpgrader No set to ' + '2');
+                                }
+                                else if (storageEnergy > 100000) {
+                                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1+extra;
+                                    console.log(roomName + ' superUpgrader No set to ' + '1');
+                                }
+                            }
+                        }
+                        else {
+                            room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+                            console.log(roomName + ' superUpgrader No set to ' + '0');
+                        }
                     }
-
-                    room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
-                    console.log(roomName + ' upgrader No set to 0');
                 }
                 else { // <= 3
                     console.log(roomName + ' no storage and no super upgrading.');
@@ -1789,11 +1971,19 @@ global.superUpgraderBalancing = function (roomName) {
                 }
             }
             else { // room lvl 8
-                if (Game.time % 10000 < 666) {
-                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                if (false && Game.shard.name == 'shardSeason') {
+                    if (room.memory.mineralThresholds.currentMineralStats.energy > 200000) {
+                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                        console.log(roomName + ' superUpgrader No set to ' + '1');
+                    }
                 }
                 else {
-                    room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+                    if (!room.memory.battleMode||(room.controller.ticksToDowngrade < 100000 || (room.memory.mineralThresholds.currentMineralStats.energy>500000) || (room.memory.mineralThresholds.currentMineralStats.energy>200000 && (room.storage.getFreeCapacity('energy')<50000||room.terminal.getFreeCapacity('energy')<20000)))) {
+                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 1;
+                    }
+                    else {
+                        room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader = 0;
+                    }
                 }
                 room.memory.forSpawning.roomCreepNo.minCreeps.upgrader = 0;
                 console.log(roomName + ' superUpgrader and upgrader No set to 1 and 0');
@@ -1936,7 +2126,12 @@ global.removeUnusedMainRoomMemory = function () {
 }
 
 global.fo = function (x) {
-    console.log(x);
+    if (typeof x === 'string') {
+        console.log(x);
+    }
+    else {
+        console.log(JSON.stringify(x));
+    }
 }
 
 global.randomIdGenerator = function () {
@@ -1949,10 +2144,40 @@ global.randomIdGenerator = function () {
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
+global.removeAllPlacedCss = function () {
+    for (let csid in Game.constructionSites) {
+        Game.getObjectById(csid).remove();
+    }
+}
+
 global.removeAllConstructionSitesInRoom = function (r, t) {
     let vs = r.find(FIND_CONSTRUCTION_SITES); {
         for (let v of vs) {
             if (v.structureType == t) {
+                v.remove();
+            }
+        }
+    }
+}
+
+global.placeWallToCloseOneEnd = function (rn, s, b) {
+    
+}
+
+global.removeAllNoneMyStructures = function (rn) {
+    let r = Game.rooms[rn];
+    if (r) {
+        for (let s of r.find(FIND_STRUCTURES, {filter: ss=>ss.my!=undefined && !ss.my})) {
+            s.destroy();
+        }
+    }
+}
+
+global.removeAllConstructionSitesInGame = function () {
+    for (let rn in Game.rooms) {
+        let r = Game.rooms[rn];
+        let vs = r.find(FIND_CONSTRUCTION_SITES); {
+            for (let v of vs) {
                 v.remove();
             }
         }
@@ -1987,4 +2212,163 @@ global.getCreepCost = function (body) {
         coste += BODYPART_COST[b.type];
     }
     return coste
+}
+
+global.roomWonderingPosi = function (r, posi=undefined, enforce=false) {
+    let rest = r.memory.restingPosi;
+    if (!enforce && rest && Game.time%50!==0) {
+        return rest
+    }
+    else {
+        // find a place near town center that has a 3*3 empty space
+        let anc = undefined;
+        let psp = undefined;
+        if (posi) {
+            psp = posi;
+        }
+        else {
+            if (r.memory.newBunker && r.memory.newBunker.layout && r.memory.newBunker.layout.coreSp && r.memory.newBunker.layout.coreSp.length>0 && r.memory.newBunker.layout.coreSp[0].id && Game.getObjectById(r.memory.newBunker.layout.coreSp[0].id)) {
+                let sp  = Game.getObjectById(r.memory.newBunker.layout.coreSp[0].id);
+                anc = {x: sp.pos.x, y: sp.pos.y, roomName: r.name};
+            }
+            else {
+                anc = r.memory.newAnchor;
+                if (anc == undefined) {
+                    anc = r.memory.anchor;
+                }
+                else {
+                    anc = {x: sx, y: sy, roomName: r.name};
+                }
+            }
+            // use this position
+            psp = anc;
+        }
+
+        let dist = function (p1, p2) {
+            return (p1.x-p2.x)**2 + (p1.y-p2.y)**2
+        }
+        
+        let terrain = new Room.Terrain(r.name);
+        
+        // spirally find next plane with 3*3 in range 10
+        let cx = 25;
+        let cy = 25;
+        let x = 0;
+        let y = 0;
+        let delta = [0, -1];
+        // spiral width
+        let width = 40;
+        // spiral height
+        let height = 40;
+    
+        for (let i = Math.pow(Math.max(width, height), 2); i > 0; i--) {
+            if ((-width / 2 < x && x <= width / 2) && (-height / 2 < y && y <= height / 2) && (Math.abs((x + y) % 2) === 1)) {
+                cx = psp.x + x;
+                cy = psp.y + y;
+                if (Math.abs(cx-psp.x)>3 && Math.abs(cy-psp.y)>3 && cx>1 && cx<48 && cy>1 && cy<48) {
+                    let c = new RoomPosition(cx, cy, r.name);
+                    if (c.findInRange(FIND_STRUCTURES, 2, {filter:t=>t.structureType!=STRUCTURE_ROAD}).length==0) {
+                        let pno = 0;
+                        let lokeds = r.lookForAtArea(LOOK_TERRAIN, cy, cx-1, cy+1, cx, true);
+                        for (let loked of lokeds) {
+                            if (loked.terrain && loked.terrain=='plain') {
+                                pno += 1;
+                            }
+                        }
+                        if (pno == 4) {
+                            r.memory.restingPosi = {x: cx, y: cy};
+                            return {x: cx, y: cy}
+                        }
+                    }
+                }
+            }
+            if (x === y
+                || (x < 0 && x === -y)
+                || (x > 0 && x === 1 - y)) {
+                // change direction
+                delta = [-delta[1], delta[0]]
+            }
+            x += delta[0];
+            y += delta[1];
+        }
+        x=0;
+        y=0
+        for (let i = Math.pow(Math.max(width, height), 2); i > 0; i--) {
+            if ((-width / 2 < x && x <= width / 2) && (-height / 2 < y && y <= height / 2) && (Math.abs((x + y) % 2) === 1)) {
+                cx = psp.x + x;
+                cy = psp.y + y;
+                //fo(cx+'_'+cy)
+                if (Math.abs(cx-psp.x)>3 && Math.abs(cy-psp.y)>3 && cx>1 && cx<48 && cy>1 && cy<48) {
+                    let c = new RoomPosition(cx, cy, r.name);
+                    if (c.findInRange(FIND_STRUCTURES, 2, {filter:t=>t.structureType!=STRUCTURE_ROAD}).length==0) {
+                        let lokeds = r.lookForAtArea(LOOK_TERRAIN, cy, cx, cy+1, cx+1, true);
+                        let run = true;
+                        for (let loked of lokeds) {
+                            if (run) {
+                                if (loked.terrain && loked.terrain=='wall') {
+                                    run = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (run) {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (x === y
+                || (x < 0 && x === -y)
+                || (x > 0 && x === 1 - y)) {
+                // change direction
+                delta = [-delta[1], delta[0]]
+            }
+            x += delta[0];
+            y += delta[1];
+        }
+        // if not find everything in range 10
+        // if not find everything in range 25
+        // if not take 25, 25
+        r.memory.restingPosi = {x: cx, y: cy};
+        return {x: cx, y: cy}
+        
+        
+        let posis = [];
+        
+        for (let i = -10; i < 11; i++) {
+            for (let j = -10; j < 11; j++) {
+                let lx = psp.x + i;
+                let ly = psp.y + j;
+                if ( lx>4 && lx< 45 && ly>4 && ly< 45 && terrain.get(lx,ly) != TERRAIN_MASK_WALL) {
+                    posis.push({x: lx, y: ly});
+                }
+            }
+        }
+        
+        posis.sort((a, b) => (dist(a, psp) > dist(b, psp)) ? 1 : -1)
+        
+        for (let posi of posis) {
+            let lx = posi.x;
+            let ly = posi.y;
+            let ss = r.lookForAtArea(LOOK_STRUCTURES,posi.y-2,posi.x-2,posi.y+2,posi.x+2,true);
+            if (ss.length<2) {
+                r.memory.restingPosi = {x: lx, y: ly};
+                return {x: lx, y: ly}
+            }
+        }
+    }
+    r.memory.restingPosi = {x: 25, y: 25};
+    return {x: 25, y: 25} 
+}
+
+global.isSlave = function (creep) {
+    if (creep.powers) {
+        return false
+    }
+    if (creep.getActiveBodyparts(WORK)>1 && creep.getActiveBodyparts(WORK) == creep.getActiveBodyparts(CARRY) && creep.getActiveBodyparts(MOVE) == creep.getActiveBodyparts(CARRY)) {
+        return true
+    }
+    else {
+        return false
+    }
 }

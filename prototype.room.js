@@ -8,10 +8,10 @@ var rolePriority = {
     wallRepairer: 1,
     longDistanceHarvester: 0.9,
     longDistanceLorry: 6.9,
-    longDistanceBuilder: 11,
+    longDistanceBuilder: 7,
     reserver: 6,
     claimer: 1,
-    pickuper: 10,
+    pickuper: 11,
     attacker: 1,
     scouter: 0.01,
     teezer: 1,
@@ -20,16 +20,16 @@ var rolePriority = {
     longDistanceUpgrader: 1,
     controllerAttacker: 1,
     dismantler: 1,
-    linkKeeper: 12.6,
+    linkKeeper: 13.6,
     traveller: 1,
     transporter: 1,
     pioneer: 1,
     melee: 7,
     stealer: 1,
     ranger: 13,
-    powerSourceAttacker: 1,
-    powerSourceHealer: 1,
-    powerSourceLorry: 1,
+    powerSourceAttacker: 9.5,
+    powerSourceHealer: 9.5,
+    powerSourceLorry: 10,
     labber: 0.5,
     superUpgrader: 0.95,
     keeperLairMeleeKeeper: 9,
@@ -52,11 +52,12 @@ var rolePriority = {
     mapper: 1.1,
     loader: 11.5,
     driver: 9.5, // dynamic, now lower than superUpgrader
-    dickHead: 12.3,
-    balancer: 12.5,
-    maintainer: 12.4,
+    dickHead: 13.3,
+    balancer: 13.5,
+    maintainer: 13.4,
     season2c: 4,
     symbolFactorier: 2,
+    newDickHead: 13.3,
 };
 
 var listOfRoles = [
@@ -101,10 +102,42 @@ var listOfRoles = [
     'maintainer',
     'season2c',
     'symbolFactorier',
+    'newDickHead',
+    'dedicatedUpgraderHauler',
 ];
 
 Room.prototype.newUpdateSpawnQueue = function () {
+    
     let room = this;
+    
+    if (room.controller && room.controller.level>6) {
+        rolePriority['lorry'] = 16.1;
+    }
+    
+    /*
+    if (room.name == 'E9S11' && Game.shard.name=='shard3') {
+        let hvtsno = room.find(FIND_MY_CREEPS, {filter: c=>c.memory.role=='harvester'}).length;
+        if (hvtsno<3) {
+            let sp = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_SPAWN })[0];
+            sp.spawnCreep([WORK, MOVE, CARRY], randomIdGenerator(), { memory: { role: 'harvester', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+        }
+        return
+    }
+    */
+    /*
+    if (room.name == 'E7S48' && Game.shard.name=='shard2') {
+        let hvtsno = room.find(FIND_MY_CREEPS, {filter: c=>c.memory.role=='harvester'}).length;
+        if (hvtsno<2) {
+            let sp = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_SPAWN })[0];
+            sp.spawnCreep([WORK, MOVE, CARRY], randomIdGenerator(), { memory: { role: 'harvester', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+        }
+    }
+    */
+    
+    if ((room.name == 'E19S51' && Game.shard.name=='shard2') || (room.name == '' && Game.shard.name=='shard3')) {
+        return
+    }
+    
     let rn = room.name;
     let currentRCL = room.controller.level;
     let creepsInRoom = updateCreepsInRoomWithSpawningByRoom(room);
@@ -159,10 +192,33 @@ Room.prototype.newUpdateSpawnQueue = function () {
     let maxEnergy = room.energyCapacityAvailable;
 
     let fuckness = determineIfFucked(room)[1];
+    
+    if (fuckness > 300 || (room.find(FIND_HOSTILE_CREEPS, {filter:c=>checkIfCreepIsBoosted(c) && c.owner.username!='Invader' && !allyList().includes(c.owner.username)}).length>1)) { // seriously fucked!!! send good defenders!
+        room.memory.battleMode = Game.time;
+    }
+    else if (room.memory.battleMode && room.memory.battleMode+1500>Game.time) {
+        room.memory.battleMode = undefined;
+    }
 
-    if (fuckness < 50) { //(fuckness<1) { // fuckness, 18 equivilient to about 6 HEAL parts or 8 RANGED_ATTACK parts or 18 attack parts
-        roomSpawningInfo.minCreeps['redneck'] = 0;
-        roomSpawningInfo.minCreeps['ranger'] = 0;
+    if (true) { //(fuckness<1) { // fuckness, 18 equivilient to about 6 HEAL parts or 8 RANGED_ATTACK parts or 18 attack parts
+        if (room.memory.battleMode) {
+            roomSpawningInfo.minCreeps['redneck'] = 0;
+            roomSpawningInfo.minCreeps['wallRepairer'] = 3;
+            roomSpawningInfo.minCreeps['superUpgrader'] = 0;
+            roomSpawningInfo.minCreeps['dedicatedUpgraderHauler'] = 0;
+            rolePriority['wallRepairer'] = 11.9;
+        }
+        else if (fuckness>200) {
+            roomSpawningInfo.minCreeps['redneck'] = 1;
+            roomSpawningInfo.minCreeps['superUpgrader'] = 0;
+            roomSpawningInfo.minCreeps['dedicatedUpgraderHauler'] = 0;
+            rolePriority['wallRepairer'] = 7;
+        }
+        else {
+            roomSpawningInfo.minCreeps['redneck'] = 0;
+            roomSpawningInfo.minCreeps['ranger'] = 0;
+            rolePriority['wallRepairer'] = 2;
+        }
 
         // endangered region
         let endangerFlag = room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'harvester' || c.memory.role == 'pickuper' || c.memory.role == 'lorry' || c.memory.role == 'loader' || c.memory.role == 'balancer' || c.memory.role == 'dickHead' || c.memory.role == 'maintainer' || c.memory.role == 'mover' });
@@ -176,20 +232,27 @@ Room.prototype.newUpdateSpawnQueue = function () {
 
         if (room.memory.needRescue == true) {
             clearSpawnQueue(room.name);
-            let sp = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_SPAWN })[0];
-            if (room.storage) {
-                fo(room.name + ' need recue lorry');
-                sp.spawnCreep([MOVE, CARRY], randomIdGenerator(), { memory: { role: 'lorry', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+            let sps = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_SPAWN });
+            if (sps.length>0) {
+                let sp = sps[0];
+                if (room.storage) {
+                    fo(room.name + ' need recue lorry');
+                    sp.spawnCreep([MOVE, CARRY], randomIdGenerator(), { memory: { role: 'lorry', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+                }
+                else {
+                    // simple harvester
+                    sp.spawnCreep([WORK, MOVE, CARRY], randomIdGenerator(), { memory: { role: 'harvester', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+                }
+                room.memory.needRescue = false;
+                return
             }
             else {
-                // simple harvester
-                sp.spawnCreep([WORK, MOVE, CARRY], randomIdGenerator(), { memory: { role: 'harvester', working: false, target: room.name, spawnTime: 3 * 2 }, directions: sp.getDefaultSpawningDir() });
+                fo(room.name + ' need to build a spawn!');
+                return
             }
-            room.memory.needRescue = false;
-            return
         }
 
-        if (creepsInRoom.length == 0) { // endanger situation
+        if (creepsInRoom.length == 0) { // endanger situation or fresh start
             if (room.energyCapacityAvailable < 550) { // early rooms
                 let rescueMiner = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'miner' && (c.ticksToLive == undefined || c.memory.spawnTime < c.ticksToLive) && c.memory.ifRescue);
                 if (rescueMiner < 1) {
@@ -216,8 +279,9 @@ Room.prototype.newUpdateSpawnQueue = function () {
         else { // back to normal
             if (room.energyCapacityAvailable < 550) { // early rooms
                 let moverNum = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'mover' && (c.ticksToLive == undefined || c.memory.spawnTime < c.ticksToLive));
-                if (moverNum < 2) {
+                if (moverNum < 1) {
                     spawningQueue.push({ memory: { role: 'mover', ifRescue: false, lvl: currentRCL }, priority: rolePriority['mover'] });
+                    return
                 }
                 else {
                     let count = 0;
@@ -278,9 +342,9 @@ Room.prototype.newUpdateSpawnQueue = function () {
                     }
                 }
             }
-            else { // late rooms
+            else {
                 let moverNum = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'mover' && (c.ticksToLive == undefined || c.memory.spawnTime < c.ticksToLive));
-                let requiredMover = 2;
+                let requiredMover = 1;
                 if (room.storage) {
                     room.memory.forSpawning.roomCreepNo.minCreeps['attacker'] = 0;
                     requiredMover = 0;
@@ -288,7 +352,7 @@ Room.prototype.newUpdateSpawnQueue = function () {
                 if (moverNum < requiredMover) {
                     spawningQueue.push({ memory: { role: 'mover', ifRescue: false, lvl: currentRCL }, priority: rolePriority['mover'] });
                 }
-                else {
+                else if (!room.terminal || Game.cpu.bucket>5000 || room.name=='E29S51' || room.name=='W2S58') {
                     let sources = Memory.mapInfo[rn].eRes;
                     for (let sourceId in sources) {
                         let source = Game.getObjectById(sourceId);
@@ -297,7 +361,7 @@ Room.prototype.newUpdateSpawnQueue = function () {
                             //&& (c.ticksToLive > (3 * 6 + Game.rooms[room.name].memory.sourceTravelTime[source.id]) || c.ticksToLive == undefined)
                         )) { // if there is no miner going to THE source, and life is long enough for the next one to take place or live length is undefined (being spawned)
                             //console.log('need to spawn '+source.id+' in room '+room.name+' in advance');
-                            if (room.memory.ECap >= 750) {
+                            if (room.memory.ECap >= 800) {
                                 //console.log('need to spawn '+source.id+' in room '+room.name+' in advance');
                                 console.log(this.name + ' added miner ' + source.id)
                                 spawningQueue.push({ memory: { role: 'miner', sourceID: source.id, target: undefined, currentRCL: currentRCL, ifMineEnergy: true, ifLink: true, ifKeeper: false, ifRescue: false, ifEarly: false }, priority: rolePriority['miner'] });
@@ -309,107 +373,79 @@ Room.prototype.newUpdateSpawnQueue = function () {
                         }
                     }
 
-
-                    let mineral = room.find(FIND_MINERALS)[0]; // find mineral deposite
-                    let mtp = mineral.mineralType;
-                    if (room.memory.mineralThresholds == undefined || (room.memory.mineralThresholds.currentMineralStats[mtp] < 100000)) {
-                        let extractor = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_EXTRACTOR })[0]; // find extractor already built
-                        if (extractor != undefined && extractor.isActive() && mineral.mineralAmount > 0) {
-                            if (!_.some(imaginaryCreepsInRoom, c => c.memory.role == 'miner' && c.memory.sourceID == mineral.id)) {
-                                let mineralContainer = mineral.pos.findInRange(FIND_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_CONTAINER });
-                                if (mineralContainer.length > 0) {
-                                    console.log(this.name + ' added mineral miner')
-                                    spawningQueue.push({ memory: { role: 'miner', sourceID: mineral.id, target: undefined, currentRCL: currentRCL, ifMineEnergy: false, ifLink: false, ifKeeper: false }, priority: rolePriority['miner'] });
+                    if (room.controller.level>5) {
+                        let mineral = room.find(FIND_MINERALS)[0]; // find mineral deposite
+                        let mtp = mineral.mineralType;
+                        if (room.memory.mineralThresholds == undefined || (room.memory.mineralThresholds.currentMineralStats[mtp] < 300000 && room.storage && room.storage.store.getFreeCapacity('energy')>100000 && (!room.terminal || room.terminal.store.getFreeCapacity('energy')>20000))) {
+                            let extractor = room.find(FIND_MY_STRUCTURES, { filter: c => c.structureType == STRUCTURE_EXTRACTOR })[0]; // find extractor already built
+                            if (extractor != undefined && extractor.isActive() && mineral.mineralAmount > 0) {
+                                if (!_.some(imaginaryCreepsInRoom, c => c.memory.role == 'miner' && c.memory.sourceID == mineral.id)) {
+                                    let mineralContainer = mineral.pos.findInRange(FIND_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_CONTAINER });
+                                    if (mineralContainer.length > 0) {
+                                        console.log(this.name + ' added mineral miner')
+                                        spawningQueue.push({ memory: { role: 'miner', sourceID: mineral.id, target: undefined, currentRCL: currentRCL, ifMineEnergy: false, ifLink: false, ifKeeper: false }, priority: rolePriority['miner'] });
+                                    }
                                 }
                             }
                         }
-                    }
-                    else {
-                        fo(room.name + ' ' + mtp + ' exploding, stopped mineral mining');
+                        else {
+                            fo(room.name + ' ' + mtp + ' exploding, stopped mineral mining');
+                        }
                     }
                 }
-                if (balanceNoLegWorkerAndMover(room)) {
-                    // AI in the current room's early state harvester mining
-                    if (room.memory.earlyHarv) { // if early state mining is active
-                        for (let earlyRoomName in room.memory.earlyHarv) {
-                            let proceedEh = true
-
-                            let minNoOfEarlyHarverster = room.memory.earlyHarv[earlyRoomName];
-
-                            if (room.memory.earlyHarv[earlyRoomName] > 0) {
-                                // check invader core
-
-                                if (Game.rooms[earlyRoomName]) {
-                                    let creepsInEarlyRoom = Game.rooms[earlyRoomName].find(FIND_MY_CREEPS);
-                                    var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom.concat(creepsInEarlyRoom);
-                                    let invcs = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: o => o.structureType == STRUCTURE_INVADER_CORE });
-                                    let invt = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: c => c.structureType == STRUCTURE_TOWER && c.owner.username == 'Invader' });
-
-                                    if (invt > 0) {
-                                        proceedEh = false;
-                                    }
-                                    else {
-                                        let invt = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: c => c.structureType == STRUCTURE_TOWER && c.owner.username == 'Invader' });
-                                        if (invcs.length > 0) {
-                                            let noMelees = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'melee' && c.memory.target == earlyRoomName);
-                                            if (noMelees < 1) {
-                                                console.log(this.name + ' added melee to attack invader core ' + earlyRoomName)
-                                                spawningQueue.push({ memory: { role: 'melee', target: earlyRoomName, home: rn }, priority: rolePriority['melee'] });
-                                            }
-                                            proceedEh = false;
-                                        }
-                                    }
-                                }
-                                else {
-                                    let NoScouters = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'scouter' && c.memory.target == earlyRoomName);
-                                    if (NoScouters < 1) {
-                                        console.log(this.name + ' added scouter ' + earlyRoomName)
-                                        spawningQueue.push({ memory: { role: 'scouter', target: earlyRoomName }, priority: rolePriority['scouter'] });
-                                    }
-                                    var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom;
-                                }
-                            }
-                            else {
-                                proceedEh = false;
-                            }
-
-                            if (proceedEh) {
-                                let noOfEarlyHarverster = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceHarvester' && c.memory.target == earlyRoomName);
-
-                                if (noOfEarlyHarverster < minNoOfEarlyHarverster) { // if not enough long distance harvesters, spawn {
-                                    console.log(this.name + ' added long distance harvester for ' + earlyRoomName)
-                                    spawningQueue.push({ memory: { role: 'longDistanceHarvester', target: earlyRoomName, energy: room.energyCapacityAvailable, home: rn }, priority: rolePriority['longDistanceHarvester'] });
-                                }
-                            }
-                        }
-                    }
+                if (!room.memory.battleMode && balanceNoLegWorkerAndMover(room)) {
                     // AI in the current room's remote mining neighbours /////////////////////////////////////////////////////////////////////////////////////
-                    if (Game.cpu.bucket > 6000) { // (room.memory.forSpawning.spawningQueue.length<6) { //}(spawningCreepName == undefined) { // if no creeps needed to spawn for the current room
-                        if (room.memory.startRemoteMining == 1) { // 1 for remote miner mining, 0 for remote harvester mining
+                    if (true || Game.cpu.bucket > 6000) { // (room.memory.forSpawning.spawningQueue.length<6) { //}(spawningCreepName == undefined) { // if no creeps needed to spawn for the current room
+                        if (room.memory.startRemoteMining == 1 && (Game.shard.name!='shard3') && (room.name!='E7S48') && room.memory.remoteMiningRoomNames) { // 1 for remote miner mining, 0 for remote harvester mining
+                        // !room.name=='W29S12' && 
+                        // switch off remote mining for shard3
                             let remoteMiningRoomNames = Object.keys(room.memory.remoteMiningRoomNames);
                             if (room.memory.reremoteMiningRoomNames != undefined && room.name != 'E23S16') {
                                 remoteMiningRoomNames = remoteMiningRoomNames.concat(Object.keys(room.memory.reremoteMiningRoomNames));
 
                             }
                             for (let remoteMiningRoomName of remoteMiningRoomNames) {
-                                if (remoteMiningRoomName == 'E6S22' || remoteMiningRoomName == 'E7S22' || remoteMiningRoomName == 'E6S23' || remoteMiningRoomName == 'E3S22' || remoteMiningRoomName == 'E2S26' || remoteMiningRoomName == 'E5S24' || remoteMiningRoomName == 'E3S21' || remoteMiningRoomName == 'E8S21' || (Game.rooms[remoteMiningRoomName] && Game.rooms[remoteMiningRoomName].controller == undefined)) {
-                                    // pass
+                                if (remoteMiningRoomName == 'W29S11' || remoteMiningRoomName == 'W23S29') {
+                                    continue;
                                 }
-                                else if ((Memory.mapInfo[remoteMiningRoomName].managedBy == undefined || Memory.mapInfo[remoteMiningRoomName].managedBy == room.name) && (determineIfRoomIsSuitableForRemoteMining(room, remoteMiningRoomName))) {
+                                if (Game.rooms[remoteMiningRoomName] == undefined) { // if no creeps in romote mining room or no scouter for the remote mining room in current spawn room and target room, spawn a scouter
+                                    // calculate No. of scouters in each reservable rooms around current spawn room, if no scouters there, spawn 1, if yes, send miners
+                                    let NoScouters = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'scouter' && c.memory.target == remoteMiningRoomName);
+                                    //console.log((Game.creeps[remoteMiningRoomName] == undefined) , (NoScouters<1),remoteMiningRoomName);
+                                    if (NoScouters < 1) {
+                                        console.log(this.name + ' added scouter ' + remoteMiningRoomName)
+                                        spawningQueue.push({ memory: { role: 'scouter', target: remoteMiningRoomName }, priority: rolePriority['scouter'] });
+                                    }
+                                    continue;
+                                }
+                                
+                                var creepsInRemoteRoom = Game.rooms[remoteMiningRoomName].find(FIND_MY_CREEPS);
+                                var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom.concat(creepsInRemoteRoom);
+                                
+                                // should have vision here
+                                if (Game.rooms[remoteMiningRoomName].find(FIND_HOSTILE_CREEPS, {filter:s=>s.owner.username!='Invader' && !allyList().includes(s.owner.username) && (s.getActiveBodyparts(HEAL)+s.getActiveBodyparts(ATTACK)+s.getActiveBodyparts(RANGED_ATTACK)>0)}).length>0) {
+                                    //startCampTask(remoteMiningRoomName);
+                                    let NoRemoteDefenders = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'ultimateWorrior' && c.memory.target == remoteMiningRoomName);
+                                    if (NoRemoteDefenders < 3) {
+                                        console.log('Remote mining ' + remoteMiningRoomName + ' is under fucked! sending untimater...');
+                                        spawningQueue.push({ memory: { role: 'ultimateWorrior', target: remoteMiningRoomName }, priority: rolePriority['ranger'] });
+                                        continue;
+                                    }
+                                    else {
+                                        
+                                    }
+                                }
+                                
+                                if (Memory.mapInfo[remoteMiningRoomName] == undefined) {
+                                    logGrandeRoomInfo(Game.rooms[remoteMiningRoomName]);
+                                }
+
+                                if ((Memory.mapInfo[remoteMiningRoomName].managedBy == undefined || Memory.mapInfo[remoteMiningRoomName].managedBy == room.name) && (determineIfRoomIsSuitableForRemoteMining(room, remoteMiningRoomName))) {
                                     if (room.memory.remoteAlarm == undefined || room.memory.remoteAlarm[remoteMiningRoomName] == undefined || (room.memory.remoteAlarm[remoteMiningRoomName] < Game.time)) {
                                         //console.log('scan all remoment mining rooms: '+remoteMiningRoomName);
-                                        if (Game.rooms[remoteMiningRoomName] == undefined) { // if no creeps in romote mining room or no scouter for the remote mining room in current spawn room and target room, spawn a scouter
-                                            // calculate No. of scouters in each reservable rooms around current spawn room, if no scouters there, spawn 1, if yes, send miners
-                                            let NoScouters = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'scouter' && c.memory.target == remoteMiningRoomName);
-                                            //console.log((Game.creeps[remoteMiningRoomName] == undefined) , (NoScouters<1),remoteMiningRoomName);
-                                            if (NoScouters < 1) {
-                                                console.log(this.name + ' added scouter ' + remoteMiningRoomName)
-                                                spawningQueue.push({ memory: { role: 'scouter', target: remoteMiningRoomName }, priority: rolePriority['scouter'] });
-                                            }
-                                        }
-                                        else { // scouter there or on its way, check if arrived in that room
-                                            var creepsInRemoteRoom = Game.rooms[remoteMiningRoomName].find(FIND_MY_CREEPS);
-                                            var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom.concat(creepsInRemoteRoom);
+                                        
+                                         // scouter there or on its way, check if arrived in that room
+                                            
                                             //var netRemoteFuckness;
                                             //var enemyFuckness;
                                             /*for (let each of creepsInHomeAndRemoteRoom) {
@@ -468,7 +504,10 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                 }
                                                 // calculate No. of reservers in each reservable rooms around current spawn room
                                                 let NoReservers = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'reserver' && c.memory.target == remoteMiningRoomName);
-                                                if (NoReservers < NoReserversRequired && ((Game.rooms[remoteMiningRoomName].controller == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd < 2000))) { // if not enough reservers, spawn {
+                                                if (room.energyCapacityAvailable<1050 && (Object.keys(Memory.mapInfo[remoteMiningRoomName].eRes).length==1 && !Game.shard.name=='shardSeason')) {
+                                                    NoReserversRequired = 0;
+                                                }
+                                                if (NoReservers < NoReserversRequired && ((Game.rooms[remoteMiningRoomName].controller == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation.username=='PythonBeatJava' && Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd < 2000) || (Game.rooms[remoteMiningRoomName].controller.reservation.username!='PythonBeatJava' && Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd > 0))) { // if not enough reservers, spawn {
                                                     console.log(this.name + ' added reserver ' + remoteMiningRoomName)
                                                     spawningQueue.push({ memory: { role: 'reserver', target: remoteMiningRoomName, big: bigReserver, roomEnergyMax: room.energyCapacityAvailable }, priority: rolePriority['reserver'] });
                                                     /*spawner = whichSpawnSpawns(this, subSpawn);
@@ -497,10 +536,30 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                     let NoLongDistanceBuilders = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceBuilder' && c.memory.target == remoteMiningRoomName);
                                                     //eval('var NoLongDistanceBuilders_'+remoteMiningRoomName+' = NoLongDistanceBuilders;');
                                                     //console.log(remoteMiningRoomName,NoLongDistanceBuilders);
-                                                    if (Game.rooms[remoteMiningRoomName].find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType == STRUCTURE_CONTAINER || STRUCTURE_ROAD }).length > 0 && NoLongDistanceBuilders < 1) { // if not enough long distance builders, spawn
+                                                    
+                                                    let needRep = false;
+                                                    if (Game.time%1500 < 100 && room.memory.remoteMiningRoomNames && room.memory.remoteMiningRoomNames[remoteMiningRoomName] && room.memory.remoteMiningRoomNames[remoteMiningRoomName].roads) {
+                                                        let roads = room.memory.remoteMiningRoomNames[remoteMiningRoomName].roads;
+                                                        for (let road of roads) {
+                                                            let found = Game.rooms[remoteMiningRoomName].lookForAt(LOOK_STRUCTURES, road.x, road.y);
+                                                            if (found.length && found[0].hits<found[0].hitsMax*0.618) {
+                                                                needRep = true;
+                                                                break
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    let nocss = Game.rooms[remoteMiningRoomName].find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType == STRUCTURE_CONTAINER || STRUCTURE_ROAD }).length;
+
+                                                    if (((needRep)||( nocss > 0)) && NoLongDistanceBuilders < 1) { // if not enough long distance builders, spawn
                                                         //if ( NoLongDistanceBuilders < roomSpawningInfo.minNoRemoteBuilders[i]) { // if not enough long distance builders, spawn
                                                         console.log(this.name + ' added longDistanceBuilder ' + remoteMiningRoomName)
-                                                        spawningQueue.push({ memory: { role: 'longDistanceBuilder', energy: 400, target: remoteMiningRoomName, home: rn }, priority: rolePriority['longDistanceBuilder'] });
+                                                        if (nocss>4) {
+                                                            spawningQueue.push({ memory: { role: 'longDistanceBuilder', energy: Math.min(room.memory.ECap, 1200), target: remoteMiningRoomName, home: rn }, priority: rolePriority['longDistanceBuilder'] });
+                                                        }
+                                                        else {
+                                                            spawningQueue.push({ memory: { role: 'longDistanceBuilder', energy: 400, target: remoteMiningRoomName, home: rn }, priority: rolePriority['longDistanceBuilder'] });
+                                                        }
                                                         /*spawner = whichSpawnSpawns(this, subSpawn);
                                                         spawningCreepName = spawner.createLongDistanceBuilder(600, remoteMiningRoomName);
                                                         if ((subSpawn!=undefined)&&(spawningCreepName==OK)) { // each time there is a creep successfully spawned, creeps in room need to be calculate again with the being-spawned creep added into the list
@@ -513,6 +572,11 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                         if (room.energyCapacityAvailable >= 1300) { // if room can spawn big reservers
                                                             bigReserver = true;
                                                             NoReserversRequired = 1; // 1 big is enough
+                                                            
+                                                            // switch on remote mining in case it is a robbed room
+                                                            if (room.memory.readyToRemoteMining[remoteMiningRoomName] == undefined) {
+                                                                room.memory.readyToRemoteMining[remoteMiningRoomName] = room.findExitTo(remoteMiningRoomName);
+                                                            }
                                                         }
                                                         else {
                                                             bigReserver = false;
@@ -532,7 +596,10 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                         }
                                                         // calculate No. of reservers in each reservable rooms around current spawn room
                                                         let NoReservers = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'reserver' && c.memory.target == remoteMiningRoomName);
-                                                        if (NoReservers < NoReserversRequired && ((Game.rooms[remoteMiningRoomName].controller == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd < 2000))) { // if not enough reservers, spawn {
+                                                        if (room.energyCapacityAvailable<1050 && (Object.keys(Memory.mapInfo[remoteMiningRoomName].eRes).length==1&&!Game.shard.name=='shardSeason')) {
+                                                            NoReserversRequired = 0;
+                                                        }
+                                                        if (NoReservers < NoReserversRequired && ((Game.rooms[remoteMiningRoomName].controller == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation == undefined) || (Game.rooms[remoteMiningRoomName].controller.reservation.username=='PythonBeatJava' && Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd < 2000) || (Game.rooms[remoteMiningRoomName].controller.reservation.username!='PythonBeatJava' && Game.rooms[remoteMiningRoomName].controller.reservation.ticksToEnd > 0))) { // if not enough reservers, spawn {
                                                             console.log(this.name + ' added reserver ' + remoteMiningRoomName)
                                                             spawningQueue.push({ memory: { role: 'reserver', target: remoteMiningRoomName, big: bigReserver, roomEnergyMax: room.energyCapacityAvailable }, priority: rolePriority['reserver'] });
                                                             /*spawner = whichSpawnSpawns(this, subSpawn);
@@ -560,8 +627,22 @@ Room.prototype.newUpdateSpawnQueue = function () {
 
                                                                     // calculate No. of lorries in each reservable rooms around current spawn room
                                                                     let NoLongDistanceLorries = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceLorry' && c.memory.target == remoteMiningRoomName);
-
-                                                                    if (roomSpawningInfo.minNoRemoteLorries == undefined || (Game.time % 277 == 0) || roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] == undefined) { // not calculated # of remote lorries, calculate it now
+                                                                    
+                                                                    if (roomSpawningInfo.minNoRemoteLorries == undefined) {
+                                                                        roomSpawningInfo.minNoRemoteLorries = {};
+                                                                    }
+                                                                    if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]==undefined) {
+                                                                        roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 0;
+                                                                    }
+                                                                    
+                                                                    if (NoLongDistanceLorries<roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]+1) {
+                                                                        room.memory.remoteMiningRoomNames[remoteMiningRoomName]['need'] = roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]+1-NoLongDistanceLorries;
+                                                                    }
+                                                                    else {
+                                                                        room.memory.remoteMiningRoomNames[remoteMiningRoomName]['need'] = 0;
+                                                                    }
+                                                                    let bigL = room.energyCapacityAvailable>=2100;
+                                                                    if (roomSpawningInfo.minNoRemoteLorries == undefined || (Math.floor(Math.random() * 11) == 0) || roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] == undefined) { // not calculated # of remote lorries, calculate it now
                                                                         //if (true) {
                                                                         //roomSpawningInfo.minNoRemoteLorries = [];
                                                                         console.log(room.name + ' updated its remote lorry numbers')
@@ -570,45 +651,51 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                                         }
                                                                         roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = initiateNoOfRemoteLorries(sources.length, Game.rooms[remoteMiningRoomName].memory.sourceTravelTime, room.energyCapacityAvailable);
 
-                                                                        // if rooms has too many dropped energy, send an extra lorry
-                                                                        let remoteMiners = Game.rooms[remoteMiningRoomName].find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'miner' });
-                                                                        let accumedSpareTime = 0;
-                                                                        let mineno = 0;
-                                                                        for (let remoteMiner of remoteMiners) {
-                                                                            if (remoteMiner.memory.spareTime) {
-                                                                                accumedSpareTime += remoteMiner.memory.spareTime;
+                                                                        // if mine not fully mined, send an extra lorry
+                                                                        let add = false;
+                                                                        for (let source of sources) {
+                                                                            if (source && source.energy && (source.energy>400) && (source.energy/source.energyCapacity>source.ticksToRegeneration/300)) {
+                                                                                add = true;
                                                                             }
-                                                                            mineno += 1;
                                                                         }
-                                                                        if (mineno > 0) {
-                                                                            accumedSpareTime = accumedSpareTime / mineno;
+                                                                        
+                                                                        if (add) {
+                                                                            roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] += 1;
                                                                         }
-
-                                                                        if (accumedSpareTime > 0) {
-                                                                            if (accumedSpareTime > 600) {
-                                                                                roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] += 1;
-                                                                            }
-                                                                            else if (accumedSpareTime < 100) {
+                                                                        else {
+                                                                            if (Game.time%1500<25) {
                                                                                 roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] -= 1;
                                                                             }
-                                                                            if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] < 1) {
-                                                                                roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 1;
-                                                                            }
-                                                                            if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] > 6) {
-                                                                                roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 6;
-                                                                            }
                                                                         }
+                                                                        
+                                                                        let maxL = 6;
+                                                                        if (bigL) {
+                                                                            maxL = 3;
+                                                                        }
+                                                                            
+                                                                        if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] < 1) {
+                                                                            roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 1;
+                                                                        }
+                                                                        if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] > maxL) {
+                                                                            roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = maxL;
+                                                                        }
+                                                                        
+                                                                        /*   
                                                                         if (currentRCL < 7) {
                                                                             roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = Math.floor(roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] * 1.45 * (Math.exp(Game.cpu.bucket / 10000) - 1) / (Math.exp(1) - 1));
                                                                         }
                                                                         else {
                                                                             roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = Object.keys(Memory.mapInfo[remoteMiningRoomName].eRes).length;
                                                                         }
+                                                                        */
                                                                     }
                                                                     else if (NoLongDistanceLorries < roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]) {
                                                                         let lorryEnergySpent = Math.min(room.energyCapacityAvailable * .875, 1933);
-                                                                        if (currentRCL < 7) {
-                                                                            lorryEnergySpent = Math.min(room.energyCapacityAvailable, 800);
+                                                                        if (bigL) {
+                                                                            lorryEnergySpent = Math.min(room.energyCapacityAvailable, 2100);
+                                                                        }
+                                                                        else {
+                                                                            lorryEnergySpent = Math.min(room.energyCapacityAvailable, 1050);
                                                                         }
 
                                                                         /*let lorryEnergySpent = roomSpawningInfo.remoteLorryEnergy;
@@ -645,11 +732,16 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                                     }
                                                                 }
                                                                 else {
-                                                                    if (room.memory.reremoteMiningRoomNamesBuilt[remoteMiningRoomName] != undefined) {
-                                                                        room.memory.reremoteMiningRoomNamesBuilt[remoteMiningRoomName] = false;
+                                                                    if (room.memory.reremoteMiningRoomNamesBuilt) {
+                                                                        if (room.memory.reremoteMiningRoomNamesBuilt[remoteMiningRoomName] != undefined) {
+                                                                            room.memory.reremoteMiningRoomNamesBuilt[remoteMiningRoomName] = false;
+                                                                        }
+                                                                        else {
+                                                                            room.memory.remoteMiningRoomNames[remoteMiningRoomName].subRoomRoadReady = false;
+                                                                        }
                                                                     }
                                                                     else {
-                                                                        room.memory.remoteMiningRoomNames[remoteMiningRoomName].subRoomRoadReady = false;
+                                                                        room.memory.reremoteMiningRoomNamesBuilt = {};
                                                                     }
                                                                     fo(remoteMiningRoomName + ' wait for infanstrcuture to be completed.')
                                                                 }
@@ -735,7 +827,7 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                     console.log('impossible!');
                                                 }
                                             }
-                                        }
+                                        
                                     }
                                     else {
                                         if (Game.time % 77 == 0) {
@@ -750,20 +842,88 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                     }
                                 }
                                 else {
-                                    fo(room.name + 'remote overlap wrong management ' + remoteMiningRoomName);
+                                    if (!isHighway(remoteMiningRoomName)) {
+                                        if (Game.rooms[remoteMiningRoomName].controller) { // not me mining
+                                            let NoLongDistanceLorries = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceLorry' && c.memory.target == remoteMiningRoomName);
+                                                                    
+                                            if (roomSpawningInfo.minNoRemoteLorries == undefined) {
+                                                roomSpawningInfo.minNoRemoteLorries = {};
+                                            }
+                                            if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]==undefined) {
+                                                roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 2;
+                                            }
+                                            
+                                            if (roomSpawningInfo.minNoRemoteLorries == undefined || (Math.floor(Math.random() * 11) == 0) || roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] == undefined) { // not calculated # of remote lorries, calculate it now
+                                                if (Game.time%1500<25) {
+                                                    roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] -= 1;
+                                                }
+                                                
+                                                let resToCollect = 0;
+                                                for (let ctn of Game.rooms[remoteMiningRoomName].find(FIND_STRUCTURES, {structureType: STRUCTURE_CONTAINER})) {
+                                                    resToCollect += ctn.store.energy;
+                                                }
+                                                for (let ctn of Game.rooms[remoteMiningRoomName].find(FIND_DROPPED_RESOURCES)) {
+                                                    resToCollect += ctn.amount;
+                                                }
+                                                
+                                                if (resToCollect>1600) {
+                                                    roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] ++;
+                                                }
+                                                
+                                                if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] < 1) {
+                                                    roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 1;
+                                                }
+                                                if (roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] > 4) {
+                                                    roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName] = 4;
+                                                }
+                                            }
+                                                                        
+                                            
+                                            if (NoLongDistanceLorries < roomSpawningInfo.minNoRemoteLorries[remoteMiningRoomName]) {
+                                                let lorryEnergySpent = Math.min(room.energyCapacityAvailable * .875, 1933);
+                                                if (currentRCL < 7 || Game.shard.name=='shardSeason') {
+                                                    lorryEnergySpent = Math.min(room.energyCapacityAvailable, 800);
+                                                }
+
+                                                console.log(this.name + ' added longDistanceLorry ' + remoteMiningRoomName)
+                                                spawningQueue.push({ memory: { role: 'longDistanceLorry', energy: lorryEnergySpent, home: room.name, target: remoteMiningRoomName }, priority: rolePriority['longDistanceLorry'] });
+                                            }
+                                        }
+                                        else {
+                                            fo(room.name + 'remote overlap wrong management ' + remoteMiningRoomName);
+                                        }
+                                    }
+                                    else {
+                                        fo(room.name + 'trying to mine highway bug')
+                                    }
                                 }
                             }
                         }
 
                         // keeper room mining code section:
-                        if (true) {
+                        if (room.controller.level==8) {
                             let keeperRoomNames = room.memory.keeperMiningRoomNames;
                             if (keeperRoomNames) { // if it is defined
                                 for (let i = 0; i < keeperRoomNames.length; i++) { // loop through every keeper room
                                     let keeperMiningRoomName = keeperRoomNames[i];
+                                    // check core
+                                    if (Memory.rooms[keeperMiningRoomName]==undefined) {
+                                        Memory.rooms[keeperMiningRoomName] = {};
+                                    }
+                                    else {
+                                        if (Memory.rooms[keeperMiningRoomName].invaderCoreTimer && Game.time<Memory.rooms[keeperMiningRoomName].invaderCoreTimer) {
+                                            continue;
+                                        }
+                                    }
                                     let keeperMiningRoom = Game.rooms[keeperMiningRoomName];
                                     //console.log(keeperRoomNames+' keeper scan')
                                     if (keeperMiningRoom) { // if it is defined (some creep is in there)
+                                        let indcs = keeperMiningRoom.find(FIND_STRUCTURES, {filter: s=>s.structureType=='invaderCore'});
+                                        if (indcs.length>0) {
+                                            if (indcs[0].effects && indcs[0].effects[0] && indcs[0].effects[0].ticksRemaining && indcs[0].effects[0].ticksRemaining>0) {
+                                                Memory.rooms[keeperMiningRoomName].invaderCoreTimer = Game.time + indcs[0].effects[0].ticksRemaining;
+                                            }
+                                        }
                                         var creepsInRemoteRoom = keeperMiningRoom.find(FIND_MY_CREEPS);
                                         //var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom.concat(creepsInRemoteRoom);
                                         //var netRemoteFuckness;
@@ -823,7 +983,7 @@ Room.prototype.newUpdateSpawnQueue = function () {
                                                 else {// if more lorries, send miners
                                                     let sources = keeperMiningRoom.find(FIND_SOURCES);//.concat(keeperMiningRoom.find(FIND_MINERALS));
                                                     let mineral = keeperMiningRoom.find(FIND_MINERALS)[0];//.concat(keeperMiningRoom.find(FIND_MINERALS));
-                                                    let noOfRequiredKeeperLairLorry = 0;
+                                                    let noOfRequiredKeeperLairLorry = 1;
                                                     for (let source of sources) { // only spawn a miner if it cannot be found both in the spawn room and destination room
                                                         if (keeperMiningRoom.memory.sourceTravelTime) {
                                                             if (keeperMiningRoom.memory.sourceTravelTime[source.id]) {
@@ -1295,15 +1455,93 @@ Room.prototype.newUpdateSpawnQueue = function () {
                 }
             }
         }
+        
+        // AI in the current room's early state harvester mining
+        if (!room.name=='W29S12' && !room.memory.battleMode && room.memory.earlyHarv && room.memory.startRemoteMining !== 1) { // if early state mining is active
+            for (let earlyRoomName in room.memory.earlyHarv) {
+                let proceedEh = true
+                let minNoOfEarlyHarverster = room.memory.earlyHarv[earlyRoomName];
+
+                if (room.memory.earlyHarv[earlyRoomName] > 0) {
+                    // check invader core
+
+                    if (Game.rooms[earlyRoomName]) {
+                        let hosts = Game.rooms[earlyRoomName].find(FIND_HOSTILE_CREEPS, { filter: c => (!allyList().includes(c.owner.username)) && (c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0) });
+                        if (hosts.length>0) {
+                            proceedEh = false;
+                        }
+                        else {
+                            let creepsInEarlyRoom = Game.rooms[earlyRoomName].find(FIND_MY_CREEPS);
+                            var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom.concat(creepsInEarlyRoom);
+                            let invcs = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: o => o.structureType == STRUCTURE_INVADER_CORE });
+                            let invt = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: c => c.structureType == STRUCTURE_TOWER && c.owner.username == 'Invader' });
+
+                            if (invt > 0) {
+                                proceedEh = false;
+                            }
+                            else {
+                                let invt = Game.rooms[earlyRoomName].find(FIND_STRUCTURES, { filter: c => c.structureType == STRUCTURE_TOWER && c.owner.username == 'Invader' });
+                                if (invcs.length > 0) {
+                                    let noMelees = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'melee' && c.memory.target == earlyRoomName);
+                                    if (noMelees < 1) {
+                                        console.log(this.name + ' added melee to attack invader core ' + earlyRoomName)
+                                        spawningQueue.push({ memory: { role: 'melee', target: earlyRoomName, home: rn }, priority: rolePriority['melee'] });
+                                    }
+                                    proceedEh = false;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        let NoScouters = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'scouter' && c.memory.target == earlyRoomName);
+                        if (NoScouters < 1) {
+                            console.log(this.name + ' added scouter ' + earlyRoomName)
+                            spawningQueue.push({ memory: { role: 'scouter', target: earlyRoomName }, priority: rolePriority['scouter'] });
+                        }
+                        var creepsInHomeAndRemoteRoom = imaginaryCreepsInRoom;
+                    }
+                }
+                else {
+                    proceedEh = false;
+                }
+
+                if (proceedEh) {
+                    let noOfEarlyHarverster = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceHarvester' && c.memory.target == earlyRoomName && !c.memory.big);
+                    let noOfFakeminer = _.sum(creepsInHomeAndRemoteRoom, (c) => c.memory.role == 'longDistanceHarvester' && c.memory.target == earlyRoomName && c.memory.big);
+
+                    let totfakeminer = Object.keys(Memory.mapInfo[earlyRoomName].eRes).length*2;
+                    if (room.energyCapacityAvailable>=750) {
+                        totfakeminer = Object.keys(Memory.mapInfo[earlyRoomName].eRes).length
+                    }
+                    
+                    if (noOfFakeminer < totfakeminer) { // if not enough long distance harvesters, spawn {
+                        console.log(this.name + ' added long distance harvester miner for ' + earlyRoomName)
+                        spawningQueue.push({ memory: { role: 'longDistanceHarvester', target: earlyRoomName, energy: room.energyCapacityAvailable, home: rn, big: true }, priority: rolePriority['longDistanceHarvester']+0.5 });
+                    }
+                    if (noOfEarlyHarverster < minNoOfEarlyHarverster*3) { // if not enough long distance harvesters, spawn {
+                        console.log(this.name + ' added long distance harvester lorry for ' + earlyRoomName)
+                        spawningQueue.push({ memory: { role: 'longDistanceHarvester', target: earlyRoomName, energy: room.energyCapacityAvailable, home: rn, big: false }, priority: rolePriority['longDistanceHarvester'] });
+                    }
+                }
+            }
+        }
 
         if (true) { // }(spawningCreepName == undefined) { // no energy problem, start other creeps building
-            if (room.storage) { // superupgrader
-                if (room.storage.store.energy < 100000) {
-                    rolePriority['superUpgrader'] = 0.01;
+            if (room.storage && !room.memory.battleMode) { // superupgrader
+                if (listOfRoles['superUpgrader']<1) {
+                    rolePriority['superUpgrader'] = 10.9;
                 }
-                else if (room.storage.store.energy > 400000) {
-                    rolePriority['superUpgrader'] = 8;
+                else {
+                    if (room.storage.store.energy < 100000) {
+                        rolePriority['superUpgrader'] = 0.01;
+                    }
+                    else if (room.storage.store.energy > 400000) {
+                        rolePriority['superUpgrader'] = 8;
+                    }
                 }
+            }
+            else {
+                rolePriority['superUpgrader'] = 0.00001;
             }
 
             /*if (Game.cpu.bucket<9500) {
@@ -1321,9 +1559,23 @@ Room.prototype.newUpdateSpawnQueue = function () {
                     spawningQueue.push({ memory: { energy: creepEnergyCost, role: role, target: room.name, RCL: currentRCL, energyMax: room.energyCapacityAvailable }, priority: rolePriority[role] });
                 }
             }
+            
+            // new dickheads
+            if (room.memory.newBunker && room.memory.newBunker.dicks1 && room.memory.newBunker.dicks1.ready) {
+                if (_.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'dickHeadpp' && c.memory.no===1)<1) {
+                    fo(room.name + ' spawn dickhead++ 1');
+                    spawningQueue.push({ memory: { role: 'dickHeadpp', no: 1, workingPos: {x: room.memory.newBunker.dicks1.x, y: room.memory.newBunker.dicks1.y} }, priority: rolePriority['maintainer']+2 });
+                }
+            }
+            if (room.memory.newBunker && room.memory.newBunker.dicks2 && room.memory.newBunker.dicks2.ready) {
+                if (_.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'dickHeadpp' && c.memory.no===2)<1) {
+                    fo(room.name + ' spawn dickhead++ 2');
+                    spawningQueue.push({ memory: { role: 'dickHeadpp', no: 2, workingPos: {x: room.memory.newBunker.dicks2.x, y: room.memory.newBunker.dicks2.y} }, priority: rolePriority['maintainer']+2 });
+                }
+            }
 
             // maintainers
-            if (currentRCL == 7 && room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType == STRUCTURE_SPAWN }).length > 1) {
+            if ( (currentRCL == 7 && room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType == STRUCTURE_SPAWN }).length > 1) || (currentRCL == 8 && room.find(FIND_MY_STRUCTURES, { filter: s => s.structureType == STRUCTURE_SPAWN }).length == 2) ) {
                 if (room.memory.maintainerCheck == undefined) {
                     room.memory.maintainerCheck = [false, false, false, true, true, true];
                 }
@@ -1367,43 +1619,83 @@ Room.prototype.newUpdateSpawnQueue = function () {
                     }
                 }
             }
-
-            // high way roles
-            let hws = room.memory.highways
-            if (hws && Game.cpu.bucket > 5000) {
-                for (let hwPurp in hws) {
-                    let hw = hws[hwPurp]
-                    if (hw) {
-                        let numDriver = hw.no;
-                        let purp = hwPurp;
-                        let proceed = true;
-                        if (purp == 'upgrade') {
-                            if (room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader'] > 1) { // (NoOfCreeps['superUpgrader']>1) {
-                                // proceed
-                                rolePriority['driver'] = rolePriority['superUpgrader'] - 0.001;
-                            }
-                            else {
-                                proceed = false;
+            
+            // dedicated upgrader hauler
+            if (room.controller.level < 8 && room.memory.frenzyMode) {
+                if (NoOfCreeps['dedicatedUpgraderHauler']<Math.max(1,room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader']-1)) {
+                    spawningQueue.push({ memory: { role: 'dedicatedUpgraderHauler'}, priority: rolePriority['superUpgrader'] - 0.001 });
+                }
+                room.memory.suckTimer = 0;
+            }
+            else if (room.find(FIND_MY_POWER_CREEPS, {filter:p=>p.memory.home==room.name && p.store.getCapacity('energy')>666}).length>0 && !room.memory.frenzyMode==true) {
+                room.memory.dedinum = 0;
+            }
+            else {
+                if (room.controller.level < 8 && room.memory.suckTimer && room.memory.suckTimer>119) {
+                    let dedinum = room.memory.dedinum;
+                    if (dedinum==undefined || Game%1500<32) {
+                        if (room.memory.newBunker && room.memory.newBunker.layout && room.memory.newBunker.layout.coreSp && room.memory.newBunker.layout.coreSp.length>0) {
+                            let sp = Game.getObjectById(room.memory.newBunker.layout.coreSp[0].id);
+                            dedinum = Math.floor(PathFinder.search(sp.pos, room.controller.pos).path.length/7);
+                        }
+                        else {
+                            dedinum = Math.floor(PathFinder.search(room.storage.pos, room.controller.pos).path.length/7);
+                        }
+                        room.memory.dedinum = Math.min(1, dedinum);
+                        if (room.memory.forLinks && room.memory.forLinks.receiverUpLinkId) {
+                            let uplink = Game.getObjectById(room.memory.forLinks.receiverUpLinkId);
+                            let recevlink = Game.getObjectById(room.memory.forLinks.receiverLinkId);
+                            if (uplink && recevlink && uplink.pos.getRangeTo(recevlink)<8) {
+                                dedinum = 0;
+                                room.memory.dedinum = dedinum;
                             }
                         }
-                        if (proceed) {
-                            let nowHas = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'driver' && (c.ticksToLive == undefined || c.memory.spawnTime < c.ticksToLive) && c.memory.purp == purp);
-                            let edrive = 200;
-                            if (currentRCL == 8) {
-                                edrive = 100;
+                    }
+                    if (room.find(FIND_MY_CREEPS, {filter:c=>c.memory.role=='dedicatedUpgraderHauler'}).length<room.memory.dedinum) {
+                        spawningQueue.push({ memory: { role: 'dedicatedUpgraderHauler'}, priority: rolePriority['superUpgrader'] - 0.001 });
+                    }
+                    room.memory.suckTimer = 0;
+                }
+            }
+            
+            // high way roles
+            if (false && !room.memory.battleMode) {
+                let hws = room.memory.highways
+                if (hws && Game.cpu.bucket > 5000) {
+                    for (let hwPurp in hws) {
+                        let hw = hws[hwPurp]
+                        if (hw) {
+                            let numDriver = hw.no;
+                            let purp = hwPurp;
+                            let proceed = true;
+                            if (purp == 'upgrade') {
+                                if (room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader'] > 1) { // (NoOfCreeps['superUpgrader']>1) {
+                                    // proceed
+                                    rolePriority['driver'] = rolePriority['superUpgrader'] - 0.001;
+                                }
+                                else {
+                                    proceed = false;
+                                }
                             }
-                            else if (currentRCL > 6) {
-                                edrive = Math.max(300, 400 * room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader']);
-                            }
-                            else if (currentRCL > 5) {
-                                edrive = Math.max(300, 250 * room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader']);
-                            }
-                            else if (currentRCL > 4) {
-                                edrive = 300;
-                            }
-                            if (nowHas < numDriver) {
-                                spawningQueue.push({ memory: { energy: edrive, role: 'driver', purp: purp, path: hw.path, from: hw.from, to: hw.to }, priority: rolePriority['driver'] });
-                                console.log(this.name + ' added ' + purp + ' driver.');
+                            if (proceed) {
+                                let nowHas = _.sum(imaginaryCreepsInRoom, (c) => c.memory.role == 'driver' && (c.ticksToLive == undefined || c.memory.spawnTime < c.ticksToLive) && c.memory.purp == purp);
+                                let edrive = 200;
+                                if (currentRCL == 8) {
+                                    edrive = 100;
+                                }
+                                else if (currentRCL > 6) {
+                                    edrive = Math.max(300, 400 * room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader']);
+                                }
+                                else if (currentRCL > 5) {
+                                    edrive = Math.max(300, 250 * room.memory.forSpawning.roomCreepNo.minCreeps['superUpgrader']);
+                                }
+                                else if (currentRCL > 4) {
+                                    edrive = 300;
+                                }
+                                if (nowHas < numDriver) {
+                                    spawningQueue.push({ memory: { energy: edrive, role: 'driver', purp: purp, path: hw.path, from: hw.from, to: hw.to }, priority: rolePriority['driver'] });
+                                    console.log(this.name + ' added ' + purp + ' driver.');
+                                }
                             }
                         }
                     }
@@ -1411,6 +1703,7 @@ Room.prototype.newUpdateSpawnQueue = function () {
             }
         }
     }
+    /*
     else if (fuckness > 300) { // seriously fucked!!! send good defenders!
         roomSpawningInfo.minCreeps['redneck'] = 2;
         // repairer
@@ -1429,9 +1722,9 @@ Room.prototype.newUpdateSpawnQueue = function () {
             }
         }
         //spawningQueue.push({memory:{role: 'attacker', energy: 1000, target: room.name},priority: rolePriority['attacker']});
-        /*spawner = whichSpawnSpawns(this, subSpawn);
-        spawningCreepName = spawner.createAttacker(room.energyAvailable*0.5, room.name);*/
+        
     }
+    */
     else { // slightly fucked
         let defRole = 'ranger';
         roomSpawningInfo.minCreeps[defRole] = Math.floor(fuckness / 99);
@@ -2294,7 +2587,7 @@ Room.prototype.updateSpawnQueue = function () {
     }
     else { // slightly fucked
         let defRole = 'ranger';
-        roomSpawningInfo.minCreeps[defRole] = Math.floor(fuckness / 100);
+        roomSpawningInfo.minCreeps[defRole] = Math.floor(fuckness / 50);
         // repairer
         // cancel other spawning
 
@@ -2310,5 +2603,49 @@ Room.prototype.updateSpawnQueue = function () {
                 spawningQueue.push({ memory: { energy: creepEnergyCost, role: role, target: room.name, home: room.name, RCL: currentRCL, energyMax: room.energyCapacityAvailable }, priority: 11.5 });
             }
         }
+    }
+}
+
+Room.prototype.updateEnergyStructures = function (force = false) {
+    let r = this;
+    let roomFillManager = this.memory.roomFillManager;
+    if (roomFillManager==undefined) {
+        this.memory.roomFillManager = {};
+        roomFillManager = this.memory.roomFillManager;
+    }
+    
+    let toFillIds = roomFillManager.toFillIds;
+    if (toFillIds==undefined) {
+        this.memory.roomFillManager.toFillIds = {'energy': []};
+        toFillIds = roomFillManager = this.memory.roomFillManager.toFillIds;
+    }
+    
+    if (force || Game.time%10==0 || toFillIds.energy.length==0) { // update to fill list
+        let ids = [];
+        
+        // all spawn, all ext, all tower and upgrade container
+        let toregis = r.find(FIND_MY_STRUCTURES, {
+            filter: t =>
+            ((t.structureType == STRUCTURE_SPAWN || (t.structureType == STRUCTURE_EXTENSION && walkableTilesSurrounded(t.pos).length > 0) || t.structureType == STRUCTURE_TOWER)
+                && (t.pos.findInRange(FIND_MY_CREEPS, 1, { filter: c => c.memory.role == 'dickHead' || c.memory.role == 'linkKeeper' || c.memory.role == 'dickHeadpp' || c.memory.role == 'newDickHead' || c.memory.role == 'maintainer' || c.memory.role == 'balancer' }).length == 0))});
+        for (let toregi of toregis) {
+            ids.push(toregi.id);
+        }
+        
+        // core and upgrade containers
+        let sps = r.find(FIND_MY_STRUCTURES, {filter: o=>o.structureType==STRUCTURE_SPAWN});
+        let conts = r.find(FIND_STRUCTURES, {
+            filter: o => ((o.structureType == STRUCTURE_CONTAINER) && (
+                o.pos.findInRange(FIND_MY_CREEPS, 1, { filter: c => c.memory.role == 'dickHead' || c.memory.role == 'linkKeeper' || c.memory.role == 'dickHeadpp' || c.memory.role == 'newDickHead' || c.memory.role == 'maintainer' || c.memory.role == 'balancer' }).length == 0
+            ))
+        });
+        for (let cont of conts) {
+            // upgrade container
+            if (cont.pos.getRangeTo(r.controller) < 3 && cont.pos.findInRange(FIND_SOURCES, 1).length==0) {
+                ids.push(cont.id);
+                continue;
+            }
+        }
+        this.memory.roomFillManager.toFillIds.energy = ids;
     }
 }

@@ -1,7 +1,7 @@
 module.exports = {
     run: function(creep) {
         let r = creep.room;
-        
+
         let carryNo = creep.getActiveBodyparts(CARRY);
         
         let creepPass = carryNo<10 && Game.cpu.bucket>9000;
@@ -50,7 +50,7 @@ module.exports = {
                     
                     if (cools.length>0) {
                         let cool = cools[0];
-                        if (!((cool.memory.role == 'miner')||(cool.memory.role == 'longDistanceHarvester')||(cool.memory.role == 'longDistanceLorry')||(cool.memory.role == 'symbolPicker')||(cool.memory.role == 'pioneer'))) {
+                        if (!((cool.memory.role == 'miner')||(cool.memory.role == 'longDistanceHarvester')||(cool.memory.role == 'longDistanceLorry')||(cool.memory.role == 'symbolPicker')||(cool.memory.role == 'pioneer')||(cool.memory.role == 'powerSourceLorry')||(cool.memory.role == 'lorry')||(cool.memory.role == 'pickuper'))) {
                             if (cool.my && creep.memory && creep.memory._trav && creep.memory._trav.path && cool.memory && cool.memory._trav && cool.memory._trav.path && (creep.memory._trav.path[1]!=cool.memory._trav.path[1]) && (creep.memory.lastWorked == undefined || creep.memory.lastWorked!= cool.name) && cool.store.energy <= cool.store.getCapacity()/2 && (cool.memory.role == 'longDistanceLorry')) {
                                 creep.room.visual.circle(creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'red'});
                                 creep.room.visual.circle(nextPos.x, nextPos.y, {fill: 'transparent', radius: 0.55, stroke: 'green'});
@@ -80,8 +80,8 @@ module.exports = {
                                     //creep.moveTo(new RoomPosition(creep.memory._trav.state[0], creep.memory._trav.state[1], creep.memory._trav.state[6]));
                                     //cool.moveTo(new RoomPosition(cool.memory._trav.state[0], cool.memory._trav.state[1], cool.memory._trav.state[6]));
                                     
-                                    creep.moveTo(creep.memory.prvPosi.x, creep.memory.prvPosi.y, {range: 0});
-                                    cool.moveTo(cool.memory.prvPosi.x, cool.memory.prvPosi.y, {range: 0});
+                                    creep.move(creep.pos.getDirectionTo(creep.memory.prvPosi.x, creep.memory.prvPosi.y));
+                                    cool.move(cool.pos.getDirectionTo(cool.memory.prvPosi.x, cool.memory.prvPosi.y));
                                     creep.memory.working = false;
                                     cool.memory.working = true;
                                     /*
@@ -129,9 +129,10 @@ module.exports = {
                             //creep.moveTo(new RoomPosition(creep.memory._trav.state[0], creep.memory._trav.state[1], creep.memory._trav.state[6]));
                             //cool.moveTo(new RoomPosition(cool.memory._trav.state[0], cool.memory._trav.state[1], cool.memory._trav.state[6]));
                             
-                            creep.moveTo(creep.memory.prvPosi.x, creep.memory.prvPosi.y, {range: 0});
-                            cool.moveTo(cool.memory.prvPosi.x, cool.memory.prvPosi.y, {range: 0});
                             
+                            creep.move(creep.pos.getDirectionTo(creep.memory.prvPosi.x, creep.memory.prvPosi.y));
+                            cool.move(cool.pos.getDirectionTo(cool.memory.prvPosi.x, cool.memory.prvPosi.y));
+                                    
                             let tempMem = creep.memory;
                             
                             creep.memory.lastWorked = cool.name
@@ -180,7 +181,7 @@ module.exports = {
                 
             for (let cId of nbCs) {
                 let c = Game.getObjectById(cId.creep.id);
-                if (c.my && c.store.getFreeCapacity()>0 && !((c.memory.role == 'miner')||(c.memory.role == 'longDistanceHarvester')||(c.memory.role == 'longDistanceLorry')||(c.memory.role == 'symbolPicker')||(c.memory.role == 'pioneer')||(c.memory.role == 'season2c'))) {
+                if (c.my && c.store.getFreeCapacity()>0 && !((c.memory.role == 'miner')||(c.memory.role == 'longDistanceHarvester')||(c.memory.role == 'longDistanceLorry')||(c.memory.role == 'symbolPicker')||(c.memory.role == 'pioneer')||(c.memory.role == 'season2c')||(c.memory.role == 'depoStorage')||(c.memory.role == 'powerSourceLorry')||(c.memory.role == 'lorry')||(c.memory.role == 'pickuper')||(c.getActiveBodyparts(CARRY)>24))) {
                     // ||(c.memory.role != 'lorry')||(c.memory.role != 'pickuper')||(c.memory.role != 'mover')
                     if (creep.transfer(c, 'energy') == OK) {
                         return

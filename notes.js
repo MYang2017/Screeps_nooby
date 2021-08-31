@@ -128,4 +128,146 @@ symbol flow in E11S16
 lab bug?
 Z flow to E1S27
 
+
+********************** MVR trading
+class Market {
+  constructor() {
+    console.log("Refreshing Market Prices");
+    RESOURCES_ALL.forEach(r => {
+      const tryMkt = Game.market.getHistory(r);
+      if(tryMkt && tryMkt.length > 0) {
+        const mktHist = tryMkt.reverse()
+        let obj = {};
+        let i = 1;
+        let avg = 0;
+        if(mktHist) {
+          mktHist.forEach(d => {
+            avg+= d.avgPrice;
+            if(i === 1) {
+              obj.dailyAvg = avg / i;
+            }
+            if(i === 3) {
+              obj.movingAvg3 = avg / i;
+            }
+            if(i === 7) {
+              obj.movingAvg7 = avg / i;
+            }
+            if(i === 14) {
+              obj.movingAvg14 = avg / i;
+            }
+            i++;
+          })
+          obj.minSell = Math.min(...Game.market.getAllOrders({ type: ORDER_SELL, resourceType: r}).map(x => x.price));
+          obj.maxBuy = Math.max(...Game.market.getAllOrders({ type: ORDER_BUY, resourceType: r }).map(x => x.price));
+
+          //to do, calc a more dynamic value
+          obj.value = obj.dailyAvg;
+
+          //calc raw cost of processed resources based on all individual part costs
+          const c = COMMODITIES[r];
+          if(c) {
+            let rawCost = 0;
+            Object.keys(c.components).forEach(k => {
+              if(this[k]) rawCost += (this[k].value * (c.components[k] / c.amount));
+              else rawCost = null
+            })
+            obj.rawCost = rawCost;
+          }
+          const b = BOOST_COMPONENTS[r];
+          if(b) {
+            let rawCost = 0;
+            b.forEach(i => {
+              if(rawCost != null) {
+                if(this[i] && this[i].value)
+                  rawCost += (this[i].value);
+                else
+                  rawCost = null
+              }
+            })
+            obj.rawCost = rawCost;
+          }
+          this[r] = obj;
+        }
+      }
+    })
+  }
+}
+
+module.exports = Market;
+
+then you can access any value like global.Market[RESOURCE_ENERGY].value
+1:31
+oh right and this in main outside of the loop:
+const Market = require('Market');
+ global.Market = new Market();
+1:31
+it just updates on global resets/code uploads
+1:31
+could obviously code for more frequenty/regular updates if wanted
+1:32
+mostly i just never had a good idea for how to implement a value that wasn't just the daily average.... sure i have better historic data with 7 day average or whatever, but if XGH2O is selling higher today and i just try to use the 7 day average, i'm probably just not going to be able to buy any
+
+
+//Organisms
+      if(this.terminal.store[RESOURCE_ORGANISM] > 0) {
+        const maxBuy = GetMaxBuy(RESOURCE_ORGANISM);
+        if(global.Market[RESOURCE_ORGANISM] && global.Market[RESOURCE_ORGANISM].value && maxBuy) {
+          const q = Math.min(this.terminal.store[RESOURCE_ORGANISM], maxBuy.remainingAmount)
+          if(maxBuy.price >= global.Market[RESOURCE_ORGANISM].value && q > 0) {
+            console.log('Selling ' + q + ' ' + RESOURCE_ORGANISM + ' for ' + maxBuy.price + ' (est. value: ' + global.Market[RESOURCE_ORGANISM].value + ')');
+            Game.market.deal(maxBuy.id, q, this.name)
+          }
+        }
+      }
+
+
+// next todos: 
+reremote mining
+    :(
+boost manufactoring
+post for sell other type of commo
+    check if we only sell regional commo
+make liquids
+    the commos that only required bars (and with/w.o. flvl)
+boost mats for VIP (res flow, auto super boost)
+    VIP room needs G series
+    other rooms 'over' them
+quads flee damage calculation
+    when surrounding incoming damage is higher than a threshold (heal, tough dpd.), flee, other wise go to target
+inc dmg for a creep at a point
+    (could be for defence or attack)
+    -> defence = my towers in room + red necks in range 1
+    -> attack = enemy towers in room + attacks at range 1 + attacks with 0 fatigue at range 2 + ranged with fatigue in range 3 + ranged with 4 fatigue in range 4 (-1 dist) 
+    TH = front active tough raw health
+    FEH = front effective health
+    DTT = damage to take
+    SH = surrounding heals
+    if (TH>=FEH) { // all damage can't penetrate
+        DTT = inc*GO.coef
+    }
+    else { // incoming damage penetrates tough
+        DTT = TH + (inc - TH/GO.coef)
+    }
+    if (DTT>=SH) {
+        flee from current target with all hostile creeps and structrues to avoid
+    }
+    else {
+        proceed moving to current target
+    }
+    functions:
+        tower damage at point
+        [DTT] = (creep body, current health, incoming damage)
+        heal surround at point
+    
+
+tower
+quads body calculator
+GH res flow
+superupgrader boost
+pc logic + multiple sources
+pc disrupt spawn attack
+    logic
+    healer
+    deliveroo
+
 */

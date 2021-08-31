@@ -114,11 +114,45 @@ global.getNumberInRoomName = function(roomName) {
 }
 
 global.powerspawnProcessPower = function(room) {
-    let storage = room.storage;
-    let terminal = room.terminal;
-    let powerSpawn = Game.getObjectById(room.memory.powerSpawnId);
-    if (powerSpawn && powerSpawn.power > 0 && powerSpawn.energy > 50 && terminal.store.energy > 15000 && storage.store.energy>100000) {
-        powerSpawn.processPower();
+    if (room.controller.level==8 || (Game.shard.name=='shardSeason' && room.controller.level>=5)) {
+        let storage = room.storage;
+        let terminal = room.terminal;
+        let powerSpawn = Game.getObjectById(room.memory.powerSpawnId);
+        if (Game.shard.name == 'shardSeason') {
+            if (Memory.s3powerStats == undefined) {
+                Memory.s3powerStats = {};
+            }
+            if (Memory.s3powerStats.processing == undefined) {
+                Memory.s3powerStats.processing = {};
+            }
+            Memory.s3powerStats.processing[room.name] = false;
+        }
+        if (powerSpawn) {
+            if (room.terminal && room.memory.mineralThresholds.currentMineralStats.energy>155000 || (room.memory.mineralThresholds.currentMineralStats.battery>10000 && room.memory.mineralThresholds.currentMineralStats.energy>105000)) {
+                if (powerSpawn.power > 0 && powerSpawn.energy > 50) {
+                    if (powerSpawn.processPower() == OK) {
+                        if (Game.shard.name=='shardSeason') {
+                            if (Memory.s3powerStats == undefined) {
+                                Memory.s3powerStats = {};
+                            }
+                            if (Memory.s3powerStats.processing == undefined) {
+                                Memory.s3powerStats.processing = {};
+                            }
+                            Memory.s3powerStats.processing[room.name] = true;
+                        }
+                    }
+                }/*
+                if (powerSpawn.power <50 && room.memory.mineralThresholds.currentMineralStats.power>0) {
+                    addResFlowTask(room.name, getATypeOfRes(room, 'power').id, room.memory.powerSpawnId, 'power', 50);
+                }*/
+            }
+        }
+        else {
+            let psps = room.find(FIND_MY_STRUCTURES, {filter: t=>t.structureType==STRUCTURE_POWER_SPAWN});
+            if (psps.length>0) {
+                room.memory.powerSpawnId = psps[0].id;
+            }
+        }
     }
 }
 
@@ -264,12 +298,15 @@ global.cacheInvaderCore = function (r) {
         return false
     }
     else { // clear dissapeared invc rooms
-        if (Memory.rooms[r.name]) {
+        if (Memory.rooms && Memory.rooms[r.name]) {
             if (Memory.rooms[r.name].avoid) {
                 Memory.rooms[r.name].avoid = false;
             }
         }
         else {
+            if (Memory.rooms==undefined) {
+                Memory.rooms = {};
+            }
             Memory.rooms[r.name] = {'avoid': false};
         }
         return true

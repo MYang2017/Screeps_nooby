@@ -287,7 +287,7 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
             // We need to set the defaults costs higher so that we
             // can set the road cost lower in `roomCallback`
             plainCost: 4,
-            swampCost: 10,
+            swampCost: 40,
 
             maxRooms: 1,
 
@@ -300,20 +300,15 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
                 if (!room) return;
                 let costs = new PathFinder.CostMatrix;
 
-                // set oppo even/odd cost fucking high so they are not planned
+                // set oppo even/odd cost high so they are not planned
                 let terrain = Game.map.getRoomTerrain(posi.roomName);
                 for (let i = 0; i < 50; i++) {
                     for (let j = 0; j < 50; j++) {
                         if (ifEO) {
                             if (!((i + j) % 2 == (posi.x + posi.y) % 2)) {
-                                if (!(terrain.get(i, j) == TERRAIN_MASK_WALL)) {
-                                    costs.set(i, j, 20);
+                                if (!(terrain.get(i, j) == TERRAIN_MASK_WALL || terrain.get(i, j) == TERRAIN_MASK_SWAMP)) {
+                                    costs.set(i, j, 5);
                                 }
-                            }
-                        }
-                        else { // switch off even/odd grid
-                            if (!(terrain.get(i, j) == TERRAIN_MASK_WALL)) {
-                                costs.set(i, j, 20);
                             }
                         }
                     }
@@ -323,10 +318,10 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
                     if (struct.structureType === STRUCTURE_ROAD) {
                         // Favor roads over plain tiles
                         if (avoidRaod) {
-                            costs.set(struct.pos.x, struct.pos.y, 5);
+                            costs.set(struct.pos.x, struct.pos.y, 6);
                         }
                         else {
-                            costs.set(struct.pos.x, struct.pos.y, 0.1);
+                            costs.set(struct.pos.x, struct.pos.y, 1);
                         }
                     } else if (struct.structureType !== STRUCTURE_CONTAINER &&
                         (struct.structureType !== STRUCTURE_RAMPART ||
@@ -339,7 +334,7 @@ var findPathBasedOnGridEvenOdd = function (posi, goalPosi, range = 1, ifEO = tru
                 room.find(FIND_CONSTRUCTION_SITES).forEach(function (site) {
                     if (site.structureType === STRUCTURE_ROAD) {
                         // Favor roads over plain tiles
-                        costs.set(site.pos.x, site.pos.y, 0.1);
+                        costs.set(site.pos.x, site.pos.y, 1);
                     }
                 });
 
@@ -367,19 +362,36 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
 
     if (r.memory.anchor) {
         anchx = r.memory.anchor.x;
-        anchy = r.memory.anchor.y - 1;
+        anchy = r.memory.anchor.y;
     }
     else if (r.memory.newAnchor) {
         anchx = r.memory.newAnchor.x;
-        anchy = r.memory.newAnchor.y - 1;
+        anchy = r.memory.newAnchor.y;
     }
     else {
         fo('please set anchor or newAnchor memory of room ' + r.name);
         return false
     }
 
-    let posi = new RoomPosition(anchx, anchy, roomName);
-
+    let posi = new RoomPosition(anchx, anchy-1, roomName);
+    if (r.memory.newBunker && r.memory.newBunker.orient) {
+        if (r.memory.newBunker.orient == 'L') {
+            posi = new RoomPosition(anchx - 1, anchy, roomName);
+        }
+        else if (r.memory.newBunker.orient == 'U') {
+            posi = new RoomPosition(anchx, anchy - 1, roomName);
+        }
+        else if (r.memory.newBunker.orient == 'D') {
+            posi = new RoomPosition(anchx, anchy + 1, roomName);
+        }
+        else if (r.memory.newBunker.orient == 'R') {
+            posi = new RoomPosition(anchx+1, anchy, roomName);
+        }
+        else {
+            fo('funcBuildingPlan rec container location wrong');
+        }
+    }
+                            
     if (goalPosi.length) { // if array of posis
         var goals = [];
         goalPosi.forEach((gp) => {
@@ -398,7 +410,7 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
             // We need to set the defaults costs higher so that we
             // can set the road cost lower in `roomCallback`
             plainCost: 2,
-            swampCost: 6,
+            swampCost: 20,
 
             maxRooms: 1,
 
@@ -428,11 +440,38 @@ var findPathBasedOnGridEvenOddAndBankerBlockage = function (r, goalPosi, range =
                             }
                         }
                         // bunker block
-                        if ((i > anchx - 5) && (i < anchx + 5) && (j > anchy - 6) && (j < anchy)) {
-                            costs.set(i, j, 0xff);
+                        if (room.memory.newBunker && room.memory.newBunker.orient) {
+                            if (room.memory.newBunker.orient == 'L') {
+                                if ((i > anchx - 1) && (i < anchx + 5) && (j > anchy - 3) && (j < anchy + 3)) {
+                                    costs.set(i, j, 0xff);
+                                }
+                            }
+                            else if (room.memory.newBunker.orient == 'U') {
+                                if ((i > anchx - 3) && (i < anchx + 3) && (j > anchy - 1) && (j < anchy + 5)) {
+                                    costs.set(i, j, 0xff);
+                                }
+                            }
+                            else if (room.memory.newBunker.orient == 'D') {
+                                if ((i > anchx - 3) && (i < anchx + 3) && (j > anchy - 5) && (j < anchy + 1)) {
+                                    costs.set(i, j, 0xff);
+                                }
+                            }
+                            else if (room.memory.newBunker.orient == 'R') {
+                                if ((i > anchx - 5) && (i < anchx + 1) && (j > anchy - 3) && (j < anchy + 3)) {
+                                    costs.set(i, j, 0xff);
+                                }
+                            }
+                            else {
+                                fo('funcBuildingPlanner path finding buncker block area wrong')
+                            }
                         }
-                        if ((i > anchx - 3) && (i < anchx + 3) && (j > anchy - 11) && (j < anchy - 5)) {
-                            costs.set(i, j, 0xff);
+                        else {
+                            if ((i > anchx - 5) && (i < anchx + 5) && (j > anchy - 6) && (j < anchy)) {
+                                costs.set(i, j, 0xff);
+                            }
+                            if ((i > anchx - 3) && (i < anchx + 3) && (j > anchy - 11) && (j < anchy - 5)) {
+                                costs.set(i, j, 0xff);
+                            }
                         }
                     }
                 }
@@ -509,6 +548,9 @@ global.checkIfRoomNeedRerunPlan = function (r) { // depricated
 }
 
 global.updateRoomPlan = function (rn) {
+    if (rn == 'E12S56') {
+        return
+    }
     // update to build memory
     let r = Game.rooms[rn];
     let roomPlanList = r.memory.roomLayout;
@@ -523,7 +565,7 @@ global.updateRoomPlan = function (rn) {
             if (toBuild.posi.x < 2 || toBuild.posi.x > 47 || toBuild.posi.y < 2 || toBuild.posi.y > 47) {
                 // pass
             }
-            else if ((found.length > 0 && found[0].structureType == toBuild.t) || (found.length > 1 && found[1].structureType == toBuild.t)) {
+            else if (found.length > 0) { // ((found.length > 0 && found[0].structureType == toBuild.t) || (found.length > 1 && found[1].structureType == toBuild.t)) {
                 // next
             }
             else {
@@ -561,8 +603,13 @@ global.fantacyRoomPlanStored = function (anchor, r) { // anchor is first spawn p
     let y = anchor.y;
     let pl = [];
     let lvl = r.controller.level;
+    
+    if (Game.shard.name=='shardSeason') {
+        return pl
+    }
 
-    if (r.name == 'E23S16') {
+    if (r.name == '?') {
+        return pl
     }
     else {
         pl.push({ posi: { x: x, y: y - 6 }, t: STRUCTURE_EXTENSION }); // 20
@@ -606,7 +653,7 @@ global.fantacyRoomPlanStored = function (anchor, r) { // anchor is first spawn p
                 if (lvl > 6) {
                     pl.push({ posi: { x: x + 2, y: y - 7 }, t: STRUCTURE_SPAWN }); // 11
                     pl.push({ posi: { x: x, y: y }, t: STRUCTURE_SPAWN }); // 11 
-                    pl.push({ posi: { x: x + 2, y: y }, t: STRUCTURE_TOWER }); // season nuke, mmo factory
+                    pl.push({ posi: { x: x + 2, y: y }, t: STRUCTURE_FACTORY }); // season nuke, mmo factory
                     pl.push({ posi: { x: x - 2, y: y - 1 }, t: STRUCTURE_EXTENSION });
                     pl.push({ posi: { x: x, y: y - 2 }, t: STRUCTURE_EXTENSION });
                     pl.push({ posi: { x: x + 2, y: y - 2 }, t: STRUCTURE_EXTENSION });
@@ -655,6 +702,92 @@ global.runUltraToBuildPlan = function (r) {
     let extensionCount = 0;
     let flagO = Game.flags[rn + '_anch']; // true anch (below storage position)
     let sp = undefined;
+    
+    if (Game.shard.name=='shardSeason') {
+        // if core memory not defined, init
+        // else 
+            // loop template
+                // if already exist
+                    // if not logged
+                        // log
+                    // else
+        // room layout template, also the building order
+        let roomLayoutTemplate = {coreSp: undefined,
+                                  recExt: [],
+                                  recCtn: undefined,
+                                  coreExt: [],
+                                  sourceCtn: [],
+                                  ext: [],
+                                  stor: undefined,
+                                  ps: undefined,
+                                  term: undefined,              
+        };
+        
+        if (r.memory.newBunker == undefined) {
+            r.memory.newBunker = {};
+            r.memory.newBunker['layout'] = roomLayoutTemplate;
+        }
+        else if (r.memory.newBunker.setPoint==undefined) {
+            fo(r.name + ' set point missing');
+        }
+        else {
+            if (r.memory.newBunker.orient==undefined) {
+                fo(r.name + ' orient missing');
+            }
+            else {
+                if (r.memory.newBunker.STclock==undefined) {
+                    fo(r.name + ' STclock missing');
+                }
+                else {
+                    // spawn
+                    if (r.memory.newBunker.layout.coreSp==undefined) {
+                        sp = r.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_SPAWN });
+                        if (sp.length > 0) {
+                            r.memory.newBunker.layout.coreSp = [{ posi: sp[0].pos, t: STRUCTURE_SPAWN, id: sp[0].id }];
+                            r.memory.newAnchor = sp[0].pos;
+                        }
+                        else {
+                            if (r.memory.newBunker.layout.coreSp && r.memory.newBunker.layout.coreSp.length>0 && r.memory.newBunker.layout.coreSp[0].id && Game.getObjectById(r.memory.newBunker.layout.coreSp[0].id) == undefined) {
+                                fo(r.name + ' spawn got destroyed, build a new one');
+                            }
+                            else { // no sp
+                                let cti = r.find(FIND_CONSTRUCTION_SITES, { filter: o => o.structureType == STRUCTURE_SPAWN });
+                                if (cti.length > 0) {
+                    
+                                }
+                                else {
+                                    fo('Please build first spawn ' + r.name + ' to initiate room build plan');
+                                }
+                                return
+                            }
+                        }
+                    }
+                    else {
+                        // check if spawn still there
+                        let sp = r.memory.newBunker.layout.coreSp[0].id;
+                        if (!sp||Game.getObjectById(sp)==null) {
+                            r.memory.newBunker.layout.coreSp = undefined;
+                        }
+                        // coreExt
+                        if (r.memory.newBunker.layout.recCtn==undefined) {
+                            sp = r.memory.newBunker.layout.coreSp[0].id;
+                            let recCtn = Game.getObjectById(sp).pos.findInRange(FIND_STRUCTURES, 1, {filter:t=>t.structureType==STRUCTURE_CONTAINER});
+                            if (recCtn.length>0) {
+                                r.memory.newBunker.layout.recCtn = [{ posi: recCtn[0].pos, t: STRUCTURE_CONTAINER, id: recCtn[0].id }];
+                            }
+                        }
+                        else {
+                            let recto = r.memory.newBunker.layout.recCtn[0].id;
+                            if (Game.getObjectById(recto)==null) {
+                                r.memory.newBunker.layout.recCtn = undefined;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
 
     // initial spawn 
     if (flagO) {
@@ -664,6 +797,7 @@ global.runUltraToBuildPlan = function (r) {
         sp = r.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_SPAWN });
         if (sp.length > 0) {
             bigPlan.push({ posi: sp[0].pos, t: STRUCTURE_SPAWN });
+            r.memory.newBunker.layout.coreSp = sp[0].id;
         }
         else {
             let cti = r.find(FIND_CONSTRUCTION_SITES, { filter: o => o.structureType == STRUCTURE_SPAWN });
@@ -678,8 +812,18 @@ global.runUltraToBuildPlan = function (r) {
     }
 
     // extension first
+    if (Memory.mapInfo[rn] == undefined) {
+        logGrandeRoomInfo(Game.rooms[rn], true);
+    }
+    
     for (let sourceId in Memory.mapInfo[rn].eRes) {
-        let containerPosi = Memory.mapInfo[rn].eRes[sourceId].easyContainerPosi
+        let containerPosi = Memory.mapInfo[rn].eRes[sourceId].easyContainerPosi;
+        let containerPosis = Memory.mapInfo[rn].eRes[sourceId].posis;
+        let perfContPosi = posiClosestToPosi(r, containerPosis, new RoomPosition (25, 25, r.name));
+        if (r.name == 'E8S58' || r.name == 'E11S1') {
+            containerPosi = perfContPosi;
+            Memory.mapInfo[rn].eRes[sourceId].easyContainerPosi = perfContPosi;
+        }
         //bigPlan.push({posi: containerPosi, t: STRUCTURE_CONTAINER});
         //containerCount++;
         let containerSurroundings = returnALLAvailableNoStructureLandCoords(r, containerPosi);
@@ -714,20 +858,32 @@ global.runUltraToBuildPlan = function (r) {
 
     // now build room plan
     let plannedList = [];
-
-    if (r.memory.anchor == undefined) {
-        r.memory.newAnchor = new RoomPosition(sp[0].pos.x, sp[0].pos.y + 10, sp[0].pos.roomName);
-        plannedList = fantacyRoomPlanStored({ x: sp[0].pos.x - 2, y: sp[0].pos.y + 7 }, r);
+    
+    if (r.terminal && r.terminal.my && r.storage && r.storage.my) {
+        r.memory.anchor = new RoomPosition(r.terminal.pos.x-2, r.terminal.pos.y+1, r.name);
+        r.memory.newAnchor = new RoomPosition(r.terminal.pos.x-2, r.terminal.pos.y+1, r.name);
+        plannedList = fantacyRoomPlanStored({ x: r.memory.newAnchor.x - 2, y: r.memory.newAnchor.y - 3 }, r);
     }
-
-    if (r.memory.newAnchor == undefined) {
-        if (flagO) {
-            r.memory.anchor = new RoomPosition(flagO.pos.x, flagO.pos.y, flagO.pos.roomName);
-            plannedList = fantacyRoomPlanStored({ x: flagO.pos.x - 2, y: flagO.pos.y - 3 }, r);
+    else {
+        if (r.memory.anchor == undefined) {
+            if (r.storage && r.storage.my) {
+                r.memory.newAnchor = new RoomPosition(r.storage.pos.x, r.storage.pos.y + 1, r.storage.pos.roomName);
+            }
+            else {
+                r.memory.newAnchor = new RoomPosition(sp[0].pos.x, sp[0].pos.y + 10, sp[0].pos.roomName);
+            }
+            plannedList = fantacyRoomPlanStored({ x: r.memory.newAnchor.x - 2, y: r.memory.newAnchor.y - 3 }, r);
         }
-        else {
-            r.memory.anchor = new RoomPosition(sp[0].pos.x + 2, sp[0].pos.y + 3, sp[0].pos.roomName);
-            plannedList = fantacyRoomPlanStored(sp[0].pos, r);
+    
+        if (r.memory.newAnchor == undefined) {
+            if (flagO) {
+                r.memory.anchor = new RoomPosition(flagO.pos.x, flagO.pos.y, flagO.pos.roomName);
+                plannedList = fantacyRoomPlanStored({ x: flagO.pos.x - 2, y: flagO.pos.y - 3 }, r);
+            }
+            else {
+                r.memory.anchor = new RoomPosition(sp[0].pos.x + 2, sp[0].pos.y + 3, sp[0].pos.roomName);
+                plannedList = fantacyRoomPlanStored(sp[0].pos, r);
+            }
         }
     }
 
@@ -784,8 +940,63 @@ global.manageUpgradeSupplier = function (r) {
     // 
 }
 
+global.ifNotBunkerBlocked = function (r, posi) {
+    if (Game.shard.name == 'shardSeason') {
+        return true
+    }
+    let lvl = r.controller.level;
+    if (r.memory==undefined || r.memory.forSpawning == undefined || r.memory.forSpawning.defaultDir == undefined || Object.keys(r.memory.forSpawning.defaultDir).length <= 1 ) {
+        return true
+    }
+    if (lvl<7) {
+        return true
+    }
+    if (r.memory.anchor) {
+        anchx = r.memory.anchor.x;
+        anchy = r.memory.anchor.y;
+    }
+    else if (r.memory.newAnchor) {
+        anchx = r.memory.newAnchor.x;
+        anchy = r.memory.newAnchor.y;
+    }
+    else {
+        fo('please set anchor or newAnchor memory of room ' + r.name + ' for room plan');
+        return false
+    }
+    
+    let i = posi.x;
+    let j = posi.y;
 
+    // lower bunker block
+    if (lvl==7) {
+        if ((i > anchx - 4) && (i < anchx) && (j > anchy - 6) && (j < anchy-2)) {
+            return false
+        }
+    }
+    else if (lvl==8) {
+        if ((i > anchx - 4) && (i < anchx + 4) && (j > anchy - 6) && (j < anchy-2)) {
+            return false
+        }
+    }
+    
+    // core
+    if ((i > anchx - 2) && (i < anchx + 2) && (j > anchy - 11) && (j < anchy - 5)) {
+        return false
+    }
+    return true
+}
 
+global.posiClosestToPosi = function (r, posis, posi) {
+    let dist = 5001;
+    let ret;
+    for (let po of posis) {
+        if ((posi.x-po.x)**2 + (posi.y-po.y)**2 < dist && ifNotBunkerBlocked(r, po)) {
+            dist = (posi.x-po.x)**2 + (posi.y-po.y)**2;
+            ret = po;
+        }
+    }
+    return ret
+}
 
 
 module.exports = { visualizePath, findPathBasedOnGridEvenOdd, findPathBasedOnGridEvenOddAndBankerBlockage };

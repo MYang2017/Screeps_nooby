@@ -5,7 +5,9 @@ var actionRecycle = require('action.recycle');
 
 module.exports = {
     run: function(creep) {
-        if (creep.room.controller.level<8) {
+        actionRecycle.run(creep);
+        return
+        if (creep.room.controller.level<8 && creep.room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader>0) {
             let path = creep.memory.path; 
             let dir = creep.memory.dir;
             
@@ -51,7 +53,7 @@ module.exports = {
             let r = creep.room;
             
             if (nowPosId == -1) {
-                creep.moveTo(path[0].x, path[0].y);
+                creep.move1tile(path[0].x, path[0].y);
             }
             else { // on track
                 let nextPosId = parseInt(nowPosId) + parseInt(creep.memory.dir);
@@ -95,7 +97,8 @@ module.exports = {
                     if (cps.length>0 && cps[0].memory.role == 'superUpgrader') {
                         let allups = creep.room.find(FIND_MY_CREEPS, {filter: c=>c.memory.role == 'superUpgrader'});
                         for (let lup of allups) {
-                            lup.move(getRandomInt(1,8));
+                            //lup.move(getRandomInt(1,8));
+                            lup.moveTo(lup.room.controller);
                         }
                     }
                     
@@ -140,7 +143,7 @@ module.exports = {
                 */
                 
                 if (doMove){
-                    creep.moveTo(nextPos.x, nextPos.y);
+                    creep.move1tile(nextPos.x, nextPos.y);
                 }
                 if (ePassRes != OK) {
                     //ontheway.run(creep);

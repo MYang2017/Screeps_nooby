@@ -25,14 +25,15 @@ module.exports = {
             }
             else {
                 if (creep.memory.working == true) {
-                    if (ifConstructionSiteInRoom(creep.room) || creep.room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader > 0) {
+                    if ((ifConstructionSiteInRoom(creep.room) || (creep.room.memory.forSpawning && creep.room.memory.forSpawning.roomCreepNo && creep.room.memory.forSpawning.roomCreepNo.minCreeps.superUpgrader > 0)) && ((creep.room.controller && (creep.room.controller.progress<creep.room.controller.progressTotal) )&&(creep.room.controller && creep.room.controller.ticksToDowngrade && creep.room.controller.ticksToDowngrade>3333))) {
                         actionBuild.run(creep);
                     }
                     else {
-                        if ( (creep.room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'pickuper' || c.memory.role == 'harvester' || c.memory.role == 'lorry' }).length == 0) && creep.memory.role != 'pioneer' ) {
+                        if ( (creep.room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'miner'}).length == 0) && creep.memory.role != 'pioneer' ) {
                             if (creep.room.name == creep.memory.target) { // if in target room work
                                 if (creep.room.energyAvailable == creep.room.energyCapacityAvailable) {
                                     actionUpgrade.run(creep);
+                                    return
                                 }
                                 else {
                                     creep.say('temp recycling');
@@ -45,10 +46,6 @@ module.exports = {
                         }
                         else {
                             actionUpgrade.run(creep);
-                            if ((creep.room.controller.level >= 5) && (_.sum(creep.room.find(FIND_MY_CREEPS, { filter: s => s.role == 'linkKeeper' })) == 0)) {
-                                let link = creep.pos.findInRange(FIND_STRUCTURES, 1, { filter: s => s.structureType == STRUCTURE_LINK })[0];
-                                creep.withdraw(link, RESOURCE_ENERGY)
-                            }
                         }
                     }
                 }

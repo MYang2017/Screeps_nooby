@@ -1,95 +1,140 @@
-var selfRecycling = require('action.selfRecycle');
+var rec = require('action.recycle');
+let dog = require('action.flee');
 
 module.exports = {
     run: function (creep) {
         if (creep.memory.prepareToDie) {
             if (creep.room.name != creep.memory.home) {
-                creep.travelTo(new RoomPosition(25, 25, creep.memory.home));
+                // move to home
+                if (creep.memory.foundRoute == undefined) {
+                    creep.memory.foundRoute = {};
+                }
+                if (creep.memory.foundRoute[creep.room.name+creep.memory.home]) {
+                    let route = creep.memory.foundRoute[creep.room.name+creep.memory.home];
+                    if (route.length > 0) {
+                        let next = route[0];
+                        let nextRoomTar = new RoomPosition(25, 25, next.room);
+                        creep.travelTo(nextRoomTar, {maxRooms: 1, offRoad: true, ignoreRoads: true});
+                    }
+                }
+                else {
+                    let route = Game.map.findRoute(creep.room, creep.memory.home, {
+                        routeCallback(roomName, fromRoomName) {
+                            let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+                            let isHighway = (parsed[1] % 10 === 0) || 
+                                            (parsed[2] % 10 === 0);
+                            let isMyRoom = Game.rooms[roomName] &&
+                                Game.rooms[roomName].controller &&
+                                Game.rooms[roomName].controller.my;
+                            if (isHighway || isMyRoom) {
+                                return 1;
+                            }
+                            else {
+                                return 4.8;
+                            }
+                        }});
+                    if (route.length > 0) {
+                        let next = route[0];
+                        let nextRoomTar = new RoomPosition(25, 25, next.room);
+                        creep.travelTo(nextRoomTar, {maxRooms: 1, offRoad: true, ignoreRoads: true});
+                    }
+                    creep.memory.foundRoute[creep.room.name+creep.memory.home] = route;
+                }
             }
-            else {
-                // finished duty and recycle
-                selfRecycling.run(creep);
+            else { // at home
+                rec.run(creep);
             }
         }
         else {
             if (creep.ticksToLive < 1000 && creep.room.name == creep.memory.home) {
                 // finished duty and recycle
-                selfRecycling.run(creep);
+                rec.run(creep);
             }
             else {
-                var destination;
-                let toHealName = creep.memory.toHeal;
-                if ((toHealName == undefined) || (Game.creeps[toHealName] == undefined)) {
-                    if (creep.room.name == creep.memory.target) { // if in target room
-                        var target = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: c => c.structureType == STRUCTURE_POWER_BANK });
-                        if (target.length == 0) {
-                            creep.room.memory.goPower = undefined;
-                            creep.memory.prepareToDie = true;
+                // if in target
+                if (creep.room.name == creep.memory.target) { // if in target room
+                    let pb = Game.getObjectById(creep.memory.sId); 
+                    if (pb==undefined) { // no pb
+                        creep.memory.prepareToDie = true;
+                    }
+                    
+                    // if to heal here, heal it
+                    let toHealName = creep.memory.toHeal;
+                    let kuli = Game.creeps[creep.memory.toHeal];
+                    if (toHealName && kuli) {
+                        if (kuli.memory.in) {
+                            if (creep.pos.getRangeTo(kuli)>1) {
+                                creep.travelTo(kuli);
+                            }
+                            else {
+                                creep.heal(kuli);
+                            }
                         }
                         else {
-                            if (creep.memory.toHeal == undefined) {
-                                var woundeds = creep.room.find(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) });
-                                /*if (creep.heal(woundeds[0]) == ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(woundeds[0])
-                                }*/
-                                var lesser = 99999;
-                                var healed;
-                                if (woundeds != undefined) {
-                                    for (let wounded of woundeds) {
-                                        //console.log(Game.creeps[wounded.name])
-                                        if (Game.creeps[wounded.name].hits < lesser) {
-                                            lesser = wounded.hits;
-                                            healed = Game.creeps[wounded.name];
-                                        }
-                                    }
-                                    if (creep.heal(healed) == ERR_NOT_IN_RANGE) {
-                                        creep.moveTo(healed);
-                                    }
-                                }
-                                /*if (woundeds != undefined) {
-                                    for (let wounded of woundeds) {
-                                        //console.log(wounded)
-                                        var range = creep.pos.getRangeTo(Game.creeps[wounded]);
-                                        if (range==1) { // in range just heal
-                                            creep.heal(wounded);
-                                            break; // no need to scan other creeps
-                                        }
-                                        else { // not in range of healing that target
-                                            var pos = ifSurrounded(Game.creeps[wounded.name]); // if the wounded target is surrounded or not
-                                            //console.log(pos)
-                                            if (pos != undefined) { // if not surrounded, go heal
-                                                creep.moveTo(pos.x,pos.y);
-                                                creep.heal(wounded);
-                                                break; // break
-                                            }
-                                            else { // if it is already surrounded, find next one
-                                                if (creep.heal(wounded) == ERR_NOT_IN_RANGE) {
-                                                    creep.moveTo(wounded);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }*/
-                                else { // if no wounded target go out of way
-                                    creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 15 });
-                                }
-                            }
-                            else { // heal assiged target
-                                if (creep.heal(Game.creeps[creep.memory.toHeal]) == ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(Game.creeps[creep.memory.toHeal]);
-                                }
+                            if (kuli.room.name == kuli.memory.target && kuli.pos.getRangeTo(pb)<2) {
+                                kuli.memory.in = true;
                             }
                         }
                     }
-                    else { // go to target room
-                        //var exit = creep.room.findExitTo(creep.memory.target);
-                        creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 15 });
+                    else {
+                        if (creep.memory.toHeal == undefined) {
+                            var woundeds = creep.room.find(FIND_MY_CREEPS, { filter: (s) => (s.hits < s.hitsMax) });
+                            if (woundeds.length>0) {
+                                if (creep.pos.getRangeTo(woundeds[0])>1) {
+                                    creep.travelTo(woundeds[0]);
+                                }
+                                else {
+                                    creep.heal(woundeds[0]);
+                                }
+                            }
+                            else { // if no wounded target go out of way
+                                if (creep.pos.getRangeTo(25, 25)>10) {
+                                    creep.travelTo(new RoomPosition(25, 25, creep.memory.target), { range: 9 });
+                                }
+                                dog.run(creep);
+                            }
+                        }
+                        else {
+                            creep.memory.toHeal = undefined;
+                        }
                     }
                 }
-                else {
-                    let toHealTar = Game.creeps[toHealName];
-                    creep.heal(toHealTar);
-                    creep.moveTo(toHealTar);
+                else { // go to target room
+                    // move to target
+                    if (creep.memory.foundRoute == undefined) {
+                        creep.memory.foundRoute = {};
+                    }
+                    if (creep.memory.foundRoute[creep.room.name+creep.memory.target]) {
+                        let route = creep.memory.foundRoute[creep.room.name+creep.memory.target];
+                        if (route.length > 0) {
+                            let next = route[0];
+                            let nextRoomTar = new RoomPosition(25, 25, next.room);
+                            creep.travelTo(nextRoomTar, {maxRooms: 1, offRoad: true, ignoreRoads: true});
+                        }
+                    }
+                    else {
+                        let route = Game.map.findRoute(creep.room, creep.memory.target, {
+                            routeCallback(roomName, fromRoomName) {
+                                let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+                                let isHighway = (parsed[1] % 10 === 0) || 
+                                                (parsed[2] % 10 === 0);
+                                let isMyRoom = Game.rooms[roomName] &&
+                                    Game.rooms[roomName].controller &&
+                                    Game.rooms[roomName].controller.my;
+                                if (isHighway || isMyRoom) {
+                                    return 1;
+                                }
+                                else {
+                                    return 4.8;
+                                }
+                            }});
+                        if (route.length > 0) {
+                            let next = route[0];
+                            let nextRoomTar = new RoomPosition(25, 25, next.room);
+                            creep.travelTo(nextRoomTar, {maxRooms: 1, offRoad: true, ignoreRoads: true});
+                        }
+                        creep.memory.foundRoute[creep.room.name+creep.memory.target] = route;
+                    }
                 }
             }
         }

@@ -13,6 +13,54 @@ module.exports = {
             creep.travelTo(creep.pos.findClosestByRange(exit));
         }*/
         
+        if (Game.cpu.bucket<9000 && Game.time%3!==0) {
+            return
+        }
+        
+        if (creep.memory.pList) {
+            if (creep.memory.toVisit == undefined || Game.rooms[creep.memory.toVisit]) {
+                creep.memory.toVisit = creep.memory.pList[Math.floor(Math.random()*creep.memory.pList.length)];
+            }
+            
+            if (creep.memory.storedRoutes == undefined) {
+                creep.memory.storedRoutes = {};
+            }
+            
+            let route = creep.memory.storedRoutes[creep.room.name + creep.memory.toVisit];
+            if (route == undefined) {
+                route = Game.map.findRoute(creep.room, creep.memory.toVisit, {
+                    routeCallback(roomName, fromRoomName) {
+                        let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+                        let isHighway = (parsed[1] % 10 === 0) ||
+                            (parsed[2] % 10 === 0);
+                        if (isHighway) {
+                            return 2;
+                        }
+                        else if (Memory.rooms[roomName] && Memory.rooms[roomName].avoid) {
+                            return 255;
+                        }
+                        else {
+                            return 4;
+                        }
+                    }
+                });
+                creep.memory.storedRoutes[creep.room.name + creep.memory.toVisit] = route;
+            }
+            
+            if (route.length > 0) {
+                if (route[0] && route[0].room) {
+                    creep.travelTo(new RoomPosition(25, 25, route[0].room));
+                }
+            }
+            
+            return
+        }
+        
+        if (Game.shard.name == 'shard2' && creep.room.name == 'E30S50') {
+            creep.moveTo(18, 22);
+            return
+        }
+        
         if (creep.memory.home == undefined) {
             creep.memory.home = creep.room.name;
         }
@@ -42,6 +90,7 @@ module.exports = {
                         }
                     }*/
                     
+                    /*
                     if (ifInsideThisSectorOfWall(creep.name, new RoomPosition(25, 25, 'E5S15'))) {
                         if (creep.room.name!=creep.memory.target) {
                             storedTravelFromAtoB(creep, 'l');
@@ -52,16 +101,17 @@ module.exports = {
                         }
                         return
                     }
+                    */
                     
                     let route = creep.memory.route;
                     if (route) {
                         if (creep.room.name!=creep.memory.target) {
-                            let emi = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>c.owner.username=='Source Keeper'});
+                            let emi = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 5, { filter: c => (!allyList().includes(c.owner.username)) && (c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0) });
                             if (emi.length>0) {
                                 creep.memory._trav = undefined;
                             }
                             
-                            emi = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3, {filter: c=>c.owner.username=='Source Keeper'});
+                            emi = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3, { filter: c => (!allyList().includes(c.owner.username)) && (c.getActiveBodyparts(ATTACK) + c.getActiveBodyparts(RANGED_ATTACK) > 0) });
                             if (emi.length>0) {
                                 actionRunAway.run(creep);
                             }
@@ -80,16 +130,22 @@ module.exports = {
                                     creep.travelTo(new RoomPosition(25, 25, nextRn.room), {maxRooms: 1, offRoad: true, ignoreRoads: true, ignoreSwamp: true});
                                 }
                                 else {
-                                    creep.travelTo(25, 25, {range: 23, maxRooms: 1, offRoad: true, ignoreRoads: true, ignoreSwamp: true});
+                                    creep.travelTo(25, 25, {range: 21, maxRooms: 1, offRoad: true, ignoreRoads: true, ignoreSwamp: true});
                                 }
                             }
                         }
-                        else {
+                        else { // in target, wonder around
+                            /*
                             let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(creep.memory.target);
                             let isMid = (parsed[1] % 10 === 5) && 
                                             (parsed[2] % 5 === 0);
                             if (isMid) {
                                 
+                            }
+                            */
+                            
+                            if (Game.time % 7 == 0 && Game.map.getRoomLinearDistance(creep.memory.home, creep.memory.target) < 3) {
+                                determineIfRoomIsSuitableForRemoteMining(Game.rooms[creep.memory.home], creep.memory.target);
                             }
                             creep.moveTo(25, 25, {range: 22, maxRooms: 1});
                             actionAvoid.run(creep);

@@ -18,7 +18,7 @@ class Traveler {
         if (!destination) {
             return ERR_INVALID_ARGS;
         }
-        if (creep.fatigue > 0) {
+        if (creep.fatigue && creep.fatigue > 0) {
             Traveler.circle(creep.pos, "aqua", .3);
             return ERR_TIRED;
         }
@@ -77,6 +77,9 @@ class Traveler {
                 options.stuckValue = 3;
             }
             else {
+                if (options === parseInt(options, 10)) { // very strange, giving me an integer instead of object
+                    options = {};
+                }
                 options.stuckValue = DEFAULT_STUCK_VALUE;
             }
         }
@@ -139,6 +142,7 @@ class Traveler {
         }
         // consume path
         if (state.stuckCount === 0 && !newPath) {
+            // pre path for longDistanceLorries passEnergy
             if (creep.memory.pDirs==undefined || creep.memory.pDirs.length !== 3) {
                 creep.memory.pDirs = [0, 0, 0];                                                                                                        
             }
@@ -146,12 +150,77 @@ class Traveler {
             creep.memory.pDirs[0] = tempD[1];
             creep.memory.pDirs[1] = tempD[2];
             creep.memory.pDirs[2] = travelData.path[0];
+            
             travelData.path = travelData.path.substr(1);
         }
         let nextDirection = parseInt(travelData.path[0], 10);
+        
+        let nextPos
+        if (nextDirection == null) {
+            nextPos = creep.pos.getDirectionTo(destination);
+        }
+        else {
+            nextPos = Traveler.positionAtDirection(creep.pos, nextDirection);
+        }
+        
+        // swap if front position is occupied by a working == true
+        if (nextPos && nextPos.x && nextPos.y && creep.pos.getRangeTo(nextPos.x && nextPos.y)==1) {
+            let frontCs = creep.room.lookForAt(LOOK_CREEPS, nextPos.x, nextPos.y);
+            /*if (frontCs.length>0 && frontCs[0].my && (frontCs[0].memory.role=='powerSourceJammer' && ((creep.memory.role=='powerSourceAttacker')||(creep.memory.role=='powerSourceLorry')))) {
+                frontCs[0].moveTo(creep);
+            }
+            else 
+            */
+            if ( creep.powers == undefined &&
+                (frontCs.length>0 && frontCs[0].my) && 
+                (!(creep.room.memory.battleMode && frontCs[0].memory.role=='redneck')) && 
+                 (frontCs[0].memory.free || 
+                  ((creep.memory.enforce || (state.stuckCount>0 && frontCs[0].memory.in==undefined && creep.memory.working != frontCs[0].memory.working)) && 
+                  !(_.sum(creep.store)==0 && _.sum(frontCs[0].store)==0) && 
+                  (!creep.memory.role=='newDickHead' && !(creep.store.getFreeCapacity('energy')==0 && frontCs[0].store.getFreeCapacity('energy')==0)) &&
+                  (frontCs[0].memory.fixed==undefined)
+                  )
+                  || (creep.pos.x==0 || creep.pos.x==49 || creep.pos.y==0 || creep.pos.y==49)
+                  || (!isSlave(creep) && isSlave(frontCs[0]))
+                  || (creep.memory.role == 'newDickHead')
+                  || ((frontCs[0].memory.role == 'lorry' || frontCs[0].memory.role == 'pickuper') && frontCs[0].memory.working==true)
+                  || (creep.memory.role == 'claimer' && frontCs[0].memory.role !== 'claimer')
+                  || (frontCs[0].memory.role == 'dedicatedUpgraderHauler' && frontCs[0].store.energy>0)
+                  || (frontCs[0].memory.role == 'pickuper' && frontCs[0].memory.working==false)
+                  || (frontCs[0].powers != undefined)
+                  || (frontCs[0].memory.boosted==false)
+                  || (frontCs[0].memory.free==true && frontCs[0].memory.role!=creep.memory.role && creep.memory.free!=true)
+                  || (frontCs[0].memory.role=='sacrificer' && creep.memory.role !=='sacrificer')
+                  || (frontCs[0].memory.role=='powerSourceLorry' && _.sum(frontCs[0].store)==0 && (!(creep.memory.role=='powerSourceLorry' && _.sum(creep.store)==0)))
+                  || (frontCs[0].memory.role=='wallRepairer' && frontCs[0].store.energy>0)
+                 )
+            ) {
+                frontCs[0].moveTo(creep);
+            }
+            else if (creep.powers && (frontCs.length>0 && frontCs[0].my) && frontCs[0].memory.working && frontCs[0].store.energy>0 && frontCs[0].store.getFreeCapacity('energy')>0 && (frontCs[0].getActiveBodyparts(WORK)==frontCs[0].getActiveBodyparts(CARRY))) {
+                frontCs[0].moveTo(creep);
+            }
+            /*
+            else if (creep.memory.role=='powerSourceAttacker' && ( frontCs[0].memory.role!=='powerSourceAttacker' || (frontCs[0].memory.role=='powerSourceAttacker' && creep.getActiveBodyparts(ATTACK)>frontCs[0].getActiveBodyparts(ATTACK)))) {
+                creep.pull(frontCs[0]);
+                creep.moveTo(frontCs[0]);
+                frontCs[0].move(creep);
+            }
+            */
+            else {
+                frontCs = creep.room.lookForAt(LOOK_POWER_CREEPS, nextPos.x, nextPos.y);
+                if ( (frontCs.length>0 && frontCs[0].my) /*&& 
+                     (creep.memory.enforce || (state.stuckCount>0)) && 
+                     !(_.sum(creep.store)==0 && _.sum(frontCs[0].store)==0) && 
+                     !(creep.store.getFreeCapacity('energy')==0 && frontCs[0].store.getFreeCapacity('energy')==0) &&
+                     (frontCs[0].memory.fixed==undefined)*/
+                ) {
+                    frontCs[0].moveTo(creep);
+                }
+            }
+        }
         if (options.returnData) {
             if (nextDirection) {
-                let nextPos = Traveler.positionAtDirection(creep.pos, nextDirection);
                 if (nextPos) {
                     options.returnData.nextPos = nextPos;
                 }
@@ -226,8 +295,16 @@ class Traveler {
             return;
         }
         if (room.controller) {
-            if (room.controller.owner && ((!room.controller.my)&&(!allyList().includes(room.controller.owner)))) {
-                room.memory.avoid = 1;
+            if (room.controller.owner && ((!room.controller.my)&&(!allyList().includes(room.controller.owner.username)))) {
+                if (Memory.rooms == undefined) {
+                    Memory.rooms = {};
+                }
+                if (Memory.rooms[room.name] == undefined) {
+                    Memory.rooms[room.name] = {};
+                }
+                if (Memory.rooms[room.name].avoid == undefined) {
+                    Memory.rooms[room.name]['avoid'] = 1;
+                }
             }
             else {
                 delete room.memory.avoid;
@@ -374,7 +451,7 @@ class Traveler {
                 if (!options.allowHostile && Traveler.checkAvoid(roomName) &&
                     roomName !== destination && roomName !== origin) {
                     // room is marked as "avoid" in room memory
-                    return Number.POSITIVE_INFINITY;
+                    return 255;
                 }
                 let parsed;
                 if (options.preferHighway) {
@@ -494,7 +571,16 @@ class Traveler {
         }
         // add middle point as unwalkable
         let anch = room.memory.newAnchor;
+        if (anch==undefined) {
+            anch = room.memory.anchor;
+        }
         if (anch) {
+            if (room.memory.coreBaseReady && room.find(FIND_MY_CREEPS, {filter:c=>c.memory.role == 'dickHead'}).length>3) {
+                matrix.set(anch.x-1, anch.y-7, 0xff);
+                matrix.set(anch.x-1, anch.y-9, 0xff);
+                matrix.set(anch.x+1, anch.y-7, 0xff);
+                matrix.set(anch.x+1, anch.y-9, 0xff);
+            }
             matrix.set(anch.x, anch.y-8, 0xff);
         }
         // for maxRooms=1
@@ -508,12 +594,15 @@ class Traveler {
      * @returns {CostMatrix}
      */
     static addCreepsToMatrix(room, matrix, creepCost) {
-        room.find(FIND_CREEPS).forEach((creep) => { 
-            if (creep.my && (creep.memory.role == 'longDistanceLorry' || creep.memory.role == 'driver'|| creep.memory.role == 'symbolPicker')) {
+        room.find(FIND_CREEPS).forEach((creep) => {
+            if (creep.my && creep.memory.role == 'powerSourceJammer') {
+                matrix.set(creep.pos.x, creep.pos.y, 1)
+            }
+            else if (creep.my && (creep.memory.role == 'longDistanceLorry' || creep.memory.role == 'driver'|| creep.memory.role == 'symbolPicker')) {
                 matrix.set(creep.pos.x, creep.pos.y, creepCost)
             }
-            else if (creep.my && creep.memory.role && (creep.memory.role == 'linkKeeper' || creep.memory.role == 'balancer' || creep.memory.role == 'maintainer')) {
-                matrix.set(creep.pos.x, creep.pos.y, 255)
+            else if (creep.my && creep.memory.role && (creep.memory.role == 'linkKeeper' || creep.memory.role == 'balancer' || creep.memory.role == 'dickHead' || creep.memory.role == 'maintainer')) {
+                matrix.set(creep.pos.x, creep.pos.y, 100)
             }
             /*else {
                 let travelData = creep.memory._trav;
@@ -540,9 +629,12 @@ class Traveler {
                 }
             }
             else {
-                matrix.set(creep.pos.x, creep.pos.y, 200);
+                matrix.set(creep.pos.x, creep.pos.y, 255);
             }
             
+        });
+        room.find(FIND_MY_POWER_CREEPS).forEach((creep) => { 
+            matrix.set(creep.pos.x, creep.pos.y, 255);
         });
         return matrix;
     }
@@ -663,7 +755,7 @@ Traveler.creepMatrixCache = {};
 exports.Traveler = Traveler;
 // this might be higher than you wish, setting it lower is a great way to diagnose creep behavior issues. When creeps
 // need to repath to often or they aren't finding valid paths, it can sometimes point to problems elsewhere in your code
-const REPORT_CPU_THRESHOLD = 50;
+const REPORT_CPU_THRESHOLD = 80;
 const DEFAULT_MAXOPS = 2000;
 const ROAD_COST_VAL = 1;
 const DEFAULT_STUCK_VALUE = 2;  // time wait before find path again when stuck
@@ -677,5 +769,9 @@ const STATE_DEST_ROOMNAME = 6;
 var creepCost = 0xff;
 // assigns a function to Creep.prototype: creep.travelTo(destination)
 Creep.prototype.travelTo = function (destination, options) {
+    return Traveler.travelTo(this, destination, options);
+};
+
+PowerCreep.prototype.travelTo = function (destination, options) {
     return Traveler.travelTo(this, destination, options);
 };

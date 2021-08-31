@@ -1,9 +1,11 @@
+var season3PowerHarvRadius = 6; // if more than x we stop
+
 global.digitalFlag = function() {
-    return true
+    return false
 }
 
 global.dzFlag = function() {
-    return true
+    return false
 }
 
 global.scanForSymb = function(dontDo) {
@@ -12,12 +14,24 @@ global.scanForSymb = function(dontDo) {
     monitorPickers(dontDo);
 }
 
+global.powerAllInOne = function (sn) {
+    let foundPs = listeningToPower(sn);
+    checkDuplicatedPower(sn, foundPs)
+    monitorPowerPickers(sn)
+}
+
+global.depositAllInOne = function (sn) {
+    let foundPs = listeningToDeposit(sn);
+    checkDuplicatedDeposit(sn, foundPs)
+    monitorDepoPickers(sn)
+}
+
 // generateRoomnameWithDistance -> generateAllRoomnameWithinDistance(rn, 5);
 // isInSameSector(rn1, rn2);
 
-global.sendMappers = function(r, interv = 530) {
-    let mrns = Memory.myRoomList.shardSeason;
-    let scanDist = 6;
+global.observerScanForPower = function (rn) {
+    let r = Game.rooms[rn];
+    let scanDist = season3PowerHarvRadius;
     if (r.controller.level>7) {
         // check the room's mapinfo, if not controlled by other rooms, and timer not defind or timer>time:
         let observerId = r.memory.observerId; // find cached observer ID
@@ -37,6 +51,46 @@ global.sendMappers = function(r, interv = 530) {
 
         let observer = Game.getObjectById(observerId);
         
+        let allRns = r.memory.toObRoomNamesForPower;
+        if (allRns == undefined || Game.time%99==0) {
+            allRns = generateAllRoomnamesWithinDistance(rn, scanDist);
+            r.memory.toObRoomNamesForPower = allRns;
+        }
+
+        for (let ind in allRns) {
+            let posiRn = allRns[ind];
+            if (Game.rooms[posiRn] == undefined && Game.time%((scanDist*2+1)**2)==ind) {
+                observer.observeRoom(posiRn);
+                //observer.observeRoom('E8S50');
+                //fo(r.name + ' watching ' + posiRn);
+            }
+        }
+    }
+}
+
+global.sendMappers = function(r, interv = 321) {
+    let mrns = Memory.myRoomList.shardSeason;
+    let scanDist = season3PowerHarvRadius;
+    
+    if (r.controller.level>7 && r.memory.observerId!==undefined) {
+        return
+        // check the room's mapinfo, if not controlled by other rooms, and timer not defind or timer>time:
+        let observerId = r.memory.observerId; // find cached observer ID
+        if (observerId == undefined) {
+            let obs = r.find(FIND_MY_STRUCTURES, {filter: c=> c.structureType == STRUCTURE_OBSERVER});
+            if (obs.length>0) {
+                observerId = obs[0].id;
+                r.memory.observerId = observerId;
+            }
+            else {
+                if (Game.time%43==0) {
+                    fo(r.name + ' need to build ob');
+                }
+                return
+            }
+        }
+
+        let observer = Game.getObjectById(observerId);
         
         let allRns = generateAllRoomnamesWithinDistance(r.name, scanDist);
         for (let ind in allRns) {
@@ -47,57 +101,66 @@ global.sendMappers = function(r, interv = 530) {
             }
         }
     }
-    else if (r.controller.level==7) {
+    else if (r.storage && r.energyCapacityAvailable>=1300) {
         if (Game.time%interv==0) {
-            scanDist = 4;
-            let rn = r.name;
-            let allRns = generateAllRoomnamesWithinDistance(rn, scanDist);
-            for (let bern of allRns) {
-                if (Game.rooms[bern]==undefined && isInSameSector(bern, rn)&&rn!=bern) {
-                    let savedPath = Memory.symbolRoutes[rn + bern];
-                    let thisDist;
-                    if (savedPath == undefined) {
-                        Memory.symbolRoutes[rn + bern] = Game.map.findRoute(rn, bern);
-                        savedPath = Memory.symbolRoutes[rn + bern];
-                    }
-                    let proc = true;
-                    for (let step of savedPath) {
-                        let steprn = step.room;
-                        if (Memory.rooms[steprn] && Memory.rooms[steprn].avoid) {
-                            proc = false;
-                            break;
+            if (r.memory.powerRoomList== undefined) {
+                r.memory.powerRoomList = [];
+                let rn = r.name;
+                let allRns = generateAllRoomnamesWithinDistance(rn, scanDist);
+                for (let bern of allRns) {
+                    let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(bern);
+                    let isHighway = (parsed[1] % 10 === 0) ||
+                        (parsed[2] % 10 === 0);
+                    if (Game.rooms[bern] == undefined && isHighway) {
+                        if (Memory.symbolRoutes == undefined) {
+                            Memory.symbolRoutes = {};
+                        }
+                        let savedPath = Memory.symbolRoutes[rn + bern];
+                        if (savedPath == undefined) {
+                            Memory.symbolRoutes[rn + bern] = Game.map.findRoute(rn, bern);
+                            savedPath = Memory.symbolRoutes[rn + bern];
+                        }
+                        let proc = true;
+                        for (let step of savedPath) {
+                            let steprn = step.room;
+                            if (Memory.rooms[steprn] && Memory.rooms[steprn].avoid) {
+                                proc = false;
+                                break;
+                            }
+                        }
+                        if (proc && savedPath.length<6 && (Memory.rooms[bern]==undefined || (Memory.rooms[bern]&&(Memory.rooms[bern].avoid==undefined||Memory.rooms[bern].avoid==false||Memory.rooms[bern].avoid==0)))) {
+                            if (Game.creeps[bern]==undefined) {
+                                fo(rn + ' send lvl4-7 power scout to ' + bern);
+                                r.memory.powerRoomList.push(bern);
+                                //r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: bern}, priority: 0.00001});
+                            }
                         }
                     }
-                    if (proc && savedPath.length<6 && (Memory.rooms[bern]==undefined || (Memory.rooms[bern]&&(Memory.rooms[bern].avoid==undefined||Memory.rooms[bern].avoid==false||Memory.rooms[bern].avoid==0)))) {
-                        if (Game.creeps[bern]==undefined) {
-                            fo(rn + ' send lvl7 symbol scout to ' + bern);
-                            r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: bern}, priority: 0.00001});
+                    else if (digitalFlag() && r.name=='E11S16' && ifInsideThisSectorOfWall(bern, new RoomPosition(25, 25, 'E5S15'))) { // special case for digital's sector
+                        let savedPath = Memory.symbolRoutes[rn + bern];
+                        if (savedPath == undefined) {
+                            Memory.symbolRoutes[rn + bern] = Game.map.findRoute(rn, bern);
+                            savedPath = Memory.symbolRoutes[rn + bern];
                         }
-                    }
-                }
-                else if (digitalFlag() && r.name=='E11S16' && ifInsideThisSectorOfWall(bern, new RoomPosition(25, 25, 'E5S15'))) { // special case for digital's sector
-                    let savedPath = Memory.symbolRoutes[rn + bern];
-                    let thisDist;
-                    if (savedPath == undefined) {
-                        Memory.symbolRoutes[rn + bern] = Game.map.findRoute(rn, bern);
-                        savedPath = Memory.symbolRoutes[rn + bern];
-                    }
-                    let proc = true;
-                    for (let step of savedPath) {
-                        let steprn = step.room;
-                        if (Memory.rooms[steprn] && Memory.rooms[steprn].avoid) {
-                            proc = false;
-                            break;
+                        let proc = true;
+                        for (let step of savedPath) {
+                            let steprn = step.room;
+                            if (Memory.rooms[steprn] && Memory.rooms[steprn].avoid) {
+                                proc = false;
+                                break;
+                            }
                         }
-                    }
-                    if (proc && savedPath.length<7 && (Memory.rooms[bern]==undefined || (Memory.rooms[bern]&&(Memory.rooms[bern].avoid==undefined||Memory.rooms[bern].avoid==false||Memory.rooms[bern].avoid==0)))) {
-                        if (Game.creeps[bern]==undefined) {
-                            fo(rn + ' send lvl7 symbol scout to ' + bern);
-                            r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: bern}, priority: 0.00001});
+                        if (proc && savedPath.length<7 && (Memory.rooms[bern]==undefined || (Memory.rooms[bern]&&(Memory.rooms[bern].avoid==undefined||Memory.rooms[bern].avoid==false||Memory.rooms[bern].avoid==0)))) {
+                            if (Game.creeps[bern]==undefined) {
+                                fo(rn + ' send lvl7 symbol scout to ' + bern);
+                                r.memory.forSpawning.spawningQueue.push({memory:{role: 'scouter', target: bern}, priority: 0.00001});
+                            }
                         }
                     }
                 }
             }
+            // send paroller
+            r.memory.forSpawning.spawningQueue.push({ memory: { role: 'scouter', target: randomIdGenerator(), pList: r.memory.powerRoomList}, priority: 12});
         }
     }
 }
@@ -135,6 +198,101 @@ global.listeningToSymbolDry = function (x, y, trn) {
     if (mrn!=undefined) {
         fo(mrn)
     }
+}
+
+global.listeningToPower = function (sn) {
+    let harvRad = season3PowerHarvRadius;
+    let foundSs = [];
+    for (let rn in Game.rooms) {
+        let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(rn);
+        let isHighway = (parsed[1] % 10 === 0) || 
+                        (parsed[2] % 10 === 0);
+        if (isHighway) { // only scan symbol in highway
+            let r = Game.rooms[rn];
+            let scts = r.find(FIND_STRUCTURES, {filter:s=>s.structureType==STRUCTURE_POWER_BANK});
+
+            if (scts.length>0) {
+                for (let sct of scts) {
+                    let symbId = sct.id;
+                    let amount = sct.power;
+                    let mrns = Memory.myRoomList[sn];
+                    let dist = 1000;
+                    let mrn;
+                    for (let mroomn of mrns) {
+                        // check if room is already on a power harvesting, decide whether we go frenzy
+                        let ongoingPs = 0;
+                        if (Memory.storedSymbols && Memory.storedSymbols[sn]) {
+                            for (let pId in Memory.storedSymbols[sn]) {
+                                let pobj = Memory.storedSymbols[sn][pId];
+                                if (pobj && pobj.mrn == mroomn && pobj.noPath==false && pobj.pairsSent) {
+                                    ongoingPs++;
+                                }
+                            }
+                        }
+                        if (ongoingPs>2 && Game.rooms[mroomn].find(FIND_MY_POWER_CREEPS, {filter: p=>p.powers && p.powers[PWR_OPERATE_SPAWN]}).length==0) {
+                            continue;
+                        }
+                        
+                        if (Game.rooms[mroomn].storage && Game.rooms[mroomn].energyCapacityAvailable>=1300 && !mrns.includes(sct.pos.roomName) && Game.map.getRoomLinearDistance(mroomn, sct.pos.roomName)<=harvRad) {
+                            let thisDist = findRouteForPowDep(mroomn, sct.pos.roomName).length;
+                            if (thisDist<dist) {
+                                dist = thisDist;
+                                mrn = mroomn;
+                            }
+                        }
+                    }
+                    if (mrn!=undefined) {
+                        let tilesRound = tilesSurrounded(sct);
+                        if (sct.ticksToDecay > 4600) {
+                            foundSs.push({id: symbId, a: amount, nospots: tilesRound, hp: sct.hits, time: sct.ticksToDecay+Game.time, dist: dist, rn: sct.pos.roomName, ts: Game.time, mrn: mrn, x: sct.pos.x, y: sct.pos.y, lono: Math.ceil(amount / 800)});
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return foundSs
+}
+
+global.listeningToDeposit = function (sn) {
+    let foundSs = [];
+    for (let rn in Game.rooms) {
+        let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(rn);
+        let isHighway = (parsed[1] % 10 === 0) || 
+                        (parsed[2] % 10 === 0);
+        if (isHighway) { // only scan symbol in highway
+            let r = Game.rooms[rn];
+            let scts = r.find(FIND_DEPOSITS);
+
+            if (scts.length>0) {
+                for (let sct of scts) {
+                    let symbId = sct.id;
+                    let cd = sct.cooldown;
+                    let lcd = sct.lastCooldown;
+                    let ttd = sct.ticksToDecay;
+                    let mrns = Memory.myRoomList[sn];
+                    let dist = 1000;
+                    let mrn;
+                    for (let mroomn of mrns) {
+                        if (Game.rooms[mroomn].controller.level==8 && Game.rooms[mroomn].energyCapacityAvailable>9999 && !mrns.includes(sct.pos.roomName) && Game.map.getRoomLinearDistance(mroomn, sct.pos.roomName)<10) {
+                            let thisDist = findRouteForPowDep(mroomn, sct.pos.roomName).length;
+                            if (thisDist<dist) {
+                                dist = thisDist;
+                                mrn = mroomn;
+                            }
+                        }
+                    }
+                    if (mrn!=undefined) {
+                        let tilesRound = tilesSurrounded(sct);
+                        if (tilesRound > 0 && (lcd==undefined || lcd<33)) { // lcd?
+                            foundSs.push({id: symbId, cd: cd, ttd: ttd, lcd: lcd, dist: dist, rn: sct.pos.roomName, ts: Game.time, mrn: mrn, x: sct.pos.x, y: sct.pos.y, nospots: tilesRound});
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return foundSs
 }
 
 global.listeningToSymbol = function () {
@@ -208,6 +366,104 @@ global.listeningToSymbol = function () {
     return foundSs
 }
 
+global.checkDuplicatedPower = function (sn, foundSs) {
+    if (Memory.storedSymbols == undefined) {
+        Memory.storedSymbols = {};
+        Memory.storedSymbols[sn] = {};
+    }
+    let storedSymbols = Memory.storedSymbols[sn];
+    for (let sId in storedSymbols) { // update
+        let sStoredObj =Memory.storedSymbols[sn][sId];
+        /*fo(sId)
+        fo(sStoredObj)
+        fo(sStoredObj)*/
+        if ((sStoredObj==undefined)||(Game.rooms[sStoredObj.rn]&&Game.getObjectById(sId)==undefined)) {
+            delete Memory.storedSymbols[sn][sId];
+        }
+    }
+    
+    for (let s of foundSs) {
+        // check if blocked by wall
+        let tr = Game.rooms[s.rn];
+        let goon = true;
+        let dedi = ['W20S12', 'W20S13', 'W20S14', 'W20S15', 'W20S16', 'W20S17'];
+        if (dedi.includes(s.rn) || s.dist>season3PowerHarvRadius || ((Game.rooms[s.mrn].memory.ECap < 2600 && s.nospots<2)||(Game.rooms[s.mrn].memory.ECap<1300)) || (Game.cpu.bucket<6000 && s.lono<3 && s.pairsSent==undefined) || (Game.cpu.bucket<4000 && s.pairsSent==undefined)) { // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            goon = false;
+        }
+        let ctnposi = new RoomPosition(s.x, s.y, s.rn);
+        
+        if (goon) {
+            if (storedSymbols[s.id] == undefined) { // not logged
+                Memory.storedSymbols[sn][s.id] = {a: s.a, time: s.time, nospots: s.nospots, hp: s.hp, dist: s.dist, rn: s.rn, ts: s.ts, gotIt: false, noPath: false, mrn: s.mrn, digi: s.digi, x: s.x, y: s.y, lono: s.lono};
+            }
+            else { // already logged, update amount and time
+                Memory.storedSymbols[sn][s.id].hp = s.hp;
+            }
+        }
+        else { // too far or too less
+            if (storedSymbols[s.id] == undefined) { // not logged
+                Memory.storedSymbols[sn][s.id] = {a: s.a, time: s.time,  dist: s.dist, rn: s.rn, ts: s.ts, gotIt: false, noPath: true, mrn: s.mrn, digi: s.digi, x: s.x, y: s.y, lono: s.lono};
+            }
+            else { // already logged
+                // check converting to sniper mode
+                if (tr && Memory.storedSymbols[sn][s.id].snipeMode == undefined) {
+                    let pb = Game.getObjectById(s.id);
+                    if (pb && (pb.hits<1000000 || pb.hits/pb.hitsMax<pb.ticksToDecay/5000)) {
+                        Memory.storedSymbols[sn][s.id].snipeMode = true;
+                    }
+                }
+
+            }
+        }
+    }
+}
+
+global.checkDuplicatedDeposit = function (sn, foundSs) {
+    if (Memory.storedDepos == undefined) {
+        Memory.storedDepos = {};
+        Memory.storedDepos[sn] = {};
+    }
+    let storedDepos = Memory.storedDepos[sn];
+    for (let sId in storedDepos) { // update
+        if (Game.rooms[storedDepos[sId].rn] && (Game.getObjectById(sId)==undefined || (Game.getObjectById(sId).lastCooldown>33))) {
+            Memory.storedDepos[sn][sId] = {};
+        }
+    }
+    
+    for (let s of foundSs) {
+        if (s.lcd>33) { // if last cd too long, we remove it
+            Memory.storedDepos[sn][s.id] = undefined;
+        }
+        else { // worth harvesting
+            // check if blocked by wall
+            let tr = Game.rooms[s.rn];
+            let goon = true;
+            if (s.dist>10) { // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                goon = false;
+            }
+            let ctnposi = new RoomPosition(s.x, s.y, s.rn);
+            
+            if (goon) {
+                if (storedDepos[s.id] == undefined) { // not logged
+                    Memory.storedDepos[sn][s.id] = {cd: s.cd, ts: s.ts, ts: s.ts, ttd: s.ttd, lcd: s.lcd, dist: s.dist, rn: s.rn, ts: s.t0, t0: s.t0, gotIt: false, noPath: false, mrn: s.mrn, digi: s.digi, x: s.x, y: s.y, nospots: s.nospots};
+                }
+                else { // already logged, update amount and time
+                    Memory.storedDepos[sn][s.id].lcd = s.lcd;
+                }
+            }
+            else { // too far
+                if (storedDepos[s.id] == undefined) { // not logged
+                    Memory.storedDepos[sn][s.id] = {cd: s.cd, ts: s.ts, ts: s.ts, ttd: s.ttd, lcd: s.lcd, dist: s.dist, rn: s.rn, ts: s.t0, t0: s.t0, gotIt: false, noPath: true, mrn: s.mrn, digi: s.digi, x: s.x, y: s.y, nospots: s.nospots};
+                }
+                else { // already logged
+                    Memory.storedDepos[sn][s.id].noPath = true;
+                    Memory.storedDepos[sn][s.id].lcd = s.lcd;
+                }
+            }
+        }
+    }
+}
+
 global.checkDuplicated = function (foundSs) {
     let storedSymbols = Memory.storedSymbols;
     if (storedSymbols == undefined) {
@@ -261,6 +517,208 @@ global.checkDuplicated = function (foundSs) {
                     Memory.storedSymbols[s.id].t0 = s.t0;
                     Memory.storedSymbols[s.id].digi = s.digi;
                 }
+            }
+        }
+    }
+}
+
+global.monitorDepoPickers = function (sn) {
+    for (let sId in Memory.storedDepos[sn]) {
+        let s = Memory.storedDepos[sn][sId];
+        
+        // delete dead jobs
+        if (Game.rooms[s.rn] && Game.getObjectById(sId)==undefined) { // if empty, remove
+            Memory.storedDepos[sn][sId] = undefined;
+        }
+        if (Memory.storedDepos[sn][sId] && Memory.storedDepos[sn][sId].noPath == undefined) {
+            delete Memory.storedDepos[sn][sId]
+        }
+        
+        if (true) {
+            if (!Memory.storedDepos[sn][sId].noPath) { /// there is path to that place
+                let tothvs = s.nospots;
+                let nowhvs = s.hvs;
+                if (nowhvs==undefined) {
+                    Memory.storedDepos[sn][sId].hvs = [];
+                    nowhvs = [];
+                }
+                let dingno = 0;
+                for (let hvid of nowhvs) { // remove dead harvesters
+                    let hver = Game.getObjectById(hvid);
+                    if ( hver == undefined) {
+                        removeElementInArrayByElement(hvid, Memory.storedDepos[sn][sId].hvs);
+                    }
+                    else { // do not count dying harvesters
+                        if (hver.ticksToLive<s.dist*50) {
+                            dingno++;
+                        }
+                    }
+                }
+                //if (nowhvs.length-dingno<tothvs) {
+                if (Memory.storedDepos[sn][sId].sent) {
+                    // spawn harvester
+                    //for (let i=0; i<(tothvs-nowhvs.length+dingno); i++) {
+                    if (Game.time%(Math.floor((1500-Math.min(1, s.dist-1.1)*50)/(s.nospots)))==0) {
+                        Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoHarvester', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    }
+                    // spawn hauler
+                    if (Game.time%(Math.floor((1500-Math.min(1, s.dist-1.1)*50)/Math.ceil(s.nospots/2.314)))==0) {
+                        Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoHauler', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    }
+                    // spawn storage
+                    if (Game.time%(Math.floor((1500-Math.min(1, s.dist-1.1)*50)/Math.ceil(s.nospots/6.618)))==0) {
+                        Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoStorage', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    }
+                    // spawn transmitter
+                }
+                else {
+                    for (let i=0; i<(tothvs); i++) {
+                        Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoHarvester', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    }
+                    // spawn hauler
+                    Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoHauler', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    // spawn storage
+                    Game.rooms[s.mrn].memory.forSpawning.spawningQueue.push({memory: {role: 'depoStorage', target: s.rn, home: s.mrn, depid: sId}, priority: 3});
+                    Memory.storedDepos[sn][sId].sent = true;
+                    // spawn transmitter
+                }
+            }
+            else { // no path ignore
+                
+            }
+        }
+    }
+}
+
+global.monitorPowerPickers = function (sn) {
+    for (let sId in Memory.storedSymbols[sn]) {
+        let s = Memory.storedSymbols[sn][sId];
+        if (true) {
+            let pb = Game.getObjectById(sId);
+            if (Memory.storedSymbols[sn][sId].jammersSent == undefined && pb && pb.hits<Math.max(200000*s.dist)) {
+                if (pb.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>['TheLastPiece', 'Mirroar', 'Mitsuyoshi'].includes(c.owner.username)}).length>0) {
+                    addPowerJammer(s.rn, s.mrn, sId, s.nospots+1);
+                    Memory.storedSymbols[sn][sId].jammersSent = true;
+                }
+            }
+            let ps = Memory.storedSymbols[sn][sId].pairsSent;
+            if (Game.time > s.ts+5000 || ((Game.time > s.ts+5000-s.dist*50-150) && (ps==undefined || ps.length<3)) || Game.rooms[s.mrn].memory.battleMode ) {
+                delete Memory.storedSymbols[sn][sId];
+                return
+            }
+            
+            if (Memory.storedSymbols[sn][sId].attackedAtTime && Memory.storedSymbols[sn][sId].attackedAtTime<=Game.time) {
+                // add ranged defender
+                addPowerSniperAtTime(Game.time, s.rn, s.mrn, sId, true);
+                // delay next spawn
+                Memory.storedSymbols[sn][sId].attackedAtTime = Game.time + 1500-200;
+            }
+            
+            if (Memory.storedSymbols[sn][sId].snipeMode && (Memory.storedSymbols[sn][sId].pickersSent == undefined)) {
+                // check if someone else is harvesting so we can just spawn haulers
+                if (pb && pb.room) {
+                    let attks = pb.pos.findInRange(FIND_CREEPS, 1, {filter:c=>c.my || allyList().includes(c.owner.username)});
+                    let dmg = 0;
+                    let ette = 5000;
+                    let dpt = 0;
+                    for (let attk of attks) {
+                        dmg += attk.getActiveBodyparts(ATTACK) * 30 * attk.ticksToLive;
+                        dpt += attk.getActiveBodyparts(ATTACK) * 30;
+                    }
+                    if (dpt>0) {
+                        ette = pb.hits/dpt;
+                    }
+                    if (dmg>pb.hits && (pb.hits<335000 || ette<s.lono*78/4+s.dist*50)) {
+                        addPowerSniperAtTime(Game.time, s.rn, s.mrn, sId);
+                        fo('sniping ' + pb.room.name )
+                        addPowerLorryGroupAtTime(Game.time, s.rn, s.mrn, s.lono, sId);
+                        Memory.storedSymbols[sn][sId].pickersSent = Game.time;
+                        fo('advancing lorry ' + pb.room.name);
+                        return
+                    }
+                }
+            }
+            else if (!Memory.storedSymbols[sn][sId].noPath) { /// there is path to that place
+                let interval = 1500-Memory.storedSymbols[sn][sId].dist*50-100;
+                let extraPairs = 0;
+                if (Memory.storedSymbols[sn][sId].dist>5) {
+                    extraPairs = 1;
+                }
+                /*
+                fo(s.rn)
+                fo(s.ts+1+interval*2+666)
+                fo(Game.time)
+                */
+                
+                if (ps==undefined) {
+                    Memory.storedSymbols[sn][sId].pairsSent = [];
+                    ps = Memory.storedSymbols[sn][sId].pairsSent;
+                }
+                
+                if (ps.length == 0) {
+                    addPowerGroupAtTime(Game.time,s.rn,s.mrn, sId);
+                    if (pb && pb.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>['TheLastPiece', 'Mirroar', 'Mitsuyoshi'].includes(c.owner.username)}).length>0) {
+                        addPowerJammer(s.rn, s.mrn, sId, s.nospots+1);
+                    }
+                    Memory.storedSymbols[sn][sId].pairsSent.push(Game.time);
+                    return
+                }
+                else if (ps.length > 0 && Memory.storedSymbols[sn][sId].pickersSent == undefined ) {
+                    // check if someone else is harvesting so we can just spawn haulers
+                    let pb = Game.getObjectById(sId);
+                    if (pb && pb.room) {
+                        let attks = pb.pos.findInRange(FIND_CREEPS, 1, {filter:c=>c.my || allyList().includes(c.owner.username)});
+                        let dmg = 0;
+                        let ette = 5000;
+                        let dpt = 0;
+                        for (let attk of attks) {
+                            dmg += attk.getActiveBodyparts(ATTACK) * 30 * attk.ticksToLive;
+                            dpt += attk.getActiveBodyparts(ATTACK) * 30;
+                        }
+                        if (dpt>0) {
+                            ette = pb.hits/dpt;
+                        }
+                        if (dmg>pb.hits && (pb.hits<335000 || ette<s.lono*78/4+s.dist*50)) {
+                            addPowerLorryGroupAtTime(Game.time, s.rn, s.mrn, s.lono, sId);
+                            Memory.storedSymbols[sn][sId].pickersSent = Game.time;
+                            fo('advancing lorry ' + pb.room.name);
+                            return
+                        }
+                    }
+                    if ((Game.time-Memory.storedSymbols[sn][sId].ts)/interval>ps.length && ps.length<3+extraPairs) {
+                        addPowerGroupAtTime(Game.time,s.rn,s.mrn, sId);
+                        if (pb && pb.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>['TheLastPiece', 'Mirroar', 'Mitsuyoshi'].includes(c.owner.username)}).length>0) {
+                            addPowerJammer(s.rn, s.mrn, sId, s.nospots+1);
+                        }
+                        Memory.storedSymbols[sn][sId].pairsSent.push(Game.time);
+                    }
+                    else if ((Game.time-Memory.storedSymbols[sn][sId].ts)/interval+0.477>ps.length && ps.length>2+extraPairs) { // calc amount and send extra?
+                        let pb = Game.getObjectById(sId);
+                        if (pb && pb.hits>300000) {
+                            addPowerGroupAtTime(Game.time,s.rn,s.mrn, sId);
+                            if (pb.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>['TheLastPiece', 'Mirroar', 'Mitsuyoshi'].includes(c.owner.username)}).length>0) {
+                                addPowerJammer(s.rn, s.mrn, sId, s.nospots+1);
+                            }
+                            Memory.storedSymbols[sn][sId].pairsSent.push(Game.time);
+                        }
+                        addPowerLorryGroupAtTime(Game.time, s.rn, s.mrn, s.lono, sId);
+                        Memory.storedSymbols[sn][sId].pickersSent = Game.time;
+                    }
+                    else { // check and resend attackers or pickers
+                        if (pb && pb.ticksToDecay && pb.ticksToDecay<2000&&pb.hits>pb.hitsMax*2000/5000&&Memory.storedSymbols[sn][sId].exextraPairsent==undefined) {
+                            addPowerGroupAtTime(Game.time,s.rn,s.mrn, sId);
+                            if (pb && pb.pos.findInRange(FIND_HOSTILE_CREEPS, 5, {filter: c=>['TheLastPiece', 'Mirroar', 'Mitsuyoshi'].includes(c.owner.username)}).length>0) {
+                                addPowerJammer(s.rn, s.mrn, sId, s.nospots+1);
+                            }
+                            Memory.storedSymbols[sn][sId].exextraPairsent = Game.time;
+                            fo('extra extra attacker sent ' + pb.room.name);
+                            return
+                        }
+                    }
+                }
+            }
+            else { // no path ignore
+                
             }
         }
     }
@@ -1125,4 +1583,30 @@ global.mapMazeInit = function () {
         }
         Memory.mapMaze = laMaze;
     }
+}
+
+global.findRouteForPowDep = function (start, tar) {
+    let route = Game.map.findRoute(start, tar, {
+        routeCallback(roomName, fromRoomName) {
+            let parsed = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+            let isHighway = (parsed[1] % 10 === 0) || 
+                            (parsed[2] % 10 === 0);
+            let isMyRoom = Game.rooms[roomName] &&
+                Game.rooms[roomName].controller &&
+                Game.rooms[roomName].controller.my;
+            if (isHighway || isMyRoom) {
+                return 1;
+            } 
+            else if (isSk(roomName)) {
+                return 30
+            }
+            else if (Memory.rooms.roomName && Memory.rooms.roomName.avoid) {
+                return 18.8
+            }
+            else {
+                return 3.14;
+            }
+            
+    }});
+    return route
 }

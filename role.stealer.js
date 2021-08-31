@@ -5,32 +5,6 @@ let getB = require('action.getBoost');
 module.exports = {
     run: function(creep) {
       creep.say('stealling');
-        if (false) { // (creep.room.name == 'E11S27' && creep.room.controller.level == 8) {
-            let full = _.sum(creep.store)>0;
-            if (full) {
-                creep.moveTo(Game.getObjectById('60285f514883687220e23d02'));
-                creep.transfer(Game.getObjectById('60285f514883687220e23d02'), 'symbol_kaph');
-            }
-            else {
-                let dps = creep.room.find(FIND_DROPPED_RESOURCES, {filter:c=>c.resouceType=='symbol_kaph'});
-                if (dps.length>0) {
-                    creep.moveTo(dps[0]);
-                    creep.pickup(dps[0]);
-                }
-                else {
-                    let dps = creep.room.find(FIND_TOMBSTONES, {filter:c=>c.store['symbol_kaph']>0});
-                    if (dps.length>0) {
-                        creep.moveTo(dps[0]);
-                        creep.withdraw(dps[0], 'symbol_kaph');
-                    }
-                    else {
-                        creep.moveTo(Game.getObjectById('606ddf3755002d18dfcecf38'));
-                        creep.withdraw(Game.getObjectById('606ddf3755002d18dfcecf38'), 'symbol_kaph');
-                    }
-                }
-            }
-            return
-        }
         if (getB.run(creep)!=true) {
             return
         }
@@ -40,17 +14,17 @@ module.exports = {
                 creep.memory.bornTime = Game.time;
             }
             else {
-                if ((creep.memory.transferTime == undefined && creep.ticksToLive<800) && creep.memory.recycle == undefined) {
+                if ( false && (creep.memory.transferTime == undefined && creep.ticksToLive<800) && creep.memory.recycle == undefined) {
                     // creep lost 
                     creep.memory.recycle = true; // set recycle true
                 }
                 else { // not lost, on normal job
-                    if (creep.memory.recycle) {
+                    if (false && creep.memory.recycle) {
                         if (storedTravelFromAtoB(creep, 'r')) { // arrived or path not defined
                             if (_.sum(creep.store)>0) {
                                 for (let mineralType in creep.store) {
                                     if (creep.transfer(creep.room.storage, mineralType) == ERR_NOT_IN_RANGE) {
-                                        creep.travelTo(creep.room.storage, {maxRooms: 1, offRoad: true, ignoreRoads: true});
+                                        creep.travelTo(creep.room.storage, {maxRooms: 1});
                                     }
                                 }
                             }
@@ -63,7 +37,7 @@ module.exports = {
                         if (creep.memory.working == true && _.sum(creep.carry) == 0) {
                           creep.memory.working = false;
                         }
-                        else if (creep.memory.working == false && _.sum(creep.carry) == creep.carryCapacity ) {
+                        else if (creep.memory.working == false && creep.store.getFreeCapacity('energy') == 0 ) {
                           creep.memory.working = true;
                         }
                         
@@ -128,6 +102,63 @@ module.exports = {
                         }
                         else { // working false, get things
                             if (creep.room.name == creep.memory.target) { // if in target room
+                                if (creep.store.getFreeCapacity('energy') > 0) {
+                                    let dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {filter: d=>d.resourceType != 'energy'});
+                                    if (dropped) {
+                                        if (creep.pos.getRangeTo(dropped)>1) {
+                                            creep.travelTo(dropped)
+                                        }
+                                        else {
+                                            creep.pickup(dropped);
+                                        }
+                                    }
+                                    else {
+                                        dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES, {filter: d=>d.amount > creep.store.getFreeCapacity('energy')});
+                                        if (dropped) {
+                                            if (creep.pos.getRangeTo(dropped)>1) {
+                                                creep.travelTo(dropped)
+                                            }
+                                            else {
+                                                creep.pickup(dropped);
+                                            }
+                                        }
+                                        else {
+                                            dropped = creep.pos.findClosestByRange(FIND_DROPPED_RESOURCES);
+                                            if (dropped) {
+                                                if (creep.pos.getRangeTo(dropped)>1) {
+                                                    creep.travelTo(dropped)
+                                                }
+                                                else {
+                                                    creep.pickup(dropped);
+                                                }
+                                            }
+                                            else {
+                                                dropped = creep.pos.findClosestByRange(FIND_RUINS, {filter: r=>r.store.energy>0});
+                                                if (dropped) {
+                                                    if (creep.pos.getRangeTo(dropped)>1) {
+                                                        creep.travelTo(dropped)
+                                                    }
+                                                    else {
+                                                        creep.withdraw(dropped, 'energy');
+                                                    }
+                                                }
+                                                else {
+                                                    let totake = creep.room.storage;
+                                                    if (totake) {
+                                                        if (creep.pos.getRangeTo(totake)>1) {
+                                                            creep.travelTo(totake)
+                                                        }
+                                                        else {
+                                                            creep.withdraw(totake, 'energy');
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    return
+                                }
+                                return
                                 if (_.sum(creep.store)>0) {
                                     let dests = creep.memory.dests;
                                     if (dests) {
@@ -186,7 +217,7 @@ module.exports = {
                                             }
                                             else {
                                                 if (creep.pos.getRangeTo(stor)>1) {
-                                                    creep.travelTo(stor, {offRoad: true, ignoreRoads: true});
+                                                    creep.travelTo(stor);
                                                 }
                                                 else {
                                                     if (creep.withdraw(stor, syb)==OK && creep.memory.transferTime == undefined) {
@@ -209,7 +240,7 @@ module.exports = {
                                     for (let syb in stor.store) {
                                         if (syb.slice(0,3)=='sym') {
                                             if (creep.pos.getRangeTo(stor)>1) {
-                                                creep.travelTo(stor, {offRoad: true, ignoreRoads: true});
+                                                creep.travelTo(stor);
                                             }
                                             else {
                                                 if (creep.withdraw(stor, syb)==OK && creep.memory.transferTime == undefined) {
